@@ -1,0 +1,44 @@
+@import "../assets/fonts.css";
+
+.font-body {
+  font-family: "Palatino", cursive;
+}
+
+.header-body h1 {
+  font-size: 1.6rem;
+  padding: 0rem;
+  margin: 0rem;
+}
+.header-body {
+  font-size: 8vh;
+  padding-top: 2vh;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  vertical-align: middle;
+  font-weight: 200;
+}
+
+.header-body p {
+  font-size: 1.4rem;
+}
+
+.header hr {
+  margin: 0rem;
+  padding: 0rem;
+}
+
+.footer {
+  height: 3vh;
+  background-color: #20232a;
+  color: #fff;
+}
+
+.main-content {
+  height: 90vh;
+}
+
+.header {
+  height: 7vh;
+  background-color: #20232a;
+  color: #fff;
+}
