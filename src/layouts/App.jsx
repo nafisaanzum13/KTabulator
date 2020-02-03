@@ -1,24 +1,20 @@
 import React, { Component } from "react";
-import Dashboard from "../components/Dashboard";
+import InputForm from "../components/InputForm";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 import { Route, Switch } from "react-router-dom";
 class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {};
-    this.mainPanel = React.createRef();
-  }
+
   render() {
     return (
       <div className="wrapper ">
         <div className="font-body">
           <div className="header">
-            <Header {...this.props} />
+            <Header />
           </div>
-          <div className="main-content ">
-            <Dashboard {...this.props} />
+          <div className="InputForm">
+            <InputForm />
           </div>
           <div className="footer">
             <Footer />
@@ -28,5 +24,7 @@ class App extends Component {
     );
   }
 }
+
+// alert("Hi Friends"); This line works! I guess we can write regular js in JSX files
 
 export default App;
