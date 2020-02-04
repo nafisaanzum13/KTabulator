@@ -15,23 +15,18 @@ class URLForm extends Component {
 
   render() {
     const urlPasted = this.props.urlPasted;
+    let urlText;
     if (urlPasted === "") {
-      return (
-        <div className="row">
-          <div className="col-md-6">
-            <div contentEditable='true' 
-              onPaste={this.handleURLPaste}
-              suppressContentEditableWarning={true}>Paste the URL here</div>
-          </div>
-        </div>
-      );
+      urlText = "Paste the URL here";
+    } else {
+      urlText = "URL has already been pasted";
     }
     return (
       <div className="row">
         <div className="col-md-6">
           <div contentEditable='true' 
             onPaste={this.handleURLPaste} 
-            suppressContentEditableWarning={true}>URL has already been pasted</div>
+            suppressContentEditableWarning={true}>{urlText}</div>
         </div>
       </div>
     );

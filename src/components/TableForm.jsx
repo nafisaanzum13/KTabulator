@@ -15,23 +15,18 @@ class TableForm extends Component {
 
   render() {
       const tablePasted = this.props.tablePasted;
+      let tableText;
       if (tablePasted === "") {
-        return (
-          <div className="row">
-            <div className="col-md-6">
-              <div contentEditable='true' 
-                onPaste={this.handleTablePaste}
-                suppressContentEditableWarning={true}>Paste the table here</div>
-            </div>
-          </div>
-        );
+        tableText = "Paste the table here";
+      } else {
+        tableText = "Table has already been pasted";
       }
       return (
         <div className="row">
           <div className="col-md-6">
             <div contentEditable='true' 
               onPaste={this.handleTablePaste}
-              suppressContentEditableWarning={true}>Table has already been pasted</div>
+              suppressContentEditableWarning={true}>{tableText}</div>
           </div>
         </div>
       );
