@@ -60,8 +60,10 @@ class App extends Component {
           <div className="header">
             <Header />
           </div>
-          <div className="InputForm">
-            {middleComponent}
+          <div className="main-content">
+            <div>
+              {middleComponent}
+            </div>
           </div>
           <div className="footer">
             <Footer />
