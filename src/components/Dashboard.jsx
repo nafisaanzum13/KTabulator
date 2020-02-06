@@ -11,8 +11,8 @@ class Dashboard extends Component {
 
   componentDidMount() {
     // The two following lines ensure that we have the information we needed
-    // alert(this.props.urlPasted);
-    // alert(this.props.tablePasted);
+    alert(this.props.urlPasted);
+    alert(this.props.tablePasted);
   }
 
   render() {
