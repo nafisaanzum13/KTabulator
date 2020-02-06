@@ -23,14 +23,14 @@ class Dashboard extends Component {
           <WorkPanel 
             urlPasted={this.props.urlPasted}
             tablePasted={this.props.tablePasted}
-            testData={testData}
+            testRows={rows}
             testColumns={columns}/>
       </div>
       <div className="origin-table">
           <OriginTable 
             urlPasted={this.props.urlPasted}
             tablePasted={this.props.tablePasted}
-            testData={testData}
+            testRows={rows}
             testColumns={columns}/>
       </div>
       </>
@@ -38,7 +38,7 @@ class Dashboard extends Component {
   }
 }
 
-const testData = [
+const rows = [
     {"city":"Berlin", "country":"Germany"},
     {"city":"Toronto","country":"Canada"},
     {"city":"Paris","country":"France"},

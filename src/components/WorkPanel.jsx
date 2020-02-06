@@ -6,6 +6,8 @@ class WorkPanel extends Component {
     constructor(props) {
       super(props);
       this.state = {
+          curColumns: this.props.testColumns,
+          curRows: this.props.testRows,
           showTable:false
       };
       this.handleShowTable = this.handleShowTable.bind(this);
@@ -24,8 +26,8 @@ class WorkPanel extends Component {
         } else {
             curTable=
             <ReactTable 
-                columns={this.props.testColumns} 
-                data={this.props.testData}>
+                columns={this.state.curColumns} 
+                data={this.state.curRows}>
             </ReactTable>
         }
         return (
