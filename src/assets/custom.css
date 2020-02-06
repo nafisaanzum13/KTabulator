@@ -38,6 +38,7 @@
 
 .work-panel {
   height: 60vh;
+  overflow: auto;
 }
 
 .origin-table {
