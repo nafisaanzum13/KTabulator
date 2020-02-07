@@ -29,8 +29,8 @@ class OriginTable extends Component {
     render() {
         // const tableString = this.props.tablePasted; // this is the place to display the table
         return (
-          <div className="col-md-6 offset-md-3">Original Table
-            <ReactTable columns={this.props.testColumns} data={this.props.testRows}>
+          <div className="col-md-10 offset-md-1">Original Table
+            <ReactTable columns={this.props.originColumns} data={this.props.originRows}>
             </ReactTable>
           </div>
         );

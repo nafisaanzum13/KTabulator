@@ -32,6 +32,7 @@ class WorkPanel extends Component {
         }
         newKeys = Object.keys(newRow[0]);
         for (let i=0;i<newKeys.length;++i) {
+            // If some property is not in the existing table(index is -1), we add it to updated columns
             if (oldKeys.indexOf(newKeys[i]) === -1) {
                 let tempHeader = {Header:newKeys[i],accessor:newKeys[i]};
                 updatedColumns.push(tempHeader);
