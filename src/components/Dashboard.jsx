@@ -11,27 +11,27 @@ class Dashboard extends Component {
 
   componentDidMount() {
     // The two following lines ensure that we have the information we needed
-    alert(this.props.urlPasted);
-    alert(this.props.tablePasted);
+    // alert(this.props.urlPasted);
+    // alert(this.props.tablePasted);
   }
 
   render() {
     stringToJSON(this.props.tablePasted);
+    rowFilter();
     return (
       <>
       <div className="work-panel">
           <WorkPanel 
             urlPasted={this.props.urlPasted}
             tablePasted={this.props.tablePasted}
-            // instead of passing the testRows and testColumns, we need to pass the parsed rowJSON and column JSON
-            testRows={rows}
-            testColumns={columns}/>
+            testRows={sampleRows} // instead of using realRows, we use sampleRows here for demo purposes
+            testColumns={realCols}/>
       </div>
       <div className="origin-table">
           <OriginTable 
             urlPasted={this.props.urlPasted}
             tablePasted={this.props.tablePasted}
-            originRows={realRows}
+            originRows={realRows} 
             originColumns={realCols}/>
       </div>
       </>
@@ -39,32 +39,16 @@ class Dashboard extends Component {
   }
 }
 
+// Here we initialize some variables
+
 var realRows = [];
 var realCols = [];
+var sampleRows = [];
+var sampleRowNames = ["Singapore","Paris","Taipei","Reykjavík","Rome","Dhaka",
+                    "Ankara","Abuja","Ottawa","London","Madrid","Tokyo",
+                    "Cairo","Beijing","Berlin"];
 
-const rows = [
-    {"city":"Berlin", "country":"Germany"},
-    {"city":"Toronto","country":"Canada"},
-    {"city":"Paris","country":"France"},
-    {"city":"Shanghai","country":"China"},
-    {"city":"Waterloo","country":"Canada"},
-    {"city":"Melbourne","country":"Australia"},
-    {"city":"New York","country":"US"},
-    {"city":"Florence","country":"Italy"}
-];
-
-const columns = [
-    {
-        Header:"City",
-        accessor:"city"
-    },
-    {
-        Header:"Country",
-        accessor:"country"
-    }
-];
-
-// This begins the conversion from String(tablePasted) to JSON format that is desired.
+// Here we begin the conversion from String(tablePasted) to JSON format that is desired.
 
 var urlArray = [];
 
@@ -120,8 +104,19 @@ function stringToJSON(tablePasted) {
     }
     realRows = rowJSON;
     realCols = colJSON;
-    console.log(realRows);
-    console.log(realCols);
+    //console.log(realRows);
+    //console.log(realCols);
+}
+
+// Here we filter the row data to get sampleRows
+
+function rowFilter() {
+    for (let i=0;i<realRows.length;++i) {
+        if (sampleRowNames.indexOf(realRows[i].City)!==-1) {
+            sampleRows.push(realRows[i]);
+        }
+    }
+    console.log(sampleRows);
 }
 
 export default Dashboard;

@@ -8,7 +8,8 @@ class WorkPanel extends Component {
       this.state = {
           curColumns: this.props.testColumns,
           curRows: this.props.testRows,
-          showTable:false
+          showTable:false, // bool storing whether we want to display the table in WorkPanel or not
+          searchKey:"City" // string storing for which entities we are making requests, it's "City" for now
       };
       this.handleShowTable = this.handleShowTable.bind(this);
       this.handleAddColumn = this.handleAddColumn.bind(this);
@@ -21,35 +22,70 @@ class WorkPanel extends Component {
     }
 
     handleAddColumn() {
-        // this is the place where we make the API call, fetch the data we need, (convert to JSON format),
-        // and append it to the table view
+        // // this is the place where we make the API call, fetch the data we need, (convert to JSON format),
+        // // and change the table view
 
-        // First we add the new column(areaTotal in this case) into curColumns
+        // // There is an issue with updating the columns, leading to the .slice().
+        // // Check out: https://spectrum.chat/react-table/general/add-columns-dynamically~5263b287-aa54-4403-9708-c017a3dfa349
+        // // this.setState({
+        // //     curColumns:curColumns.slice() 
+        // // })
+
+        // The first step, before we even make any requests, is to get the old columns of the table
         let updatedColumns = this.state.curColumns;
         let oldKeys=[],newKeys=[];
         for (let i=0;i<this.state.curColumns.length;++i) {
             oldKeys.push(this.state.curColumns[i].accessor);
-        }
-        newKeys = Object.keys(newRow[0]);
-        for (let i=0;i<newKeys.length;++i) {
-            // If some property is not in the existing table(index is -1), we add it to updated columns
-            if (oldKeys.indexOf(newKeys[i]) === -1) {
-                let tempHeader = {Header:newKeys[i],accessor:newKeys[i]};
-                updatedColumns.push(tempHeader);
-            }
-        }
-        // There is an issue with updating the columns, leading to the .slice().
-        // Check out: https://spectrum.chat/react-table/general/add-columns-dynamically~5263b287-aa54-4403-9708-c017a3dfa349
-        // this.setState({
-        //     curColumns:curColumns.slice() 
-        // })
+        }      
 
-        // At this stage we have updated curColumns, which can be used in setState. Now we need to update the data
-        let joinKey = "city"; // this is the joinKey we want to use to join the old data and the new data, it's "city" in this case
-        let updatedRows = joinObjects(this.state.curRows, newRow, joinKey);
-        this.setState({
-            curColumns:updatedColumns.slice(),
-            curRows:updatedRows 
+        // Let's build the REAL city array from this.state.curRows
+        let realCityArray=[];
+        for (let i=0;i<this.state.curRows.length;++i) {
+            realCityArray.push(this.state.curRows[i].City);
+        }
+
+        let dbResult = [];
+        let newRow = [];
+        let promiseArray = [];
+
+        for (let i=0;i<realCityArray.length;++i) {
+            let curURL = "http://vmdbpedia.informatik.uni-leipzig.de:8080/api/1.2.1/values?entities="+realCityArray[i]+
+            "&property=dbo%3AareaTotal&format=JSON&pretty=NONE&limit=1000&offset=0&key=1234&oldVersion=false"
+            let curPromise = cityGet(curURL);
+            promiseArray.push(curPromise);
+        }
+
+        allPromiseReady(promiseArray).then((values) => {
+            // We loop through the result array returned by all our network requests
+            for (let i=0;i<values.length;++i) {
+                let tempObj={};
+                if (values[i].results.bindings[0].dboareaTotal === undefined) {
+                    tempObj = {"City":realCityArray[i],"AreaTotal":"N/A"};
+                } else {
+                    dbResult = values[i].results.bindings[0].dboareaTotal.value;
+                    tempObj = {"City":realCityArray[i],"AreaTotal":dbResult};
+                }
+                newRow.push(tempObj);
+            }
+            // Let's update the colJSON
+            newKeys = Object.keys(newRow[0]);
+            for (let i=0;i<newKeys.length;++i) {
+                // If some property is not in the existing table(index is -1), we add it to updated columns
+                if (oldKeys.indexOf(newKeys[i]) === -1) {
+                    let tempHeader = {Header:newKeys[i],accessor:newKeys[i]};
+                    updatedColumns.push(tempHeader);
+                }
+            }
+            // console.log(updatedColumns);
+            // colJSON has been updated
+
+            // Now we update the rowJSON
+            let updatedRows = joinObjects(this.state.curRows, newRow, this.state.searchKey);
+            this.setState({
+                curColumns:updatedColumns.slice(),
+                curRows:updatedRows 
+            })
+            // This is successful!
         })
     }
 
@@ -86,18 +122,8 @@ class WorkPanel extends Component {
 
 export default WorkPanel;
 
-const newRow = [
-    {"city":"Berlin", "area":"100"},
-    {"city":"Toronto","area":"120"},
-    {"city":"Paris","area":"80"},
-    {"city":"Shanghai","area":"150"},
-    {"city":"Waterloo","area":"20"},
-    {"city":"Melbourne","area":"200"},
-    {"city":"New York","area":"150"},
-    {"city":"Florence","area":"90"}
-];
+// Below lists some test data and helper functions
 
-// 
 function joinObjects() {
     var idMap = {};
     // Iterate over arguments
@@ -122,4 +148,17 @@ function joinObjects() {
     }
     return newArray;
 }
+
+function cityGet(url) {
+    return fetch(url, {
+        headers: {
+        'Accept': 'application/json'
+        }
+    }).then((response) => response.json())
+}
+
+function allPromiseReady(promiseArray){
+    return Promise.all(promiseArray);
+}
+
 
