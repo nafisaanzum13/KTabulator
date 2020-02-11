@@ -116,7 +116,7 @@ function rowFilter() {
             sampleRows.push(realRows[i]);
         }
     }
-    console.log(sampleRows);
+    // console.log(sampleRows);
 }
 
 export default Dashboard;
