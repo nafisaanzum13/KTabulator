@@ -46,6 +46,10 @@
   overflow: scroll;  /* This allows the origin-table component to be scrollable with a scrollbar*/
 }
 
+.scrollable-horizontal {
+  overflow:auto;
+}
+
 .header {
   height: 7vh;
   background-color: #20232a;

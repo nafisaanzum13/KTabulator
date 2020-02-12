@@ -13,12 +13,14 @@ class WorkPanel extends Component {
           showTable:false, // bool storing whether we want to display the table in WorkPanel or not
           showNeighbour:false, // bool storing whether we want to display the neighbours found from clicking on "Explore Neighbours"
           neighbourFound:[], // array storing the neighbours that we have found. Initially empty.
+          columnCanAdd:[], // array storing the columns that we can add (selected from neighbourFound). Initially empty
           searchKey:"City", // string storing for which entities we are making requests, it's "City" for now
           searchColumn:"areaTotal" // string storing the column we want to add to the table, it's "areaTotal" for now
       };
-      this.handleShowTable = this.handleShowTable.bind(this);
-      this.handleAddColumn = this.handleAddColumn.bind(this);
-      this.handleExploreNeighbour = this.handleExploreNeighbour.bind(this);
+      this.handleShowTable = this.handleShowTable.bind(this); // click to show working table
+      this.handleAddColumn = this.handleAddColumn.bind(this); // click to add column to working table
+      this.handleExploreNeighbour = this.handleExploreNeighbour.bind(this); // click to explore neighbours of interesting cell
+      this.handleAddAction = this.handleAddAction.bind(this); // click to add neighbour to action list
     }
 
     handleShowTable() {
@@ -38,7 +40,7 @@ class WorkPanel extends Component {
             let neighbourArray = []; 
             for (let i=0;i<bindingArray.length;++i) {
                 let neighbourName = bindingArray[i].p.value.slice(28);
-                neighbourArray.push(<div key={i}><button>{neighbourName}</button></div>);
+                neighbourArray.push(neighbourName);
             }
             this.setState({
                 showNeighbour:true,
@@ -47,7 +49,28 @@ class WorkPanel extends Component {
         });
     }
 
-    handleAddColumn() {
+    handleAddAction(e,neighbourName) {
+
+        // When we click on a neighbour from neighbour panel, we want to add it to action, and remove it from neighbour panel
+
+        // Remove from neighbour panel
+        let neighbourFound = [...this.state.neighbourFound]; // make a separate copy of the array
+        let index = neighbourFound.indexOf(neighbourName);
+        if (index !== -1) {
+            neighbourFound.splice(index, 1);
+        }
+
+        let columnCanAdd = [...this.state.columnCanAdd];
+        if (columnCanAdd.indexOf(neighbourName) === -1) {
+            columnCanAdd.push(neighbourName);
+        }
+        this.setState({
+            neighbourFound:neighbourFound,
+            columnCanAdd:columnCanAdd
+        })
+    }
+
+    handleAddColumn(e,searchCol) {
         // // this is the place where we make the API call, fetch the data we need, (convert to JSON format),
         // // and change the table view
 
@@ -73,7 +96,7 @@ class WorkPanel extends Component {
         let suffixURL = "%0D%0A%7D&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
         for (let i=0;i<realCityArray.length;++i) {
             // We build the query body using the current city in realCityArray, and the current searchColumn
-            let queryBody = "select+%3Fsomevar%0D%0Awhere+%7B%0D%0A%09dbr%3A"+realCityArray[i]+"+dbo%3A"+this.state.searchColumn+"+%3Fsomevar";
+            let queryBody = "select+%3Fsomevar%0D%0Awhere+%7B%0D%0A%09dbr%3A"+realCityArray[i]+"+dbo%3A"+searchCol+"+%3Fsomevar";
             let queryURL = prefixURL+queryBody+suffixURL;
             let curPromise = cityGet(queryURL);
             promiseArray.push(curPromise);
@@ -83,7 +106,7 @@ class WorkPanel extends Component {
             // We loop through the result array returned by all our network requests
             for (let i=0;i<values.length;++i) {;
                 let tempObj={};
-                let newColName = this.state.searchColumn;
+                let newColName = searchCol;
                 newColName = newColName.charAt(0).toUpperCase() + newColName.slice(1) // Convert first letter to CAPS
                 tempObj["City"] = realCityArray[i];
                 // This mean result is not found
@@ -138,9 +161,21 @@ class WorkPanel extends Component {
                 data={this.state.curRows}>
             </ReactTable>
         }
+
+        // Let's create the neighbour buttons here, and pass to NeighbourPanel
+        let neighbourPass = [];
+        neighbourPass.push(<p>List of potentailly interesting properties:</p>);
+        for (let i=0;i<this.state.neighbourFound.length;++i) {
+            let neighbourName = this.state.neighbourFound[i];
+            neighbourPass.push(
+                <div key={neighbourName}>
+                    <button onClick={(e) => this.handleAddAction(e, neighbourName)}>{neighbourName}</button>
+                </div>);
+        }
+
         return (
         <div className="row">
-          <div className="col-md-6">
+          <div className="col-md-6 scrollable-horizontal">
               <button onClick={this.handleShowTable}>Show Table Below</button>
               <div>
                   {curTable}
@@ -150,12 +185,13 @@ class WorkPanel extends Component {
             <NeighbourPanel 
                 showTable={this.state.showTable}
                 showNeighbour={this.state.showNeighbour}
-                neighbourFound={this.state.neighbourFound}
+                neighbourFound={neighbourPass}
                 onExploreNeighbour={this.handleExploreNeighbour}/>
           </div>
           <div className="col-md-3">
             <ActionList 
                 showTable={this.state.showTable}
+                columnCanAdd={this.state.columnCanAdd}
                 onAddColumn={this.handleAddColumn}/>
           </div>
         </div>

@@ -6,15 +6,23 @@ class ActionList extends Component {
         this.handleAddColumn = this.handleAddColumn.bind(this);
     };
 
-    handleAddColumn() {
-        this.props.onAddColumn();
+    handleAddColumn(e, colName) {
+        this.props.onAddColumn(e, colName);
     }
 
     render() {
         let curAdd = null;
         const showTable = this.props.showTable;
+        const addArray = this.props.columnCanAdd;
         if (showTable === true) {
-            curAdd = <button onClick={this.handleAddColumn}>Add Column: areaTotal (City)</button>
+            curAdd = [];
+            for(let i=0;i<addArray.length;++i) {
+                let tempName = "Add Column:(City) "+addArray[i];
+                curAdd.push(
+                <div key={tempName}>
+                    <button onClick={(e) => this.handleAddColumn(e, addArray[i])}>{tempName}</button>
+                </div>);
+            }
         }
         return (
             <>
