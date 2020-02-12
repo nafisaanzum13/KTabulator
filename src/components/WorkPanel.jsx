@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import NeighbourPanel from "../components/NeighbourPanel";
+import ActionList from "../components/ActionList";
 import ReactTable from 'react-table-6';
 import 'react-table-6/react-table.css';
 
@@ -9,6 +11,8 @@ class WorkPanel extends Component {
           curColumns: this.props.testColumns,
           curRows: this.props.testRows,
           showTable:false, // bool storing whether we want to display the table in WorkPanel or not
+          showNeighbour:false, // bool storing whether we want to display the neighbours found from clicking on "Explore Neighbours"
+          neighbourFound:[], // array storing the neighbours that we have found. Initially empty.
           searchKey:"City", // string storing for which entities we are making requests, it's "City" for now
           searchColumn:"areaTotal" // string storing the column we want to add to the table, it's "areaTotal" for now
       };
@@ -25,17 +29,21 @@ class WorkPanel extends Component {
 
     handleExploreNeighbour() {
         let url = "http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=PREFIX+rdf%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0D%0APREFIX+rdfs%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E%0D%0APREFIX+owl%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23%3E%0D%0APREFIX+xsd%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0D%0APREFIX+dbo%3A+%3Chttp%3A%2F%2Fdbpedia.org%2Fontology%2F%3E%0D%0APREFIX+dbr%3A+%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2F%3E%0D%0APREFIX+dbp%3A+%3Chttp%3A%2F%2Fdbpedia.org%2Fproperty%2F%3E%0D%0APREFIX+db%3A+%3Chttp%3A%2F%2Fdbpedia.org%2F%3E%0D%0A%0D%0A%0D%0ASELECT+%3Fp%0D%0AWHERE+%7B%0D%0A++dbr%3ABerlin+%3Fp+%3Fo.%0D%0A++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++FILTER%28isLiteral%28%3Fo%29+%26%26+%0D%0A+++%09%09%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%22%2C%22i%22%29%29+%26%26%0D%0A++++%09regex%28%3FpString%2C%22ontology%22%2C%22i%22%29%29%0D%0A%7D&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-        let neighboursFound = "";
         fetch(url)
         .then((response) => {
             return response.json();
         })
         .then((myJson) => {
             let bindingArray = myJson.results.bindings;
+            let neighbourArray = []; 
             for (let i=0;i<bindingArray.length;++i) {
-                neighboursFound = neighboursFound+bindingArray[i].p.value+"\n";
+                let neighbourName = bindingArray[i].p.value.slice(28);
+                neighbourArray.push(<div key={i}><button>{neighbourName}</button></div>);
             }
-            alert("Here are the neighbours found:\n"+neighboursFound);
+            this.setState({
+                showNeighbour:true,
+                neighbourFound:neighbourArray
+            })
         });
     }
 
@@ -75,14 +83,17 @@ class WorkPanel extends Component {
             // We loop through the result array returned by all our network requests
             for (let i=0;i<values.length;++i) {;
                 let tempObj={};
+                let newColName = this.state.searchColumn;
+                newColName = newColName.charAt(0).toUpperCase() + newColName.slice(1) // Convert first letter to CAPS
+                tempObj["City"] = realCityArray[i];
                 // This mean result is not found
                 if (values[i].results.bindings.length === 0) {
-                    tempObj = {"City":realCityArray[i],"AreaTotal":"N/A"};
+                    tempObj[newColName] = "N/A";
                 }
                 // If result is found, we create a new row object, and add it to newRow array 
                 else {
                     dbResult = values[i].results.bindings[0].somevar.value;
-                    tempObj = {"City":realCityArray[i],"AreaTotal":dbResult};
+                    tempObj[newColName] = dbResult;
                 }
                 newRow.push(tempObj);
             }
@@ -117,21 +128,15 @@ class WorkPanel extends Component {
     }
 
     render() {
-        let curTable,curAdd,curExplore;
+        let curTable;
         if (this.state.showTable === false) {
             curTable=null;
-            curAdd=null;
-            curExplore=null;
         } else {
             curTable=
             <ReactTable 
                 columns={this.state.curColumns} 
                 data={this.state.curRows}>
             </ReactTable>
-            curAdd=
-            <button onClick={this.handleAddColumn}>Add Column: areaTotal (City)</button>
-            curExplore=
-            <button onClick={this.handleExploreNeighbour}>Explore Neighbour: Berlin</button>
         }
         return (
         <div className="row">
@@ -142,12 +147,16 @@ class WorkPanel extends Component {
               </div>
           </div>
           <div className="col-md-3">
-            <p>Explore Neighbours:</p>
-            {curExplore}
+            <NeighbourPanel 
+                showTable={this.state.showTable}
+                showNeighbour={this.state.showNeighbour}
+                neighbourFound={this.state.neighbourFound}
+                onExploreNeighbour={this.handleExploreNeighbour}/>
           </div>
           <div className="col-md-3">
-            <p>Action list:</p>
-            {curAdd}
+            <ActionList 
+                showTable={this.state.showTable}
+                onAddColumn={this.handleAddColumn}/>
           </div>
         </div>
         );
@@ -190,6 +199,8 @@ function cityGet(url) {
 function allPromiseReady(promiseArray){
     return Promise.all(promiseArray);
 }
+
+
 
 // let curURL = "http://vmdbpedia.informatik.uni-leipzig.de:8080/api/1.2.1/values?entities="+realCityArray[i]+
 // "&property=dbo%3AareaTotal&format=JSON&pretty=NONE&limit=1000&offset=0&key=1234&oldVersion=false"
