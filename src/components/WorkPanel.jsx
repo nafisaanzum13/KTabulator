@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import UsecaseSelect from "../components/UsecaseSelect";
+import TablePanel from "../components/TablePanel";
 import NeighbourPanel from "../components/NeighbourPanel";
 import ActionList from "../components/ActionList";
 import ReactTable from 'react-table-6';
@@ -150,16 +152,6 @@ class WorkPanel extends Component {
     }
 
     render() {
-        let curTable;
-        if (this.state.tableReady === false) {
-            curTable=null;
-        } else {
-            curTable=
-            <ReactTable 
-                columns={this.state.curColumns} 
-                data={this.state.curRows}>
-            </ReactTable>
-        }
 
         // Let's create the neighbour buttons here, and pass to NeighbourPanel
         let neighbourPass = [];
@@ -175,13 +167,15 @@ class WorkPanel extends Component {
         return (
         <div className="row">
           <div className="col-md-6 scrollable-horizontal">
-              {/* we want to make the four lines below into its own component */}
-              {/* first we make this button into its own component */}
-              <div>
-                <button onClick={this.handleShowTable}>Show Table Below</button>
+              <div className="usecase-select">
+                <UsecaseSelect 
+                    onShowTable={this.handleShowTable}/>
               </div>
               <div>
-                  {curTable}
+                <TablePanel
+                    tableReady={this.state.tableReady}
+                    curColumns={this.state.curColumns}
+                    curRows={this.state.curRows}/>
               </div>
           </div>
           <div className="col-md-3">

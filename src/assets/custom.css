@@ -46,6 +46,10 @@
   overflow: scroll;  /* This allows the origin-table component to be scrollable with a scrollbar*/
 }
 
+.usecase-select {
+  height: 5vh;
+}
+
 .scrollable-horizontal {
   overflow:auto;
 }
