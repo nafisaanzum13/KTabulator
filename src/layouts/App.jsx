@@ -3,6 +3,7 @@ import InputForm from "../components/InputForm";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Dashboard from "../components/Dashboard";
+import TableCreate from "../components/TableCreate";
 
 import { Route, Switch, Link } from "react-router-dom";
 class App extends Component {
@@ -12,11 +13,13 @@ class App extends Component {
     this.state = {
       urlPasted:"",
       tablePasted:"",
-      dashboardReady:false
+      dashboardReady:false,
+      tableCreate:false
     };
     this.handleURLPaste = this.handleURLPaste.bind(this);
     this.handleTablePaste = this.handleTablePaste.bind(this);
     this.handleDashboardClick = this.handleDashboardClick.bind(this);
+    this.handleTableCreateClick = this.handleTableCreateClick.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -37,16 +40,28 @@ class App extends Component {
     });
   }
 
+  handleTableCreateClick() {
+    this.setState({
+      tableCreate: true
+    })
+  }
+
   render() {
     const dashReady = this.state.dashboardReady;
+    const tableCreate = this.state.tableCreate;
     let middleComponent;
-    if (dashReady === false) {
+    if (tableCreate === true) {
+      middleComponent = 
+        <TableCreate
+          urlPasted={this.state.urlPasted}/>;
+    } else if (dashReady === false){
       middleComponent = 
         <InputForm 
           urlPasted={this.state.urlPasted}
           onURLPaste={this.handleURLPaste}
           tablePasted={this.state.tablePasted}
           onTablePaste={this.handleTablePaste}
+          onTableCreateClick = {this.handleTableCreateClick}
           onDashboardClick={this.handleDashboardClick}/>
     } else {
       middleComponent = 
@@ -73,7 +88,5 @@ class App extends Component {
     );
   }
 }
-
-// alert("Hi Friends"); This line works! I guess we can write regular js in JSX files
 
 export default App;

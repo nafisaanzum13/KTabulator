@@ -10,12 +10,11 @@ class WorkPanel extends Component {
       this.state = {
           curColumns: this.props.testColumns,
           curRows: this.props.testRows,
-          showTable:false, // bool storing whether we want to display the table in WorkPanel or not
+          tableReady:false, // bool storing the table in WorkPanel is ready or not
           showNeighbour:false, // bool storing whether we want to display the neighbours found from clicking on "Explore Neighbours"
           neighbourFound:[], // array storing the neighbours that we have found. Initially empty.
           columnCanAdd:[], // array storing the columns that we can add (selected from neighbourFound). Initially empty
           searchKey:"City", // string storing for which entities we are making requests, it's "City" for now
-          searchColumn:"areaTotal" // string storing the column we want to add to the table, it's "areaTotal" for now
       };
       this.handleShowTable = this.handleShowTable.bind(this); // click to show working table
       this.handleAddColumn = this.handleAddColumn.bind(this); // click to add column to working table
@@ -25,7 +24,7 @@ class WorkPanel extends Component {
 
     handleShowTable() {
         this.setState({
-            showTable: true
+            tableReady: true
         });
     }
 
@@ -95,7 +94,7 @@ class WorkPanel extends Component {
         let prefixURL = "http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=PREFIX+rdf%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0D%0APREFIX+rdfs%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E%0D%0APREFIX+owl%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23%3E%0D%0APREFIX+xsd%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0D%0APREFIX+dbo%3A+%3Chttp%3A%2F%2Fdbpedia.org%2Fontology%2F%3E%0D%0APREFIX+dbr%3A+%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2F%3E%0D%0APREFIX+dbp%3A+%3Chttp%3A%2F%2Fdbpedia.org%2Fproperty%2F%3E%0D%0APREFIX+db%3A+%3Chttp%3A%2F%2Fdbpedia.org%2F%3E%0D%0A%0D%0A";
         let suffixURL = "%0D%0A%7D&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
         for (let i=0;i<realCityArray.length;++i) {
-            // We build the query body using the current city in realCityArray, and the current searchColumn
+            // We build the query body using the current city in realCityArray, and the parameter "searchCol"
             let queryBody = "select+%3Fsomevar%0D%0Awhere+%7B%0D%0A%09dbr%3A"+realCityArray[i]+"+dbo%3A"+searchCol+"+%3Fsomevar";
             let queryURL = prefixURL+queryBody+suffixURL;
             let curPromise = cityGet(queryURL);
@@ -152,7 +151,7 @@ class WorkPanel extends Component {
 
     render() {
         let curTable;
-        if (this.state.showTable === false) {
+        if (this.state.tableReady === false) {
             curTable=null;
         } else {
             curTable=
@@ -176,21 +175,25 @@ class WorkPanel extends Component {
         return (
         <div className="row">
           <div className="col-md-6 scrollable-horizontal">
-              <button onClick={this.handleShowTable}>Show Table Below</button>
+              {/* we want to make the four lines below into its own component */}
+              {/* first we make this button into its own component */}
+              <div>
+                <button onClick={this.handleShowTable}>Show Table Below</button>
+              </div>
               <div>
                   {curTable}
               </div>
           </div>
           <div className="col-md-3">
             <NeighbourPanel 
-                showTable={this.state.showTable}
+                tableReady={this.state.tableReady}
                 showNeighbour={this.state.showNeighbour}
                 neighbourFound={neighbourPass}
                 onExploreNeighbour={this.handleExploreNeighbour}/>
           </div>
           <div className="col-md-3">
             <ActionList 
-                showTable={this.state.showTable}
+                tableReady={this.state.tableReady}
                 columnCanAdd={this.state.columnCanAdd}
                 onAddColumn={this.handleAddColumn}/>
           </div>

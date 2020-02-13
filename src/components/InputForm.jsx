@@ -6,10 +6,15 @@ class InputForm extends Component {
   constructor(props) {
     super(props);
     this.handleDashboardClick = this.handleDashboardClick.bind(this);
+    this.handleTableCreateClick = this.handleTableCreateClick.bind(this);
   }
 
   handleDashboardClick() {
     this.props.onDashboardClick();
+  }
+
+  handleTableCreateClick() {
+    this.props.onTableCreateClick();
   }
 
   render() {
@@ -28,10 +33,16 @@ class InputForm extends Component {
             onTablePaste={this.props.onTablePaste}
           />
         </div>
-        <br></br>
+        <br />
         <div className="row">
           <div className="col-md-6">
             <button onClick={this.handleDashboardClick}>Go to Dashboard</button>
+          </div>
+        </div>
+        <br />
+        <div className="row">
+          <div className="col-md-6">
+            <button onClick={this.handleTableCreateClick}>Go to Alternate Universe</button>
           </div>
         </div>
       </>

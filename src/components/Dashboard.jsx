@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import WorkPanel from "../components/WorkPanel";
-import OriginTable from "./OriginTable";
+import BottomPanel from "../components/BottomPanel";
 
 class Dashboard extends Component {
 
@@ -11,8 +11,8 @@ class Dashboard extends Component {
 
   componentDidMount() {
     // The two following lines ensure that we have the information we needed
-    alert(this.props.urlPasted);
-    alert(this.props.tablePasted);
+    // alert(this.props.urlPasted);
+    // alert(this.props.tablePasted);
   }
 
   render() {
@@ -27,8 +27,8 @@ class Dashboard extends Component {
             testRows={sampleRows} // instead of using realRows, we use sampleRows here for demo purposes
             testColumns={realCols}/>
       </div>
-      <div className="origin-table">
-          <OriginTable 
+      <div className="bottom-panel">
+          <BottomPanel 
             urlPasted={this.props.urlPasted}
             tablePasted={this.props.tablePasted}
             originRows={realRows} 
@@ -56,8 +56,8 @@ function stringToJSON(tablePasted) {
     const regex = /(\(https.*?\))/g;     // this regular expression matches all strings of form "(https....)"
     const regexSpace = /(\s\(https.*?\))/g;  // this regular expression matches all string of form " (https....)"
     
-    let colJSON = [];  // pass this JSON as table columns to WorkPanel and OriginTable
-    let rowJSON = [];  // pass this JSON as table rows to WorkPanel and OriginTable
+    let colJSON = [];  // pass this JSON as table columns to WorkPanel and BottomPanel
+    let rowJSON = [];  // pass this JSON as table rows to WorkPanel and BottomPanel
     let clipText = tablePasted; 
     let clip = clipText.split("\n");
 

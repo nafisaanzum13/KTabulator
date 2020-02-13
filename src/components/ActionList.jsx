@@ -12,9 +12,9 @@ class ActionList extends Component {
 
     render() {
         let curAdd = null;
-        const showTable = this.props.showTable;
+        const tableReady = this.props.tableReady;
         const addArray = this.props.columnCanAdd;
-        if (showTable === true) {
+        if (tableReady === true) {
             curAdd = [];
             for(let i=0;i<addArray.length;++i) {
                 let tempName = "Add Column:(City) "+addArray[i];

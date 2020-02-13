@@ -13,9 +13,9 @@ class NeighbourPanel extends Component {
     render() {
         let curExplore = null;
         let curNeighbour = null;
-        const showTable = this.props.showTable;
+        const tableReady = this.props.tableReady;
         const showNeighbour = this.props.showNeighbour;
-        if (showTable === true) {
+        if (tableReady === true) {
             curExplore = <button onClick={this.handleExploreNeighbour}>Explore Neighbour: Berlin</button>
             if (showNeighbour === true) {
                 curNeighbour = this.props.neighbourFound;

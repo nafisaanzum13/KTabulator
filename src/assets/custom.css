@@ -41,7 +41,7 @@
   overflow: auto;
 }
 
-.origin-table {
+.bottom-panel {
   height: 30vh;
   overflow: scroll;  /* This allows the origin-table component to be scrollable with a scrollbar*/
 }
