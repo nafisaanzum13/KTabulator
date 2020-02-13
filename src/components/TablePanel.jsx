@@ -9,14 +9,17 @@ class TablePanel extends Component {
 
     render() {
         let curTable;
-        if (this.props.tableReady === false) {
-            curTable=null;
-        } else {
+        if (this.props.usecaseSelected === "") {
+            curTable=null
+        } else if (this.props.usecaseSelected === "startTable") {
             curTable=
             <ReactTable 
                 columns={this.props.curColumns} 
                 data={this.props.curRows}>
             </ReactTable>
+        } else {
+            const subject = this.props.urlPasted.slice(30)
+            curTable=<p>The subject of interest is: {subject}</p>
         }
 
         return (

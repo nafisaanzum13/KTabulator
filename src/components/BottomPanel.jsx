@@ -15,10 +15,19 @@ class BottomPanel extends Component {
     }
 
     render() {
-        return (
-          <div className="col-md-10 offset-md-1">
+        let content;
+        if (this.props.usecaseSelected === "startTable") {
+          content = 
             <ReactTable columns={this.props.originColumns} data={this.props.originRows}>
             </ReactTable>
+        } else if (this.props.usecaseSelected === "startSubject") {
+          content=<iframe src={this.props.urlPasted} className="col-md-10 offset-md-1 bottom-iframe"></iframe>
+        } else {
+          content = null
+        }
+        return (
+          <div className="col-md-10 offset-md-1">
+            {content}
           </div>
         );
     }

@@ -3,18 +3,24 @@ import React, { Component } from "react";
 class UsecaseSelect extends Component {
     constructor(props) {
         super(props);
-        this.handleShowTable = this.handleShowTable.bind(this);
+        this.handleStartTable = this.handleStartTable.bind(this);
+        this.handleStartSubject = this.handleStartSubject.bind(this);
     };
 
-    handleShowTable() {
-        this.props.onShowTable();
+    handleStartTable() {
+        this.props.onStartTable();
+    }
+
+    handleStartSubject() {
+        this.props.onStartSubject();
     }
 
     render() {
         return (
-            <div className="row col-md-6">
-                <p>Choose starting point:</p>
-                <button onClick={this.handleShowTable}>Show Pasted Table</button>
+            <div>
+                Choose starting point:
+                <button onClick={this.handleStartTable}>Table Workspace</button>
+                <button onClick={this.handleStartSubject}>Subject Workspace</button>
             </div>
         );
     }

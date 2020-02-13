@@ -50,6 +50,10 @@
   height: 5vh;
 }
 
+.bottom-iframe {
+  height: 30vh;
+}
+
 .scrollable-horizontal {
   overflow:auto;
 }

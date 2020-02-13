@@ -4,15 +4,36 @@ import BottomPanel from "../components/BottomPanel";
 
 class Dashboard extends Component {
 
-//   constructor(props) {
-//     super(props);
-//     // insert more fields later
-//   }
+  constructor(props) {
+    super(props);
+    this.state = {
+        tableReady:false, // storing whether the table in tablePanel is ready. This is set to true when
+                          // 1) User clicks on "Start From Table" 2)User clicks on "Table Ready" from "startSubject" usecase
+        usecaseSelected:"" // storing which usecase we are at: "startTable" or "startSubject"
+    };
+    // click to go to "startTable" use case, this should also set tableReady to true
+    this.handleStartTable = this.handleStartTable.bind(this); 
+    this.handleStartSubject = this.handleStartSubject.bind(this);
+  }
 
   componentDidMount() {
     // The two following lines ensure that we have the information we needed
     // alert(this.props.urlPasted);
     // alert(this.props.tablePasted);
+  }
+
+  handleStartTable() {
+      this.setState({
+        tableReady:true, // if we start form table, then table is already ready
+        usecaseSelected:"startTable"
+      });
+  }
+
+  handleStartSubject() {
+      this.setState({
+          tableReady:false, // if we just click on start subject, then table is not ready yet
+          usecaseSelected:"startSubject"
+      })
   }
 
   render() {
@@ -22,13 +43,19 @@ class Dashboard extends Component {
       <>
       <div className="work-panel">
           <WorkPanel 
+            usecaseSelected={this.state.usecaseSelected}
+            tableReady={this.state.tableReady}
             urlPasted={this.props.urlPasted}
             tablePasted={this.props.tablePasted}
             testRows={sampleRows} // instead of using realRows, we use sampleRows here for demo purposes
-            testColumns={realCols}/>
+            testColumns={realCols}
+            onStartTable={this.handleStartTable}
+            onStartSubject={this.handleStartSubject}/>
       </div>
       <div className="bottom-panel">
           <BottomPanel 
+            usecaseSelected={this.state.usecaseSelected}
+            tableReady={this.state.tableReady}
             urlPasted={this.props.urlPasted}
             tablePasted={this.props.tablePasted}
             originRows={realRows} 
@@ -41,6 +68,7 @@ class Dashboard extends Component {
 
 // Here we initialize some variables
 
+var sampleDone = false;
 var realRows = [];
 var realCols = [];
 var sampleRows = [];
@@ -108,15 +136,17 @@ function stringToJSON(tablePasted) {
     //console.log(realCols);
 }
 
-// Here we filter the row data to get sampleRows
+// Here we filter the row data to get sampleRows. We have to prevent this function being called multiple times though
 
 function rowFilter() {
-    for (let i=0;i<realRows.length;++i) {
-        if (sampleRowNames.indexOf(realRows[i].City)!==-1) {
-            sampleRows.push(realRows[i]);
+    if (sampleDone === false) {
+        for (let i=0;i<realRows.length;++i) {
+            if (sampleRowNames.indexOf(realRows[i].City)!==-1) {
+                sampleRows.push(realRows[i]);
+            }
         }
+        sampleDone = true;
     }
-    // console.log(sampleRows);
 }
 
 export default Dashboard;

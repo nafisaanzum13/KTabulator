@@ -3,31 +3,21 @@ import UsecaseSelect from "../components/UsecaseSelect";
 import TablePanel from "../components/TablePanel";
 import NeighbourPanel from "../components/NeighbourPanel";
 import ActionList from "../components/ActionList";
-import ReactTable from 'react-table-6';
-import 'react-table-6/react-table.css';
 
 class WorkPanel extends Component {
     constructor(props) {
       super(props);
       this.state = {
-          curColumns: this.props.testColumns,
+          curColumns: this.props.testColumns, // array storing column data used to 
           curRows: this.props.testRows,
-          tableReady:false, // bool storing the table in WorkPanel is ready or not
           showNeighbour:false, // bool storing whether we want to display the neighbours found from clicking on "Explore Neighbours"
           neighbourFound:[], // array storing the neighbours that we have found. Initially empty.
           columnCanAdd:[], // array storing the columns that we can add (selected from neighbourFound). Initially empty
           searchKey:"City", // string storing for which entities we are making requests, it's "City" for now
       };
-      this.handleShowTable = this.handleShowTable.bind(this); // click to show working table
       this.handleAddColumn = this.handleAddColumn.bind(this); // click to add column to working table
       this.handleExploreNeighbour = this.handleExploreNeighbour.bind(this); // click to explore neighbours of interesting cell
       this.handleAddAction = this.handleAddAction.bind(this); // click to add neighbour to action list
-    }
-
-    handleShowTable() {
-        this.setState({
-            tableReady: true
-        });
     }
 
     handleExploreNeighbour() {
@@ -169,25 +159,28 @@ class WorkPanel extends Component {
           <div className="col-md-6 scrollable-horizontal">
               <div className="usecase-select">
                 <UsecaseSelect 
-                    onShowTable={this.handleShowTable}/>
+                    onStartTable={this.props.onStartTable}
+                    onStartSubject={this.props.onStartSubject}/>
               </div>
               <div>
                 <TablePanel
-                    tableReady={this.state.tableReady}
+                    urlPasted={this.props.urlPasted}
+                    usecaseSelected={this.props.usecaseSelected}
+                    tableReady={this.props.tableReady}
                     curColumns={this.state.curColumns}
                     curRows={this.state.curRows}/>
               </div>
           </div>
           <div className="col-md-3">
             <NeighbourPanel 
-                tableReady={this.state.tableReady}
+                tableReady={this.props.tableReady}
                 showNeighbour={this.state.showNeighbour}
                 neighbourFound={neighbourPass}
                 onExploreNeighbour={this.handleExploreNeighbour}/>
           </div>
           <div className="col-md-3">
             <ActionList 
-                tableReady={this.state.tableReady}
+                tableReady={this.props.tableReady}
                 columnCanAdd={this.state.columnCanAdd}
                 onAddColumn={this.handleAddColumn}/>
           </div>
