@@ -1,3 +1,5 @@
+// We are starting again
+
 import React, { Component } from "react";
 import InputForm from "../components/InputForm";
 import Header from "../components/Header";
