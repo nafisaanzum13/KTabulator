@@ -26,7 +26,7 @@ class App extends Component {
       urlPasted:"",
       tablePasted:"",
       usecaseSelected:"",
-      keyColIndex:-1,        // "startSubject": before we populate the first column, this will remain as -1
+      keyColIndex:0,        // initially the key column is the first column
       tableHeader:["",""],   // 1D array storing the table headers. Initially there are two empty columns.
       tableData:emptyTable,  // 2D array storing the table data (not including the table headers). Initally 10*3.
       keyColOptions:[],    // 1D array storing the options passed to the key column's selection
@@ -88,7 +88,7 @@ class App extends Component {
 
     // This function changes keyColOptions if we are clicking on the selection header for a key column
 
-    if ((this.state.keyColIndex === -1) || (colIndex === this.state.keyColIndex)) {
+    if (colIndex === this.state.keyColIndex) {
 
       // We first get all the non-empty values from the key column
 
@@ -162,7 +162,7 @@ class App extends Component {
     // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
     // ask in ActionPanel whether user wants to populate the column based on the chosen column name
     let tempObj = {};
-    if ((this.state.keyColIndex === -1) || (colIndex === this.state.keyColIndex)) {
+    if (colIndex === this.state.keyColIndex) {
       tempObj["task"] = "populateKeyColumn";
     } else {
       tempObj["task"] = "populateOtherColumn";
@@ -237,9 +237,6 @@ class App extends Component {
   }
 
   populateOtherColumn(e, colIndex, neighbour) {
-    // console.log(this.state.keyColIndex);
-    // console.log(colIndex);
-    // console.log(neighbour);
 
     // Now we need to fill in the content for this function
     // we need to make ten queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar

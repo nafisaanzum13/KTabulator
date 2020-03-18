@@ -20,7 +20,7 @@ class TablePanel extends Component {
     let tempRow = [];
     for (let colIndex=0; colIndex<colNum; ++colIndex) {
       let tempHeader;
-      if ((colIndex === this.props.keyColIndex) || ((this.props.keyColIndex === -1) && (colIndex === 0))) {
+      if (colIndex === this.props.keyColIndex) {
         tempHeader =
         <th>
           <div onClick={(e) => this.props.getKeyOptions(e,colIndex)}>
