@@ -13,9 +13,11 @@ class App extends Component {
   constructor(props) {
     super(props);
     let emptyTable = [];
-    for (let i=0;i<10;++i) {
+    const initialRowNum = 10;
+    const initialColNum = 3;
+    for (let i=0;i<initialRowNum;++i) {
       let tempRow = [];
-      for (let j=0;j<2;++j) {
+      for (let j=0;j<initialColNum;++j) {
         tempRow.push("");
       }
       emptyTable.push(tempRow);
@@ -26,7 +28,7 @@ class App extends Component {
       usecaseSelected:"",
       keyColIndex:-1,        // "startSubject": before we populate the first column, this will remain as -1
       tableHeader:["",""],   // 1D array storing the table headers. Initially there are two empty columns.
-      tableData:emptyTable,  // 2D array storing the table data (not including the table headers). Initally 10*2.
+      tableData:emptyTable,  // 2D array storing the table data (not including the table headers). Initally 10*3.
       keyColOptions:[],    // 1D array storing the options passed to the key column's selection
       otherColOptions:[],    // 1D array storing the options passed to the other columns' selections
       curActionInfo:null,    // object storing the current action that should be displayed in ActionPanel. Initially null.
@@ -87,8 +89,6 @@ class App extends Component {
           allSubject.push(this.state.tableData[i][0]);
         }
       }
-
-      console.log(allSubject);
 
       // In here we fetch the options for first column's selection
 

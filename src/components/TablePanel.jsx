@@ -20,7 +20,7 @@ class TablePanel extends Component {
     let tempRow = [];
     for (let j=0; j<colNum; ++j) {
       let options = [];
-      if ((j === this.props.keyColIndex) || (this.props.keyColIndex === -1)) {
+      if ((j === this.props.keyColIndex) || ((this.props.keyColIndex === -1) && (j === 0))) {
         options = this.props.keyColOptions;
       } else {
         options = this.props.otherColOptions;
