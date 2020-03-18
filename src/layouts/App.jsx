@@ -34,9 +34,7 @@ class App extends Component {
       keyColIndex:0,        // initially the key column is the first column
       tableHeader:["",""],   // 1D array storing the table headers. Initially there are two empty columns.
       tableData:emptyTable,  // 2D array storing the table data (not including the table headers). Initally 10*3.
-      keyColOptions:[],    // 1D array storing the options passed to the key column's selection
-      otherColOptions:[],    // 2D storing the mapping between otherCol's index and their selection options. Note: one of them will be empty, aka the keyColumn
-      optionsMap:optionsMap,         // 2D array storing the options map
+      optionsMap:optionsMap, // 2D array storing the options map
       curActionInfo:null,    // object storing the current action that should be displayed in ActionPanel. Initially null.
     };
     this.handleURLPaste = this.handleURLPaste.bind(this);
@@ -132,7 +130,6 @@ class App extends Component {
         let optionsMap = this.state.optionsMap.slice();
         optionsMap[this.state.keyColIndex] = keyColOptions;
         this.setState({
-          keyColOptions:keyColOptions,
           optionsMap:optionsMap,
         })
       });
@@ -236,11 +233,17 @@ class App extends Component {
         tempObj["value"] = neighbour;
         otherColOptions.push(tempObj);
       }
+      let optionsMap = this.state.optionsMap.slice();
+      for (let i=0;i<optionsMap.length;++i) {
+        if (i !== this.state.keyColIndex) {
+          optionsMap[i] = otherColOptions;
+        }
+      }
       this.setState({
         keyColIndex:colIndex,
         curActionInfo:null,
         tableData:tableData,
-        otherColOptions:otherColOptions,
+        optionsMap:optionsMap,
       })
     })
   }
@@ -303,8 +306,6 @@ class App extends Component {
                 selectColHeader={this.selectColHeader}
                 getKeyOptions={this.getKeyOptions}
                 getOtherOptions={this.getOtherOptions}
-                keyColOptions={this.state.keyColOptions}
-                otherColOptions={this.state.otherColOptions}
                 optionsMap={this.state.optionsMap}/>
             </div>
             <div className="col-md-4">

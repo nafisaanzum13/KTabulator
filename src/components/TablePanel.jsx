@@ -28,7 +28,7 @@ class TablePanel extends Component {
               value={this.props.tableHeader[colIndex]}
               onChange={(e) => this.props.selectColHeader(e,colIndex)}
               placeholder={"Choose header"}
-              options={this.props.keyColOptions}
+              options={this.props.optionsMap[this.props.keyColIndex]}
               isMulti={false}
             />
           </div>
@@ -41,7 +41,7 @@ class TablePanel extends Component {
               value={this.props.tableHeader[colIndex]}
               onChange={(e) => this.props.selectColHeader(e,colIndex)}
               placeholder={"Choose header"}
-              options={this.props.otherColOptions}
+              options={this.props.optionsMap[colIndex]}
               isMulti={false}
             />
           </div>
