@@ -1,16 +1,29 @@
 @import "../assets/fonts.css";
 
+.header {
+  height: 5.5vh;
+  background-color: #20232a;
+  color: #fff;
+}
+
+.footer {
+  height: 2vh;
+  background-color: #20232a;
+  color: #fff;
+}
+
 .font-body {
   font-family: "Palatino", cursive;
 }
 
 .header-body h1 {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   padding: 0rem;
   margin: 0rem;
 }
+
 .header-body {
-  padding-top: 2vh;
+  padding-top: 1vh;
   padding-left: 1rem;
   padding-right: 1rem;
   vertical-align: middle;
@@ -26,40 +39,14 @@
   padding: 0rem;
 }
 
-.footer {
-  height: 2vh;
-  background-color: #20232a;
-  color: #fff;
+.top-content {
+  height:55vh;
 }
 
-.main-content {
-  height: 90vh;
+.bottom-content {
+  height:35vh;
 }
 
-.work-panel {
-  height: 60vh;
-  overflow: auto;
-}
-
-.bottom-panel {
-  height: 30vh;
-  overflow: scroll;  /* This allows the origin-table component to be scrollable with a scrollbar*/
-}
-
-.usecase-select {
-  height: 5vh;
-}
-
-.bottom-iframe {
-  height: 30vh;
-}
-
-.scrollable-horizontal {
-  overflow:auto;
-}
-
-.header {
-  height: 7vh;
-  background-color: #20232a;
-  color: #fff;
+.wiki-page {
+  height:35vh;
 }
