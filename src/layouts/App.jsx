@@ -13,6 +13,7 @@ class App extends Component {
   constructor(props) {
     super(props);
     let emptyTable = [];
+    let optionsMap = [];
     const initialRowNum = 10;
     const initialColNum = 3;
     for (let i=0;i<initialRowNum;++i) {
@@ -21,6 +22,10 @@ class App extends Component {
         tempRow.push("");
       }
       emptyTable.push(tempRow);
+    }
+    for (let j=0;j<initialColNum;++j) {
+      let emptyOptions = [];
+      optionsMap.push(emptyOptions);
     }
     this.state = {
       urlPasted:"",
@@ -31,6 +36,7 @@ class App extends Component {
       tableData:emptyTable,  // 2D array storing the table data (not including the table headers). Initally 10*3.
       keyColOptions:[],    // 1D array storing the options passed to the key column's selection
       otherColOptions:[],    // 2D storing the mapping between otherCol's index and their selection options. Note: one of them will be empty, aka the keyColumn
+      optionsMap:optionsMap,         // 2D array storing the options map
       curActionInfo:null,    // object storing the current action that should be displayed in ActionPanel. Initially null.
     };
     this.handleURLPaste = this.handleURLPaste.bind(this);
@@ -123,8 +129,11 @@ class App extends Component {
             tempObj["value"] = neighbour;
             keyColOptions.push(tempObj);
         }
+        let optionsMap = this.state.optionsMap.slice();
+        optionsMap[this.state.keyColIndex] = keyColOptions;
         this.setState({
           keyColOptions:keyColOptions,
+          optionsMap:optionsMap,
         })
       });
     }
@@ -295,7 +304,8 @@ class App extends Component {
                 getKeyOptions={this.getKeyOptions}
                 getOtherOptions={this.getOtherOptions}
                 keyColOptions={this.state.keyColOptions}
-                otherColOptions={this.state.otherColOptions}/>
+                otherColOptions={this.state.otherColOptions}
+                optionsMap={this.state.optionsMap}/>
             </div>
             <div className="col-md-4">
               <ActionPanel 
