@@ -30,7 +30,7 @@ class App extends Component {
       tableHeader:["",""],   // 1D array storing the table headers. Initially there are two empty columns.
       tableData:emptyTable,  // 2D array storing the table data (not including the table headers). Initally 10*3.
       keyColOptions:[],    // 1D array storing the options passed to the key column's selection
-      otherColOptions:[],    // 1D array storing the options passed to the other columns' selections
+      otherColOptions:[],    // 2D storing the mapping between otherCol's index and their selection options. Note: one of them will be empty, aka the keyColumn
       curActionInfo:null,    // object storing the current action that should be displayed in ActionPanel. Initially null.
     };
     this.handleURLPaste = this.handleURLPaste.bind(this);
@@ -38,17 +38,15 @@ class App extends Component {
     this.handleSelectTask = this.handleSelectTask.bind(this);
     this.cellChange = this.cellChange.bind(this);
     this.selectColHeader = this.selectColHeader.bind(this);
-    this.getKeyOption = this.getKeyOption.bind(this);
+    this.getKeyOptions = this.getKeyOptions.bind(this);
+    this.getOtherOptions = this.getOtherOptions.bind(this);
     this.populateKeyColumn = this.populateKeyColumn.bind(this);
+    this.populateOtherColumn = this.populateOtherColumn.bind(this);
   };
 
   handleURLPaste(urlPasted) {
-    const subject = urlPasted.slice(30);
-    let tableData = this.state.tableData.slice();
-    tableData[0][0] = subject;
     this.setState({
       urlPasted: urlPasted,
-      tableData:tableData,
     });
   }
 
@@ -59,12 +57,25 @@ class App extends Component {
   }
 
   handleSelectTask(e, taskSelected) {
-    this.setState({
-      usecaseSelected:taskSelected
-    });
+    if (taskSelected === "startSubject") {
+      const subject = this.state.urlPasted.slice(30);
+      let tableData = this.state.tableData.slice();
+      tableData[0][0] = subject;
+      this.setState({
+        usecaseSelected:taskSelected,
+        tableData:tableData,
+      });
+    } else {
+      this.setState({
+        usecaseSelected:taskSelected
+      });
+    }
   }
 
   cellChange(e,i,j) {
+
+    // This function handles changing cell in a table
+
     e.preventDefault();
     let tableData = this.state.tableData.slice();
     tableData[i][j] = e.target.value;
@@ -73,13 +84,13 @@ class App extends Component {
     })
   }
 
-  getKeyOption(e,colIndex) {
+  getKeyOptions(e,colIndex) {
 
     // This function changes keyColOptions if we are clicking on the selection header for a key column
 
     if ((this.state.keyColIndex === -1) || (colIndex === this.state.keyColIndex)) {
 
-      // Let's get all the non-empty values from the first column
+      // We first get all the non-empty values from the key column
 
       let allSubject = [];
       for (let i=0;i<this.state.tableData.length;++i) {
@@ -119,6 +130,32 @@ class App extends Component {
     }
   }
 
+  getOtherOptions(e,colIndex) {
+    // This function ensures that if some cells in nonkey column has been entered, we want to update the header options 
+    // when we are clicking on the header 
+
+    // if ((this.state.keyColIndex !== -1) && (colIndex !== this.state.keyColIndex)) {
+    //   // first we want to check if this column is all-empty
+    //   let colEmpty = true;
+    //   let nonEmptyInfo = [];
+    //   for (let i=0;i<this.state.tableData.length;++i) {
+    //     if (this.state.tableData[i][colIndex] !== "") {
+    //       colEmpty = false;
+    //       nonEmptyInfo.push([i,this.state.tableData[i][colIndex]]);
+    //     }
+    //   }
+    //   // We only want to update the options if the column is non-empty
+    //   if (colEmpty === false) {
+    //     https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=
+    //     SELECT+%3Fsomevar%0D%0AWHERE+%7B%0D%0A++++++++dbr%3ABarack_Obama+%3Fsomevar+dbr%3AMichelle_Obama.%0D%0A++++++++dbr%3ARonald_Reagan+%3Fsomevar+dbr%3ANancy_Reagan.%0D%0A%7D%0D%0A%0D%0A&
+    //     format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+
+    //     for (let i=0;i<nonEmptyInfo.length;++i) {
+    //       console.log(this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex]);
+    //     }
+    //   }
+    // }
+  }
+
   selectColHeader(e,colIndex) {
     let tableHeader = this.state.tableHeader.slice();
     tableHeader[colIndex] = e;
@@ -127,6 +164,8 @@ class App extends Component {
     let tempObj = {};
     if ((this.state.keyColIndex === -1) || (colIndex === this.state.keyColIndex)) {
       tempObj["task"] = "populateKeyColumn";
+    } else {
+      tempObj["task"] = "populateOtherColumn";
     }
     tempObj["colIndex"] = colIndex;
     tempObj["neighbour"] = e.value;
@@ -143,8 +182,8 @@ class App extends Component {
     // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
 
     // For now we are populating ten entries only. So let's calculate how many entries we need to fill.
-    let emptyEntryCount = 10;
-    for (let i=0;i<10;++i) {
+    let emptyEntryCount = this.state.tableData.length;
+    for (let i=0;i<this.state.tableData.length;++i) {
       if (this.state.tableData[i][colIndex] !== "") {
         emptyEntryCount--;
       } else {
@@ -197,6 +236,48 @@ class App extends Component {
     })
   }
 
+  populateOtherColumn(e, colIndex, neighbour) {
+    // console.log(this.state.keyColIndex);
+    // console.log(colIndex);
+    // console.log(neighbour);
+
+    // Now we need to fill in the content for this function
+    // we need to make ten queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
+    let promiseArray = [];
+    let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    for (let i=0; i<this.state.tableData.length;++i) {
+      let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
+                      +this.state.tableData[i][this.state.keyColIndex]
+                      +"+%28dbo%3A"+neighbour+"%7Cdbp%3A"+neighbour+"%29+%3Fsomevar.%0D%0A%7D%0D%0A%0D%0A&";
+      let queryURL = prefixURL+queryBody+suffixURL;
+      let curPromise = fetchOne(queryURL);
+      promiseArray.push(curPromise);
+    }
+    allPromiseReady(promiseArray).then((values) => {
+      let tableData = this.state.tableData.slice();
+      for (let i=0;i<values.length;++i) {
+        if (values[i].results.bindings.length === 0) {
+          // this means results is not found
+          tableData[i][colIndex] = "N/A";
+        } else {
+          // let's determine if we need to truncate
+          let dbResult = values[i].results.bindings[0].somevar.value;
+          let prefixToRemove = "http://dbpedia.org/resource/";
+          // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
+          if (dbResult.includes(prefixToRemove) === true) {
+              dbResult = dbResult.slice(28);
+          }
+          tableData[i][colIndex] = dbResult;
+        }
+      }
+      this.setState({
+        curActionInfo:null,
+        tableData:tableData,
+      })
+    })
+  }
+
   render() {
     return (
       <div className="wrapper ">
@@ -214,7 +295,8 @@ class App extends Component {
                 keyColIndex={this.state.keyColIndex}
                 onCellChange={this.cellChange}
                 selectColHeader={this.selectColHeader}
-                getKeyOption={this.getKeyOption}
+                getKeyOptions={this.getKeyOptions}
+                getOtherOptions={this.getOtherOptions}
                 keyColOptions={this.state.keyColOptions}
                 otherColOptions={this.state.otherColOptions}/>
             </div>
@@ -225,7 +307,8 @@ class App extends Component {
                 curActionInfo={this.state.curActionInfo}
                 handleURLPaste={this.handleURLPaste}
                 handleSelectTask={this.handleSelectTask}
-                populateKeyColumn={this.populateKeyColumn}/>
+                populateKeyColumn={this.populateKeyColumn}
+                populateOtherColumn={this.populateOtherColumn}/>
             </div>
           </div>
           <div className="bottom-content">

@@ -16,30 +16,42 @@ class TablePanel extends Component {
 
     let table = [];
 
-    // i corresponds to the row number, j corresponds to the column number
+    // This part creates the table header row
     let tempRow = [];
-    for (let j=0; j<colNum; ++j) {
-      let options = [];
-      if ((j === this.props.keyColIndex) || ((this.props.keyColIndex === -1) && (j === 0))) {
-        options = this.props.keyColOptions;
-      } else {
-        options = this.props.otherColOptions;
-      }
-      tempRow.push(
+    for (let colIndex=0; colIndex<colNum; ++colIndex) {
+      let tempHeader;
+      if ((colIndex === this.props.keyColIndex) || ((this.props.keyColIndex === -1) && (colIndex === 0))) {
+        tempHeader =
         <th>
-          <div onClick={(e) => this.props.getKeyOption(e,j)}>
+          <div onClick={(e) => this.props.getKeyOptions(e,colIndex)}>
             <Select
-              value={this.props.tableHeader[j]}
-              onChange={(e) => this.props.selectColHeader(e,j)}
+              value={this.props.tableHeader[colIndex]}
+              onChange={(e) => this.props.selectColHeader(e,colIndex)}
               placeholder={"Choose header"}
-              options={options}
+              options={this.props.keyColOptions}
               isMulti={false}
             />
           </div>
         </th>
-      );
+      } else {
+        tempHeader =
+        <th>
+          <div onClick={(e) => this.props.getOtherOptions(e,colIndex)}>
+            <Select
+              value={this.props.tableHeader[colIndex]}
+              onChange={(e) => this.props.selectColHeader(e,colIndex)}
+              placeholder={"Choose header"}
+              options={this.props.otherColOptions}
+              isMulti={false}
+            />
+          </div>
+        </th>
+      }
+      tempRow.push(tempHeader);
     }
     table.push(<tr>{tempRow}</tr>)
+
+    // i corresponds to the row number, j corresponds to the column number
 
     for (let i = 0; i < rowNum; i++) {
         let tempRow = [];

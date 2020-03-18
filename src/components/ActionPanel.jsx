@@ -37,6 +37,13 @@ class ActionPanel extends Component {
             <p>{actionInfo.neighbour} ?</p>
             <button onClick={(e) => this.props.populateKeyColumn(e,actionInfo.colIndex,actionInfo.neighbour)}>OK</button>
           </div>
+      } else if (actionInfo.task === "populateOtherColumn") {
+        actionEle =
+          <div>
+            <p>Populate column {actionInfo.colIndex} with column header:</p>
+            <p>{actionInfo.neighbour} ?</p>
+            <button onClick={(e) => this.props.populateOtherColumn(e,actionInfo.colIndex,actionInfo.neighbour)}>OK</button>
+          </div>
       }
     }
     else {
