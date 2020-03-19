@@ -50,3 +50,18 @@
 .wiki-page {
   height:35vh;
 }
+
+.table-panel {
+  overflow:auto;
+}
+
+/* This makes sure that the context menu does not seem transparent */
+.react-contextmenu {
+  background-color: #fff;
+  border: 1px solid rgba(0,0,0,.15);
+  transition: opacity 250ms ease !important;
+}
+
+.react-contextmenu-item--divider {
+  border-bottom: 1px solid rgba(7, 3, 3, 0.15);
+}

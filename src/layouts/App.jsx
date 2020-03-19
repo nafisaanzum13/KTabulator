@@ -12,7 +12,8 @@ class App extends Component {
 
   constructor(props) {
     super(props);
-    let emptyTable = [];
+    let tableData = [];
+    let tableHeader = [];
     let optionsMap = [];
     const initialRowNum = 10;
     const initialColNum = 3;
@@ -21,20 +22,22 @@ class App extends Component {
       for (let j=0;j<initialColNum;++j) {
         tempRow.push("");
       }
-      emptyTable.push(tempRow);
+      tableData.push(tempRow);
     }
     for (let j=0;j<initialColNum;++j) {
       let emptyOptions = [];
       optionsMap.push(emptyOptions);
+      tableHeader.push("");
     }
     this.state = {
       urlPasted:"",
       tablePasted:"",
       usecaseSelected:"",
       keyColIndex:0,        // initially the key column is the first column
-      tableHeader:["",""],   // 1D array storing the table headers. Initially there are two empty columns.
-      tableData:emptyTable,  // 2D array storing the table data (not including the table headers). Initally 10*3.
+      tableHeader:tableHeader,   // 1D array storing the table headers. Initially there are 3 empty columns.
+      tableData:tableData,  // 2D array storing the table data (not including the table headers). Initally 10*3.
       optionsMap:optionsMap, // 2D array storing the options map
+      keyColNeighbours:[], // 1D array storing the neighbours of the key column
       curActionInfo:null,    // object storing the current action that should be displayed in ActionPanel. Initially null.
     };
     this.handleURLPaste = this.handleURLPaste.bind(this);
@@ -46,6 +49,7 @@ class App extends Component {
     this.getOtherOptions = this.getOtherOptions.bind(this);
     this.populateKeyColumn = this.populateKeyColumn.bind(this);
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
+    this.contextAddColumn = this.contextAddColumn.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -208,6 +212,7 @@ class App extends Component {
     // This function populates the key column
 
     // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
+    // We also need to fetch the neighbours of this key column, and change all 
 
     // For now we are populating ten entries only. So let's calculate how many entries we need to fill.
     let emptyEntryCount = this.state.tableData.length;
@@ -235,7 +240,7 @@ class App extends Component {
     // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
     let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyTwo = "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"+this.state.tableData[0][colIndex]+"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
+    let queryBodyTwo = "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"+this.state.tableData[this.state.keyColIndex][colIndex]+"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
     let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
     let otherColPromise = fetchOne(queryURLTwo);
     promiseArray.push(otherColPromise);
@@ -247,22 +252,23 @@ class App extends Component {
         tableData[i+10-emptyEntryCount][colIndex] = values[0].results.bindings[i].somevar.value.slice(28);
       }
       // let's now work with the second promise result
-      let otherColOptions = [];
+      let keyColNeighbours = [];
       for (let i=0;i<values[1].results.bindings.length;++i) {
         let tempObj = {};
         let neighbour = values[1].results.bindings[i].p.value.slice(28);
         tempObj["label"] = neighbour;
         tempObj["value"] = neighbour;
-        otherColOptions.push(tempObj);
+        keyColNeighbours.push(tempObj);
       }
       let optionsMap = this.state.optionsMap.slice();
       for (let i=0;i<optionsMap.length;++i) {
         if (i !== this.state.keyColIndex) {
-          optionsMap[i] = otherColOptions;
+          optionsMap[i] = keyColNeighbours;
         }
       }
       this.setState({
         keyColIndex:colIndex,
+        keyColNeighbours:keyColNeighbours,
         curActionInfo:null,
         tableData:tableData,
         optionsMap:optionsMap,
@@ -309,6 +315,46 @@ class App extends Component {
     })
   }
 
+  contextAddColumn(e,colIndex) {
+
+    const rowNum = this.state.tableData.length;
+    const colNum = this.state.tableData[0].length;
+
+    // we first take care of table data's addition
+    let tableData = [];
+    for (let i=0;i<rowNum;++i) {
+      let tempRow = [];
+      for (let j=0;j<colIndex+1;++j) {
+        tempRow.push(this.state.tableData[i][j]);
+      }
+      tempRow.push("");
+      for (let k=colIndex+1;k<colNum;++k) {
+        tempRow.push(this.state.tableData[i][k]);
+      }
+      tableData.push(tempRow);
+    }
+
+    // we now take care of optionsMap's addition, as well as tableHeader's addition
+    // This added column will have options equal to the neighbours of the key column
+    let optionsMap = [];
+    let tableHeader = [];
+    for (let j=0;j<colIndex+1;++j) {
+      optionsMap.push(this.state.optionsMap[j]);
+      tableHeader.push(this.state.tableHeader[j]);
+    }
+    optionsMap.push(this.state.keyColNeighbours);
+    tableHeader.push("");
+    for (let k=colIndex+1;k<colNum;++k) {
+      optionsMap.push(this.state.optionsMap[k]);
+      tableHeader.push(this.state.tableHeader[k]);
+    }
+    this.setState({
+      tableData:tableData,
+      tableHeader:tableHeader,
+      optionsMap:optionsMap,
+    })
+  }
+
   render() {
     return (
       <div className="wrapper ">
@@ -317,7 +363,7 @@ class App extends Component {
             <Header />
           </div>
           <div className="row top-content">
-            <div className="col-md-8">
+            <div className="col-md-8 table-panel">
               <TablePanel 
                 urlPasted={this.state.urlPasted}
                 usecaseSelected={this.state.usecaseSelected}
@@ -328,7 +374,8 @@ class App extends Component {
                 selectColHeader={this.selectColHeader}
                 getKeyOptions={this.getKeyOptions}
                 getOtherOptions={this.getOtherOptions}
-                optionsMap={this.state.optionsMap}/>
+                optionsMap={this.state.optionsMap}
+                contextAddColumn={this.contextAddColumn}/>
             </div>
             <div className="col-md-4">
               <ActionPanel 

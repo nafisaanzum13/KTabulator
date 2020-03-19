@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import Select from 'react-select';
+import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
 
 class TablePanel extends Component {
   constructor(props) {
@@ -53,17 +54,22 @@ class TablePanel extends Component {
 
     // i corresponds to the row number, j corresponds to the column number
 
+    // We are adding an ID for each cell for contextmenu
+
     for (let i = 0; i < rowNum; i++) {
         let tempRow = [];
         //Inner loop to create each cell of the row
         for (let j = 0; j < colNum; j++) {
           // Create the each cell
-            tempRow.push(
-              <td>
+          let tempID = "cellRow"+i+"Col"+j;
+          tempRow.push(
+            <td>
+              <ContextMenuTrigger id={tempID}>
                 <input type="text" 
                   value={this.props.tableData[i][j]} 
                   onChange={(e) => this.props.onCellChange(e,i,j)}/>
-              </td>
+              </ContextMenuTrigger>
+            </td>
           );
         }
         //Create the parent and add the children
@@ -74,6 +80,26 @@ class TablePanel extends Component {
 
   render() {
     let tableEle = null;
+
+    // The following code sets up the context menus
+    let menuArray = [];
+    for (let i=0;i<this.props.tableData.length;++i) {
+      for (let j=0;j<this.props.tableData[0].length;++j) {
+        let tempID = "cellRow"+i+"Col"+j;
+        menuArray.push(
+          <ContextMenu id={tempID}>
+            <MenuItem onClick={(e) => this.props.contextAddColumn(e,j)}>
+              Add Column to the Right
+            </MenuItem>
+            <MenuItem divider />
+            <MenuItem>
+              Set as Key Column
+            </MenuItem>
+          </ContextMenu>
+        );
+      }
+    }
+
     if (this.props.usecaseSelected === "") {
       tableEle = <h1>Welcome to WikiData Wrangler!</h1>
     } else if (this.props.usecaseSelected === "startSubject") {
@@ -85,6 +111,7 @@ class TablePanel extends Component {
     return (
       <div>
         {tableEle}
+        {menuArray}
       </div>
     );
   }
