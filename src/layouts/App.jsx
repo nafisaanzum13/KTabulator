@@ -140,26 +140,48 @@ class App extends Component {
     // This function ensures that if some cells in nonkey column has been entered, we want to update the header options 
     // when we are clicking on the header 
 
-    // if ((this.state.keyColIndex !== -1) && (colIndex !== this.state.keyColIndex)) {
-    //   // first we want to check if this column is all-empty
-    //   let colEmpty = true;
-    //   let nonEmptyInfo = [];
-    //   for (let i=0;i<this.state.tableData.length;++i) {
-    //     if (this.state.tableData[i][colIndex] !== "") {
-    //       colEmpty = false;
-    //       nonEmptyInfo.push([i,this.state.tableData[i][colIndex]]);
-    //     }
-    //   }
-    //   // We only want to update the options if the column is non-empty
-    //   if (colEmpty === false) {
-    //     https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=
-    //     SELECT+%3Fsomevar%0D%0AWHERE+%7B%0D%0A++++++++dbr%3ABarack_Obama+%3Fsomevar+dbr%3AMichelle_Obama.%0D%0A++++++++dbr%3ARonald_Reagan+%3Fsomevar+dbr%3ANancy_Reagan.%0D%0A%7D%0D%0A%0D%0A&
-    //     format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+
-    //     for (let i=0;i<nonEmptyInfo.length;++i) {
-    //       console.log(this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex]);
-    //     }
-    //   }
-    // }
+    if (colIndex !== this.state.keyColIndex) {
+      // first we want to check if this column is all-empty
+      let colEmpty = true;
+      let nonEmptyInfo = [];
+      for (let i=0;i<this.state.tableData.length;++i) {
+        if (this.state.tableData[i][colIndex] !== "") {
+          colEmpty = false;
+          nonEmptyInfo.push([i,this.state.tableData[i][colIndex]]);
+        }
+      }
+      // We only want to update the options if the column is non-empty
+      if (colEmpty === false) {
+        let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+        let suffixURL = "%0D%0A%7D%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+        let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B";
+        for (let i=0;i<nonEmptyInfo.length;++i) {
+          let curKeySubject = this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex];
+          let curEnteredSubject = nonEmptyInfo[i][1];
+          queryBody+="%0D%0A++++++++dbr%3A"+curKeySubject+"+%3Fsomevar+dbr%3A"+curEnteredSubject+".";
+        }
+        let queryURL=prefixURL+queryBody+suffixURL;
+        fetch(queryURL)
+        .then((response) => {
+          return response.json();
+        })
+        .then((myJson) => {
+          let otherColOptions = [];
+          for (let i=0;i<myJson.results.bindings.length;++i) {
+              let tempObj = {}
+              let neighbour = myJson.results.bindings[i].somevar.value.slice(28);
+              tempObj["label"] = neighbour;
+              tempObj["value"] = neighbour;
+              otherColOptions.push(tempObj);
+          }
+          let optionsMap = this.state.optionsMap.slice();
+          optionsMap[colIndex] = otherColOptions;
+          this.setState({
+            optionsMap:optionsMap,
+          }) 
+        });
+      }
+    }
   }
 
   selectColHeader(e,colIndex) {
