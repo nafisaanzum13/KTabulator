@@ -81,9 +81,9 @@ class App extends Component {
     }
   }
 
-  cellChange(e,i,j) {
+  // This function handles manually changing cell in a table
 
-    // This function handles changing cell in a table
+  cellChange(e,i,j) {
 
     e.preventDefault();
     let tableData = this.state.tableData.slice();
@@ -93,20 +93,22 @@ class App extends Component {
     })
   }
 
-  getKeyOptions(e,colIndex) {
+  // This function updates the options for selections when we click on selection for a key column
+  // based on cells already filled in this column
 
-    // This function changes keyColOptions if we are clicking on the selection header for a key column
+  getKeyOptions(e,colIndex) {
 
     if (colIndex === this.state.keyColIndex) {
 
       // We first get all the non-empty values from the key column
+      // We also replaces ( and )
 
       let allSubject = [];
       for (let i=0;i<this.state.tableData.length;++i) {
         if (this.state.tableData[i][colIndex] === "") {
           break;
         } else {
-          allSubject.push(this.state.tableData[i][colIndex]);
+          allSubject.push(this.state.tableData[i][colIndex].replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029"));
         }
       }
 
@@ -141,9 +143,10 @@ class App extends Component {
     }
   }
 
+  // This function updates the options for selections when we click on selection for non-key column
+  // based on cells already filled in this column 
+
   getOtherOptions(e,colIndex) {
-    // This function ensures that if some cells in nonkey column has been entered, we want to update the header options 
-    // when we are clicking on the header 
 
     if (colIndex !== this.state.keyColIndex) {
       // first we want to check if this column is all-empty
@@ -161,8 +164,8 @@ class App extends Component {
         let suffixURL = "%0D%0A%7D%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
         let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B";
         for (let i=0;i<nonEmptyInfo.length;++i) {
-          let curKeySubject = this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex];
-          let curEnteredSubject = nonEmptyInfo[i][1];
+          let curKeySubject = this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex].replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029");
+          let curEnteredSubject = nonEmptyInfo[i][1].replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029");
           queryBody+="%0D%0A++++++++dbr%3A"+curKeySubject+"+%3Fsomevar+dbr%3A"+curEnteredSubject+".";
         }
         let queryURL=prefixURL+queryBody+suffixURL;
@@ -189,6 +192,8 @@ class App extends Component {
     }
   }
 
+  // This function handles the the selection of a column header.
+
   selectColHeader(e,colIndex) {
     let tableHeader = this.state.tableHeader.slice();
     tableHeader[colIndex] = e;
@@ -208,9 +213,9 @@ class App extends Component {
     })
   }
 
+  // This function populates the key column
+
   populateKeyColumn(e, colIndex, neighbour) {
-    
-    // This function populates the key column
 
     // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
     // We also need to fetch the neighbours of this key column, and change all 
@@ -241,7 +246,10 @@ class App extends Component {
     // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
     let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyTwo = "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"+this.state.tableData[0][colIndex]+"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
+    let queryBodyTwo = 
+      "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
+      +this.state.tableData[0][colIndex].replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029")
+      +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
     let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
     let otherColPromise = fetchOne(queryURLTwo);
     promiseArray.push(otherColPromise);
@@ -286,7 +294,7 @@ class App extends Component {
     let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     for (let i=0; i<this.state.tableData.length;++i) {
       let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
-                      +this.state.tableData[i][this.state.keyColIndex]
+                      +this.state.tableData[i][this.state.keyColIndex].replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029")
                       +"+%28dbo%3A"+neighbour+"%7Cdbp%3A"+neighbour+"%29+%3Fsomevar.%0D%0A%7D%0D%0A%0D%0A&";
       let queryURL = prefixURL+queryBody+suffixURL;
       let curPromise = fetchOne(queryURL);
@@ -363,7 +371,10 @@ class App extends Component {
     if (colIndex !== this.state.keyColIndex) {
       let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
       let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      let queryBody = "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"+this.state.tableData[0][colIndex]+"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
+      let queryBody = 
+        "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
+        +this.state.tableData[0][colIndex].replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029")
+        +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
       let queryURL = prefixURL+queryBody+suffixURL;
       fetch(queryURL)
       .then((response) => {
