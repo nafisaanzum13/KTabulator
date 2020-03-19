@@ -50,6 +50,7 @@ class App extends Component {
     this.populateKeyColumn = this.populateKeyColumn.bind(this);
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
+    this.contextSetKey = this.contextSetKey.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -102,10 +103,10 @@ class App extends Component {
 
       let allSubject = [];
       for (let i=0;i<this.state.tableData.length;++i) {
-        if (this.state.tableData[i][0] === "") {
+        if (this.state.tableData[i][colIndex] === "") {
           break;
         } else {
-          allSubject.push(this.state.tableData[i][0]);
+          allSubject.push(this.state.tableData[i][colIndex]);
         }
       }
 
@@ -240,7 +241,7 @@ class App extends Component {
     // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
     let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyTwo = "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"+this.state.tableData[this.state.keyColIndex][colIndex]+"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
+    let queryBodyTwo = "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"+this.state.tableData[0][colIndex]+"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
     let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
     let otherColPromise = fetchOne(queryURLTwo);
     promiseArray.push(otherColPromise);
@@ -262,7 +263,7 @@ class App extends Component {
       }
       let optionsMap = this.state.optionsMap.slice();
       for (let i=0;i<optionsMap.length;++i) {
-        if (i !== this.state.keyColIndex) {
+        if (i !== colIndex) {
           optionsMap[i] = keyColNeighbours;
         }
       }
@@ -315,6 +316,8 @@ class App extends Component {
     })
   }
 
+  // The follwing function adds a new column to the table, to the right of the context-menu clicked column.
+
   contextAddColumn(e,colIndex) {
 
     const rowNum = this.state.tableData.length;
@@ -355,6 +358,42 @@ class App extends Component {
     })
   }
 
+  // The following functions sets the cotextmenu selected column to be the key column
+  contextSetKey(e,colIndex) {
+    if (colIndex !== this.state.keyColIndex) {
+      let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBody = "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"+this.state.tableData[0][colIndex]+"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
+      let queryURL = prefixURL+queryBody+suffixURL;
+      fetch(queryURL)
+      .then((response) => {
+        return response.json();
+      })
+      .then((myJson) => {
+        let keyColNeighbours = [];
+        for (let i=0;i<myJson.results.bindings.length;++i) {
+          let tempObj = {};
+          let neighbour = myJson.results.bindings[i].p.value.slice(28);
+          tempObj["label"] = neighbour;
+          tempObj["value"] = neighbour;
+          keyColNeighbours.push(tempObj);
+        }
+        let optionsMap = this.state.optionsMap.slice();
+        for (let i=0;i<optionsMap.length;++i) {
+          if (i !== colIndex) {
+            optionsMap[i] = keyColNeighbours;
+          }
+        }
+        this.setState({
+          keyColIndex:colIndex,
+          keyColNeighbours:keyColNeighbours,
+          curActionInfo:null,
+          optionsMap:optionsMap,
+        })
+      });
+    }
+  }
+
   render() {
     return (
       <div className="wrapper ">
@@ -375,7 +414,8 @@ class App extends Component {
                 getKeyOptions={this.getKeyOptions}
                 getOtherOptions={this.getOtherOptions}
                 optionsMap={this.state.optionsMap}
-                contextAddColumn={this.contextAddColumn}/>
+                contextAddColumn={this.contextAddColumn}
+                contextSetKey={this.contextSetKey}/>
             </div>
             <div className="col-md-4">
               <ActionPanel 

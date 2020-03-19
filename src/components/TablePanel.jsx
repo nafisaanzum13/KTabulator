@@ -62,10 +62,18 @@ class TablePanel extends Component {
         for (let j = 0; j < colNum; j++) {
           // Create the each cell
           let tempID = "cellRow"+i+"Col"+j;
+          let cellColor;
+          if (j === this.props.keyColIndex) {
+            cellColor = {"background-color":"LightBlue"};
+          } else {
+            cellColor = {"background-color":"White"};
+          }
           tempRow.push(
             <td>
               <ContextMenuTrigger id={tempID}>
-                <input type="text" 
+                <input 
+                  type="text"
+                  style={cellColor} 
                   value={this.props.tableData[i][j]} 
                   onChange={(e) => this.props.onCellChange(e,i,j)}/>
               </ContextMenuTrigger>
@@ -92,7 +100,7 @@ class TablePanel extends Component {
               Add Column to the Right
             </MenuItem>
             <MenuItem divider />
-            <MenuItem>
+            <MenuItem onClick={(e) => this.props.contextSetKey(e,j)}>
               Set as Key Column
             </MenuItem>
           </ContextMenu>
