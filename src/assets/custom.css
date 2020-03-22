@@ -52,6 +52,7 @@
 }
 
 .table-panel {
+  height:55vh;
   overflow:auto;
 }
 

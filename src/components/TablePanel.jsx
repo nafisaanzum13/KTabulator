@@ -74,7 +74,7 @@ class TablePanel extends Component {
                 <input 
                   type="text"
                   style={cellColor} 
-                  value={this.props.tableData[i][j]} 
+                  value={this.props.tableData[i][j].data} 
                   onChange={(e) => this.props.onCellChange(e,i,j)}/>
               </ContextMenuTrigger>
             </td>
