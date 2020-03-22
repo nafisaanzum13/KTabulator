@@ -237,7 +237,9 @@ class App extends Component {
     // This query populates the first columns.
     let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLOne = "%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyOne = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A%09%3Fsomevar+dct%3Asubject+dbc%3A"+neighbour+".%0D%0A%7D%0D%0ALIMIT+"+emptyEntryCount;
+    let queryBodyOne = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A%09%3Fsomevar+dct%3Asubject+dbc%3A"
+                        +neighbour.replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029")
+                        +".%0D%0A%7D%0D%0ALIMIT+"+emptyEntryCount;
     let queryURLOne = prefixURLOne+queryBodyOne+suffixURLOne;
     let keyColPromise = fetchOne(queryURLOne);
     promiseArray.push(keyColPromise);
@@ -293,8 +295,12 @@ class App extends Component {
     let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     for (let i=0; i<this.state.tableData.length;++i) {
+      let cellValue = this.state.tableData[i][this.state.keyColIndex].replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029");
+      if (cellValue === "N/A") {
+        cellValue = "NONEXISTINGSTRING"; // N/A's will block the search, let's replace it with some string that does not block the search
+      }
       let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
-                      +this.state.tableData[i][this.state.keyColIndex].replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029")
+                      +cellValue
                       +"+%28dbo%3A"+neighbour+"%7Cdbp%3A"+neighbour+"%29+%3Fsomevar.%0D%0A%7D%0D%0A%0D%0A&";
       let queryURL = prefixURL+queryBody+suffixURL;
       let curPromise = fetchOne(queryURL);
