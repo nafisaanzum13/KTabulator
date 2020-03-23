@@ -103,6 +103,10 @@ class TablePanel extends Component {
             <MenuItem onClick={(e) => this.props.contextSetKey(e,j)}>
               Set as Key Column
             </MenuItem>
+            <MenuItem divider />
+            <MenuItem onClick={(e) => this.props.contextCellOrigin(e,i,j)}>
+              Show Origin of Cell
+            </MenuItem>
           </ContextMenu>
         );
       }

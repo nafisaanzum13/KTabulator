@@ -44,6 +44,12 @@ class ActionPanel extends Component {
             <p>{actionInfo.neighbour} ?</p>
             <button onClick={(e) => this.props.populateOtherColumn(e,actionInfo.colIndex,actionInfo.neighbour)}>OK</button>
           </div>
+      } else if (actionInfo.task === "contextCellOrigin") {
+        actionEle =
+          <div>
+            <p>Origin of selected cell is:</p>
+            <p>{actionInfo.origin}</p>
+          </div>
       }
     }
     else {

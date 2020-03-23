@@ -40,19 +40,19 @@
 }
 
 .top-content {
-  height:55vh;
+  height:45vh;
 }
 
 .bottom-content {
-  height:35vh;
+  height:45vh;
 }
 
 .wiki-page {
-  height:35vh;
+  height:45vh;
 }
 
 .table-panel {
-  height:55vh;
+  height:45vh;
   overflow:auto;
 }
 

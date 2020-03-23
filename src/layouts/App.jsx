@@ -20,7 +20,10 @@ class App extends Component {
     for (let i=0;i<initialRowNum;++i) {
       let tempRow = [];
       for (let j=0;j<initialColNum;++j) {
-        tempRow.push({"data":""});
+        // Initially, cell has no data or origin
+        // data field is a string
+        // origin field is an array of strings
+        tempRow.push({"data":"","origin":[]});
       }
       tableData.push(tempRow);
     }
@@ -51,6 +54,7 @@ class App extends Component {
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextSetKey = this.contextSetKey.bind(this);
+    this.contextCellOrigin = this.contextCellOrigin.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -144,7 +148,7 @@ class App extends Component {
   }
 
   // This function updates the options for selections when we click on selection for non-key column
-  // based on cells already filled in this column 
+  // based on cells already filled in this column, and the cells in the key column
 
   getOtherOptions(e,colIndex) {
 
@@ -214,6 +218,8 @@ class App extends Component {
   }
 
   // This function populates the key column
+  // It also fetches the neighbours of the key column (based on the first cell in the table)
+  // as well as setting the origins of cells in the key column
 
   populateKeyColumn(e, colIndex, neighbour) {
 
@@ -257,13 +263,24 @@ class App extends Component {
     promiseArray.push(otherColPromise);
 
     allPromiseReady(promiseArray).then((values) => {
-      // let's first work with the first promise result
+
+      // let's first work with the first promise result: fill in table data with the entities we have fetched
+
+      // First part sets the data for each cell
       let tableData = this.state.tableData.slice();
       let rowNum = tableData.length;
       for (let i=0;i<values[0].results.bindings.length;++i) {
         tableData[i+rowNum-emptyEntryCount][colIndex].data = values[0].results.bindings[i].somevar.value.slice(28);
       }
-      // let's now work with the second promise result
+
+      // second part sets the origin for each cell
+      for (let i=0;i<rowNum;++i) {
+        let tempOrigin = this.state.tableHeader[colIndex].value+":"+tableData[i][colIndex].data;
+        tableData[i][colIndex].origin.push(tempOrigin);
+      }
+
+      // let's now work with the second promise result: update the selection options for non-key columns
+
       let keyColNeighbours = [];
       for (let i=0;i<values[1].results.bindings.length;++i) {
         let tempObj = {};
@@ -321,7 +338,13 @@ class App extends Component {
           if (dbResult.includes(prefixToRemove) === true) {
               dbResult = dbResult.slice(28);
           }
+          // We first set the data of the cell
           tableData[i][colIndex].data = dbResult;
+          // We then set the origin of the cell
+          let originToAdd = neighbour+":"+dbResult;
+          let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
+          keyOrigin.push(originToAdd);
+          tableData[i][colIndex].origin = keyOrigin;
         }
       }
       this.setState({
@@ -369,6 +392,7 @@ class App extends Component {
     this.setState({
       tableData:tableData,
       tableHeader:tableHeader,
+      curActionInfo:null,
       optionsMap:optionsMap,
     })
   }
@@ -412,6 +436,30 @@ class App extends Component {
     }
   }
 
+  contextCellOrigin(e,rowIndex,colIndex) {
+    // To get the origin of a cell, we simply returns its "origin field"
+    // The trick is to set the origin field correctly in previous functions
+    // The place to do that should be in the two populating columns
+
+    let cellSelected = this.state.tableData[rowIndex][colIndex];
+    let originLiteral = "";
+    for (let i=0;i<cellSelected.origin.length;++i) {
+      if (i !== 0) {
+        originLiteral+=" --> ";
+      }
+      originLiteral = originLiteral+cellSelected.origin[i];
+    }
+    
+    // This origin literal correctly contains the cell Origin we want to display
+    // Now we just need to show it in the ActionPanel
+    let tempObj = {};
+    tempObj["task"] = "contextCellOrigin";
+    tempObj["origin"] = originLiteral;
+    this.setState({
+      curActionInfo:tempObj,
+    })
+  }
+
   render() {
     return (
       <div className="wrapper ">
@@ -433,7 +481,8 @@ class App extends Component {
                 getOtherOptions={this.getOtherOptions}
                 optionsMap={this.state.optionsMap}
                 contextAddColumn={this.contextAddColumn}
-                contextSetKey={this.contextSetKey}/>
+                contextSetKey={this.contextSetKey}
+                contextCellOrigin={this.contextCellOrigin}/>
             </div>
             <div className="col-md-4">
               <ActionPanel 
