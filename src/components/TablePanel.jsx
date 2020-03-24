@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import TableSelection from "../components/TableSelection";
 import Select from 'react-select';
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
 
@@ -89,41 +90,53 @@ class TablePanel extends Component {
   render() {
     let tableEle = null;
 
-    // The following code sets up the context menus
-    let menuArray = [];
-    for (let i=0;i<this.props.tableData.length;++i) {
-      for (let j=0;j<this.props.tableData[0].length;++j) {
-        let tempID = "cellRow"+i+"Col"+j;
-        menuArray.push(
-          <ContextMenu id={tempID}>
-            <MenuItem onClick={(e) => this.props.contextAddColumn(e,j)}>
-              Add Column to the Right
-            </MenuItem>
-            <MenuItem divider />
-            <MenuItem onClick={(e) => this.props.contextSetKey(e,j)}>
-              Set as Key Column
-            </MenuItem>
-            <MenuItem divider />
-            <MenuItem onClick={(e) => this.props.contextCellOrigin(e,i,j)}>
-              Show Origin of Cell
-            </MenuItem>
-          </ContextMenu>
-        );
-      }
-    }
-
+    // Case one: user hasn't selected any task yet
     if (this.props.usecaseSelected === "") {
       tableEle = <h1>Welcome to WikiData Wrangler!</h1>
-    } else if (this.props.usecaseSelected === "startSubject") {
+    } 
+    // Case two: user has chosen task "startSubject"
+    else if (this.props.usecaseSelected === "startSubject") {
+      let menuArray = [];
+      for (let i=0;i<this.props.tableData.length;++i) {
+        for (let j=0;j<this.props.tableData[0].length;++j) {
+          let tempID = "cellRow"+i+"Col"+j;
+          menuArray.push(
+            <ContextMenu id={tempID}>
+              <MenuItem onClick={(e) => this.props.contextAddColumn(e,j)}>
+                Add Column to the Right
+              </MenuItem>
+              <MenuItem divider />
+              <MenuItem onClick={(e) => this.props.contextSetKey(e,j)}>
+                Set as Key Column
+              </MenuItem>
+              <MenuItem divider />
+              <MenuItem onClick={(e) => this.props.contextCellOrigin(e,i,j)}>
+                Show Origin of Cell
+              </MenuItem>
+            </ContextMenu>
+          );
+        }
+      }
       tableEle = 
-        <table border="1"><tbody>{this.createSuperTable()}</tbody></table>
+        <div>
+          <table border="1"><tbody>{this.createSuperTable()}</tbody></table>
+          {menuArray}
+        </div>
+    } 
+    // Case three: user has chosen task "exploreTable"
+    else if (this.props.usecaseSelected === "exploreTable"){
+      tableEle = 
+        <TableSelection 
+          originTableArray={this.props.originTableArray}
+          tableOpenList={this.props.tableOpenList}
+          toggleTable={this.props.toggleTable}
+          selectedTableIndex={this.props.selectedTableIndex}/>
     } else {
-      // do something
+
     }
     return (
       <div>
         {tableEle}
-        {menuArray}
       </div>
     );
   }

@@ -33,19 +33,31 @@ class App extends Component {
       tableHeader.push("");
     }
     this.state = {
+      // states below are general states used throughout the app
       urlPasted:"",
       tablePasted:"",
       usecaseSelected:"",
-      keyColIndex:0,        // initially the key column is the first column
+
+      // states below are useful for startSubject
+      keyColIndex:0,             // initially the key column is the first column
       tableHeader:tableHeader,   // 1D array storing the table headers. Initially there are 3 empty columns.
-      tableData:tableData,  // 2D array storing the table data (not including the table headers). Initally 10*3.
-      optionsMap:optionsMap, // 2D array storing the options map
-      keyColNeighbours:[], // 1D array storing the neighbours of the key column
-      curActionInfo:null,    // object storing the current action that should be displayed in ActionPanel. Initially null.
+      tableData:tableData,       // 2D array storing the table data (not including the table headers). Initally 10*3.
+      optionsMap:optionsMap,     // 2D array storing the options map
+      keyColNeighbours:[],       // 1D array storing the neighbours of the key column
+      curActionInfo:null,        // object storing the current action that should be displayed in ActionPanel. Initially null.
+
+      // startes below are useful for exploreTable
+      originTableArray:[],       // 1D array storing all tables found on pasted URL
+      tableOpenList:[],          // 1D array storing whether each table in originTableArray has been toggled open or not
+      selectedTableIndex:"",     // index of table selected by user 
     };
+
+    // functions below are useful during start up
     this.handleURLPaste = this.handleURLPaste.bind(this);
     this.handleTablePaste = this.handleTablePaste.bind(this);
     this.handleSelectTask = this.handleSelectTask.bind(this);
+
+    // functions below are useful for startSubject
     this.cellChange = this.cellChange.bind(this);
     this.selectColHeader = this.selectColHeader.bind(this);
     this.getKeyOptions = this.getKeyOptions.bind(this);
@@ -55,6 +67,9 @@ class App extends Component {
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextSetKey = this.contextSetKey.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
+
+    // functions below are useful for exploreTable
+    this.toggleTable = this.toggleTable.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -71,6 +86,7 @@ class App extends Component {
 
   handleSelectTask(e, taskSelected) {
     if (taskSelected === "startSubject") {
+      // If user chooses "startSubject", we set the URL to be the first cell in the table
       const subject = this.state.urlPasted.slice(30);
       let tableData = this.state.tableData.slice();
       tableData[0][0].data = subject;
@@ -78,7 +94,30 @@ class App extends Component {
         usecaseSelected:taskSelected,
         tableData:tableData,
       });
-    } else {
+    }
+    else if (taskSelected === "exploreTable") {
+      // If user chooses "exploreTable", we want to update the originTableArray, which stores all the tables found on the pasted URL
+      // We also initialize tableOpenList to all false
+      fetch(this.state.urlPasted)
+      .then((response) => {
+        return response.text();
+      }) 
+      .then((htmlText) => {
+        // We first parse the pasted URL and store the list of tables from the pasted URL
+        let doc = new DOMParser().parseFromString(htmlText,"text/html");
+        let originTableArray = doc.getElementsByTagName('table');
+        let tableOpenList = [];
+        for (let i=0;i<originTableArray.length;++i) {
+          tableOpenList.push(false);
+        }
+        this.setState({
+          usecaseSelected:taskSelected,
+          originTableArray:originTableArray,
+          tableOpenList:tableOpenList,
+        })
+      });
+    } 
+    else {
       this.setState({
         usecaseSelected:taskSelected
       });
@@ -460,6 +499,30 @@ class App extends Component {
     })
   }
 
+  toggleTable(e,index) {
+    let tableOpenList = this.state.tableOpenList.slice();
+    tableOpenList[index] = !tableOpenList[index];
+    // When we toggle on one table, we want to close all other tables
+    for (let i=0;i<tableOpenList.length;++i) {
+      if (i !== index) {
+        tableOpenList[i] = false;
+      }
+    }
+    console.log(tableOpenList);
+    // We should change the Action Panel here, if we just toggled open a table
+    if (tableOpenList[index] === true) {
+      this.setState({
+        tableOpenList:tableOpenList,
+        curActionInfo:{"task":"selectTableIndex","tableIndex":index},
+      })
+    } else {
+      this.setState({
+        tableOpenList:tableOpenList,
+        curActionInfo:null,
+      })
+    }
+  }
+
   render() {
     return (
       <div className="wrapper ">
@@ -472,6 +535,7 @@ class App extends Component {
               <TablePanel 
                 urlPasted={this.state.urlPasted}
                 usecaseSelected={this.state.usecaseSelected}
+                // Following states are passed to "startSubject"
                 tableHeader={this.state.tableHeader}
                 tableData={this.state.tableData}
                 keyColIndex={this.state.keyColIndex}
@@ -482,7 +546,12 @@ class App extends Component {
                 optionsMap={this.state.optionsMap}
                 contextAddColumn={this.contextAddColumn}
                 contextSetKey={this.contextSetKey}
-                contextCellOrigin={this.contextCellOrigin}/>
+                contextCellOrigin={this.contextCellOrigin}
+                // Folloiwng states are passed to "exploreTable"
+                originTableArray={this.state.originTableArray}
+                tableOpenList={this.state.tableOpenList}
+                toggleTable={this.toggleTable}
+                selectedTableIndex={this.state.selectedTableIndex}/>
             </div>
             <div className="col-md-4">
               <ActionPanel 
@@ -492,7 +561,9 @@ class App extends Component {
                 handleURLPaste={this.handleURLPaste}
                 handleSelectTask={this.handleSelectTask}
                 populateKeyColumn={this.populateKeyColumn}
-                populateOtherColumn={this.populateOtherColumn}/>
+                populateOtherColumn={this.populateOtherColumn}
+                // Folloiwng states are passed to "exploreTable"
+                selectedTableIndex={this.state.selectedTableIndex}/>
             </div>
           </div>
           <div className="bottom-content">

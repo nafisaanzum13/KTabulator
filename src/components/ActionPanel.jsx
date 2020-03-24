@@ -50,6 +50,11 @@ class ActionPanel extends Component {
             <p>Origin of selected cell is:</p>
             <p>{actionInfo.origin}</p>
           </div>
+      } else if (actionInfo.task === "selectTableIndex") {
+        actionEle =
+          <div>
+            <p>Select table {actionInfo.tableIndex}?</p>
+          </div>
       }
     }
     else {
