@@ -125,12 +125,17 @@ class TablePanel extends Component {
     } 
     // Case three: user has chosen task "exploreTable"
     else if (this.props.usecaseSelected === "exploreTable"){
-      tableEle = 
-        <TableSelection 
-          originTableArray={this.props.originTableArray}
-          tableOpenList={this.props.tableOpenList}
-          toggleTable={this.props.toggleTable}
-          selectedTableIndex={this.props.selectedTableIndex}/>
+      if (this.props.selectedTableIndex === -1) {
+        tableEle = 
+          <TableSelection 
+            originTableArray={this.props.originTableArray}
+            tableOpenList={this.props.tableOpenList}
+            toggleTable={this.props.toggleTable}
+            selectedTableIndex={this.props.selectedTableIndex}/>
+      } else {
+        tableEle = 
+          <div dangerouslySetInnerHTML={{__html: this.props.originTableArray[this.props.selectedTableIndex].outerHTML}} />
+      }
     } else {
 
     }

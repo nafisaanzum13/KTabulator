@@ -49,7 +49,8 @@ class App extends Component {
       // startes below are useful for exploreTable
       originTableArray:[],       // 1D array storing all tables found on pasted URL
       tableOpenList:[],          // 1D array storing whether each table in originTableArray has been toggled open or not
-      selectedTableIndex:"",     // index of table selected by user 
+      selectedTableIndex:-1,     // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
+      propertyNeighbours:[],     // 1D array of objects storing the property neighbours of the pasted URL
     };
 
     // functions below are useful during start up
@@ -145,14 +146,13 @@ class App extends Component {
     if (colIndex === this.state.keyColIndex) {
 
       // We first get all the non-empty values from the key column
-      // We also replaces ( and )
 
       let allSubject = [];
       for (let i=0;i<this.state.tableData.length;++i) {
         if (this.state.tableData[i][colIndex].data === "") {
           break;
         } else {
-          allSubject.push(this.state.tableData[i][colIndex].data.replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029"));
+          allSubject.push(regexReplace(this.state.tableData[i][colIndex].data));
         }
       }
 
@@ -208,8 +208,8 @@ class App extends Component {
         let suffixURL = "%0D%0A%7D%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
         let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B";
         for (let i=0;i<nonEmptyInfo.length;++i) {
-          let curKeySubject = this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex].data.replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029");
-          let curEnteredSubject = nonEmptyInfo[i][1].replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029");
+          let curKeySubject = regexReplace(this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex].data);
+          let curEnteredSubject = regexReplace(nonEmptyInfo[i][1]);
           queryBody+="%0D%0A++++++++dbr%3A"+curKeySubject+"+%3Fsomevar+dbr%3A"+curEnteredSubject+".";
         }
         let queryURL=prefixURL+queryBody+suffixURL;
@@ -284,7 +284,7 @@ class App extends Component {
     let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLOne = "%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyOne = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A%09%3Fsomevar+dct%3Asubject+dbc%3A"
-                        +neighbour.replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029")
+                        +regexReplace(neighbour)
                         +".%0D%0A%7D%0D%0ALIMIT+"+emptyEntryCount;
     let queryURLOne = prefixURLOne+queryBodyOne+suffixURLOne;
     let keyColPromise = fetchOne(queryURLOne);
@@ -296,7 +296,7 @@ class App extends Component {
     let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyTwo = 
       "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
-      +this.state.tableData[0][colIndex].data.replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029")
+      +regexReplace(this.state.tableData[0][colIndex].data)
       +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
     let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
     let otherColPromise = fetchOne(queryURLTwo);
@@ -353,7 +353,7 @@ class App extends Component {
     let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     for (let i=0; i<this.state.tableData.length;++i) {
-      let cellValue = this.state.tableData[i][this.state.keyColIndex].data.replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029");
+      let cellValue = regexReplace(this.state.tableData[i][this.state.keyColIndex].data);
       if (cellValue === "N/A") {
         cellValue = "NONEXISTINGSTRING"; // N/A's will block the search, let's replace it with some string that does not block the search
       }
@@ -444,7 +444,7 @@ class App extends Component {
       let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       let queryBody = 
         "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
-        +this.state.tableData[0][colIndex].data.replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029")
+        +regexReplace(this.state.tableData[0][colIndex].data)
         +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
       let queryURL = prefixURL+queryBody+suffixURL;
       fetch(queryURL)
@@ -526,7 +526,35 @@ class App extends Component {
   // The following function handles the selection of table
 
   onSelectTable(e,tableIndex) {
-    console.log(tableIndex);
+    // Firt thing we need to do is to let table panel display the selected table
+    // Now we need to update the Action Panel to display the first degree properties of the original page
+    // We do a fetch request here (Sixth Query)
+    let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBody = 
+      "SELECT+%3Fp+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
+      +regexReplace(this.state.urlPasted.slice(30))
+      +"+%3Fp+%3Fo.%0D%0A++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++FILTER%28isIRI%28%3Fo%29+%26%26+regex%28%3FpString%2C%22property%22%2C%22i%22%29%29.%0D%0A%7D%0D%0A&";
+    let queryURL = prefixURL+queryBody+suffixURL;
+    fetch(queryURL)
+    .then((response) => {
+      return response.json();
+    })
+    .then((myJson) => {
+      let propertyNeighbours = [];
+      let bindingArray = myJson.results.bindings;
+      for (let i=0;i<bindingArray.length;++i) {
+        let predicate = bindingArray[i].p.value.slice(28);
+        let object = bindingArray[i].o.value.slice(28);
+        propertyNeighbours.push({"predicate":predicate,"object":object});
+      }
+      let curActionInfo = {"task":"showPropertyNeighbours"};
+      this.setState({
+        selectedTableIndex:tableIndex,
+        propertyNeighbours:propertyNeighbours,
+        curActionInfo:curActionInfo,
+      })
+    });
   }
 
   render() {
@@ -559,7 +587,7 @@ class App extends Component {
                 toggleTable={this.toggleTable}
                 selectedTableIndex={this.state.selectedTableIndex}/>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-4 action-panel">
               <ActionPanel 
                 urlPasted={this.state.urlPasted}
                 usecaseSelected={this.state.usecaseSelected}
@@ -570,7 +598,8 @@ class App extends Component {
                 populateOtherColumn={this.populateOtherColumn}
                 // Folloiwng states are passed to "exploreTable"
                 selectedTableIndex={this.state.selectedTableIndex}
-                onSelectTable={this.onSelectTable}/>
+                onSelectTable={this.onSelectTable}
+                propertyNeighbours={this.state.propertyNeighbours}/>
             </div>
           </div>
           <div className="bottom-content">
@@ -596,4 +625,9 @@ function fetchOne(url) {
 
 function allPromiseReady(promiseArray){
   return Promise.all(promiseArray);
+}
+
+function regexReplace(str) {
+  // This function currently replaces "(", ")", and "-"
+  return str.replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029").replace(/-|%E2%80%93/,"%5Cu2013");
 }

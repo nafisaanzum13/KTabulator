@@ -25,9 +25,7 @@ class TableSelection extends Component {
           buttonText = buttonText+headerData+"|";
         }
         // Now let's update the table content
-        let tableContent = this.props.originTableArray[i]
-        tableContent = {__html: tableContent.outerHTML};
-        tableContent = <div dangerouslySetInnerHTML={tableContent} />
+        let tableContent = <div dangerouslySetInnerHTML={{__html: this.props.originTableArray[i].outerHTML}} />
         buttonArray.push(
             <div>
                 <Button onClick={(e) => this.props.toggleTable(e,i)}>{buttonText}</Button>

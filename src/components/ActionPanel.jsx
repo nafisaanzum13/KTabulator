@@ -1,12 +1,32 @@
 import React, { Component } from "react";
 import URLForm from "../components/URLForm";
 import TaskMenu from "../components/TaskMenu";
+import { Collapse, Button, CardBody, Card } from 'reactstrap';
 
 class ActionPanel extends Component {
   constructor(props) {
     super(props);
     this.state = {
     }
+    this.createPropertyArray = this.createPropertyArray.bind(this);
+  }
+
+  createPropertyArray() {
+    const propertyNeighbours = this.props.propertyNeighbours;
+    let propertyArray = [];
+    for (let i=0;i<propertyNeighbours.length;++i) {
+      // We create the text for property buttons: table index plus column names
+      const predicate = propertyNeighbours[i].predicate;
+      const object = propertyNeighbours[i].object;
+      let propertyText = predicate+": "+object;
+      let tooltipText = "Show other pages with "+predicate+": "+object;
+      propertyArray.push(
+          <div>
+              <Button title={tooltipText}>{propertyText}</Button>
+          </div>
+      )
+    }
+    return propertyArray;
   }
 
   render() {
@@ -55,6 +75,11 @@ class ActionPanel extends Component {
           <div>
             <p>Select table {actionInfo.tableIndex}?</p>
             <button onClick={(e) => this.props.onSelectTable(e,actionInfo.tableIndex)}>OK</button>
+          </div>
+      } else if (actionInfo.task === "showPropertyNeighbours") {
+        actionEle =
+          <div>
+            {this.createPropertyArray()}
           </div>
       }
     }

@@ -56,6 +56,11 @@
   overflow:auto;
 }
 
+.action-panel {
+  height:45vh;
+  overflow:auto;
+}
+
 /* This makes sure that the context menu does not seem transparent */
 .react-contextmenu {
   background-color: #fff;
