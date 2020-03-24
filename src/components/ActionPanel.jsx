@@ -22,7 +22,18 @@ class ActionPanel extends Component {
       let tooltipText = "Show other pages with "+predicate+": "+object;
       propertyArray.push(
           <div>
-              <Button title={tooltipText}>{propertyText}</Button>
+              <Button 
+                title={tooltipText}
+                onClick={(e) => this.props.togglePropertyNeighbours(e,i)}>
+                {propertyText}
+              </Button>
+              <Collapse isOpen={this.props.siblingArray[i].isOpen}>
+                <Card>
+                    <CardBody>
+                        {this.props.siblingArray[i].linkArray}
+                    </CardBody>
+                </Card>
+              </Collapse>
           </div>
       )
     }

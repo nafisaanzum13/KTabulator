@@ -51,6 +51,7 @@ class App extends Component {
       tableOpenList:[],          // 1D array storing whether each table in originTableArray has been toggled open or not
       selectedTableIndex:-1,     // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
       propertyNeighbours:[],     // 1D array of objects storing the property neighbours of the pasted URL
+      siblingArray:[],           // 1D array of objects storing the 1) hide/show status and 2)content for each property neighbour 
     };
 
     // functions below are useful during start up
@@ -72,6 +73,7 @@ class App extends Component {
     // functions below are useful for exploreTable
     this.toggleTable = this.toggleTable.bind(this);
     this.onSelectTable = this.onSelectTable.bind(this);
+    this.togglePropertyNeighbours = this.togglePropertyNeighbours.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -534,13 +536,15 @@ class App extends Component {
     let queryBody = 
       "SELECT+%3Fp+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
       +regexReplace(this.state.urlPasted.slice(30))
-      +"+%3Fp+%3Fo.%0D%0A++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++FILTER%28isIRI%28%3Fo%29+%26%26+regex%28%3FpString%2C%22property%22%2C%22i%22%29%29.%0D%0A%7D%0D%0A&";
+      +"+%3Fp+%3Fo.%0D%0A++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++FILTER%28isIRI%28%3Fo%29+%26%26+regex%28%3FpString%2C%22property%22%2C%22i%22%29+%26%26+%28%21regex%28%3FpString%2C%22text%22%2C%22i%22%29%29%29.%0D%0A%7D%0D%0A&";
     let queryURL = prefixURL+queryBody+suffixURL;
+
     fetch(queryURL)
     .then((response) => {
       return response.json();
     })
     .then((myJson) => {
+      // First we fetch the property neighbours
       let propertyNeighbours = [];
       let bindingArray = myJson.results.bindings;
       for (let i=0;i<bindingArray.length;++i) {
@@ -548,13 +552,30 @@ class App extends Component {
         let object = bindingArray[i].o.value.slice(28);
         propertyNeighbours.push({"predicate":predicate,"object":object});
       }
+      // Then we update the action in Action Panel
       let curActionInfo = {"task":"showPropertyNeighbours"};
+      // Then we create the collapses corresponding to the property buttons in action panel
+      let siblingArray = [];
+      for (let i=0;i<propertyNeighbours.length;++i) {
+        siblingArray.push({"isOpen":false,"linkArray":[]});
+      }
       this.setState({
         selectedTableIndex:tableIndex,
         propertyNeighbours:propertyNeighbours,
         curActionInfo:curActionInfo,
+        siblingArray:siblingArray,
       })
     });
+  }
+
+  togglePropertyNeighbours(e,index) {
+    let siblingArray = this.state.siblingArray.slice();
+    siblingArray[index].isOpen = !siblingArray[index].isOpen;
+    // We want to have more meaningful content here (aka the siblings of the original page)
+    siblingArray[index].linkArray = "Hi from property "+index;
+    this.setState({
+      siblingArray:siblingArray,
+    })
   }
 
   render() {
@@ -599,7 +620,9 @@ class App extends Component {
                 // Folloiwng states are passed to "exploreTable"
                 selectedTableIndex={this.state.selectedTableIndex}
                 onSelectTable={this.onSelectTable}
-                propertyNeighbours={this.state.propertyNeighbours}/>
+                propertyNeighbours={this.state.propertyNeighbours}
+                siblingArray={this.state.siblingArray}
+                togglePropertyNeighbours={this.togglePropertyNeighbours}/>
             </div>
           </div>
           <div className="bottom-content">

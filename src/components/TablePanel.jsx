@@ -125,6 +125,7 @@ class TablePanel extends Component {
     } 
     // Case three: user has chosen task "exploreTable"
     else if (this.props.usecaseSelected === "exploreTable"){
+      // Case 3.1: User has not selected a table yet
       if (this.props.selectedTableIndex === -1) {
         tableEle = 
           <TableSelection 
@@ -132,9 +133,19 @@ class TablePanel extends Component {
             tableOpenList={this.props.tableOpenList}
             toggleTable={this.props.toggleTable}
             selectedTableIndex={this.props.selectedTableIndex}/>
-      } else {
+      } 
+      // Case 3.2: User has selected a table
+      else {
         tableEle = 
-          <div dangerouslySetInnerHTML={{__html: this.props.originTableArray[this.props.selectedTableIndex].outerHTML}} />
+          <div className="row">
+            <div 
+              className="col-md-6"
+              dangerouslySetInnerHTML={{__html: this.props.originTableArray[this.props.selectedTableIndex].outerHTML}}>
+            </div>
+            <div className="col-md-6">
+              Drop links from Action Panel here to see similar tables.
+            </div>
+          </div>
       }
     } else {
 
