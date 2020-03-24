@@ -54,6 +54,7 @@ class ActionPanel extends Component {
         actionEle =
           <div>
             <p>Select table {actionInfo.tableIndex}?</p>
+            <button onClick={(e) => this.props.onSelectTable(e,actionInfo.tableIndex)}>OK</button>
           </div>
       }
     }

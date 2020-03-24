@@ -70,6 +70,7 @@ class App extends Component {
 
     // functions below are useful for exploreTable
     this.toggleTable = this.toggleTable.bind(this);
+    this.onSelectTable = this.onSelectTable.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -508,7 +509,6 @@ class App extends Component {
         tableOpenList[i] = false;
       }
     }
-    console.log(tableOpenList);
     // We should change the Action Panel here, if we just toggled open a table
     if (tableOpenList[index] === true) {
       this.setState({
@@ -521,6 +521,12 @@ class App extends Component {
         curActionInfo:null,
       })
     }
+  }
+
+  // The following function handles the selection of table
+
+  onSelectTable(e,tableIndex) {
+    console.log(tableIndex);
   }
 
   render() {
@@ -563,7 +569,8 @@ class App extends Component {
                 populateKeyColumn={this.populateKeyColumn}
                 populateOtherColumn={this.populateOtherColumn}
                 // Folloiwng states are passed to "exploreTable"
-                selectedTableIndex={this.state.selectedTableIndex}/>
+                selectedTableIndex={this.state.selectedTableIndex}
+                onSelectTable={this.onSelectTable}/>
             </div>
           </div>
           <div className="bottom-content">
