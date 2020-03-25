@@ -74,6 +74,7 @@ class App extends Component {
     this.toggleTable = this.toggleTable.bind(this);
     this.onSelectTable = this.onSelectTable.bind(this);
     this.togglePropertyNeighbours = this.togglePropertyNeighbours.bind(this);
+    this.handleDropLink = this.handleDropLink.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -602,7 +603,8 @@ class App extends Component {
             <div className="row">
               <a 
                 href="https://www.google.com" 
-                onClick={(e) => {e.preventDefault();e.stopPropagation();return false;}}>
+                onClick={(e) => {e.preventDefault();e.stopPropagation();return false;}}
+                onDragStart={(e) => {e.dataTransfer.setData("text",siblingURL);}}>
                 {siblingURL}
               </a>
             </div>
@@ -620,6 +622,11 @@ class App extends Component {
         siblingArray:siblingArray,
       })
     } 
+  }
+
+  handleDropLink(e) {
+    let data = e.dataTransfer.getData("text");
+    console.log(data);
   }
 
   render() {
@@ -650,7 +657,8 @@ class App extends Component {
                 originTableArray={this.state.originTableArray}
                 tableOpenList={this.state.tableOpenList}
                 toggleTable={this.toggleTable}
-                selectedTableIndex={this.state.selectedTableIndex}/>
+                selectedTableIndex={this.state.selectedTableIndex}
+                handleDropLink={this.handleDropLink}/>
             </div>
             <div className="col-md-4 action-panel">
               <ActionPanel 

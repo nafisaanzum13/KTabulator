@@ -135,6 +135,7 @@ class TablePanel extends Component {
             selectedTableIndex={this.props.selectedTableIndex}/>
       } 
       // Case 3.2: User has selected a table
+      // Make the second part into its own component
       else {
         let originURL = reverseReplace(this.props.urlPasted.slice(30));
         tableEle = 
@@ -144,7 +145,10 @@ class TablePanel extends Component {
               <br />
               <div dangerouslySetInnerHTML={{__html: this.props.originTableArray[this.props.selectedTableIndex].outerHTML}}></div>
             </div>
-            <div className="col-md-6">
+            <div 
+              className="col-md-6"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => this.props.handleDropLink(e)}>
               Drop links from Action Panel here to see similar tables.
             </div>
           </div>
