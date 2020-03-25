@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import URLForm from "../components/URLForm";
 import TaskMenu from "../components/TaskMenu";
 import { Collapse, Button, CardBody, Card } from 'reactstrap';
+import { FaList } from "react-icons/fa";
 
 class ActionPanel extends Component {
   constructor(props) {
@@ -18,7 +19,7 @@ class ActionPanel extends Component {
       // We create the text for property buttons: table index plus column names
       const predicate = propertyNeighbours[i].predicate;
       const object = propertyNeighbours[i].object;
-      let propertyText = predicate+": "+object;
+      let propertyText = predicate+": "+object+" ";
       let tooltipText = "Show other pages with "+predicate+": "+object;
       propertyArray.push(
           <div>
@@ -26,6 +27,7 @@ class ActionPanel extends Component {
                 title={tooltipText}
                 onClick={(e) => this.props.togglePropertyNeighbours(e,i)}>
                 {propertyText}
+                <FaList />
               </Button>
               <Collapse isOpen={this.props.siblingArray[i].isOpen}>
                 <Card>
@@ -90,6 +92,7 @@ class ActionPanel extends Component {
       } else if (actionInfo.task === "showPropertyNeighbours") {
         actionEle =
           <div>
+            <p>Explore relations below to look for other pages with similar tables:</p>
             {this.createPropertyArray()}
           </div>
       }

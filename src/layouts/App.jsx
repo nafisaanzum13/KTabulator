@@ -74,7 +74,6 @@ class App extends Component {
     this.toggleTable = this.toggleTable.bind(this);
     this.onSelectTable = this.onSelectTable.bind(this);
     this.togglePropertyNeighbours = this.togglePropertyNeighbours.bind(this);
-    this.handleDropLink = this.handleDropLink.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -603,8 +602,7 @@ class App extends Component {
             <div className="row">
               <a 
                 href="https://www.google.com" 
-                onClick={(e) => {e.preventDefault();e.stopPropagation();return false;}}
-                onDragStart={(e) => {e.dataTransfer.setData("text",siblingURL);}}>
+                onClick={(e) => {e.preventDefault();e.stopPropagation();return false;}}>
                 {siblingURL}
               </a>
             </div>
@@ -624,11 +622,6 @@ class App extends Component {
     } 
   }
 
-  handleDropLink(e) {
-    let data = e.dataTransfer.getData("text");
-    console.log(data);
-  }
-
   render() {
     return (
       <div className="wrapper ">
@@ -637,7 +630,7 @@ class App extends Component {
             <Header />
           </div>
           <div className="row top-content">
-            <div className="col-md-8 table-panel">
+            <div className="col-md-7 table-panel">
               <TablePanel 
                 urlPasted={this.state.urlPasted}
                 usecaseSelected={this.state.usecaseSelected}
@@ -657,10 +650,9 @@ class App extends Component {
                 originTableArray={this.state.originTableArray}
                 tableOpenList={this.state.tableOpenList}
                 toggleTable={this.toggleTable}
-                selectedTableIndex={this.state.selectedTableIndex}
-                handleDropLink={this.handleDropLink}/>
+                selectedTableIndex={this.state.selectedTableIndex}/>
             </div>
-            <div className="col-md-4 action-panel">
+            <div className="col-md-5 action-panel">
               <ActionPanel 
                 urlPasted={this.state.urlPasted}
                 usecaseSelected={this.state.usecaseSelected}
@@ -703,6 +695,6 @@ function allPromiseReady(promiseArray){
 }
 
 function regexReplace(str) {
-  // This function currently replaces "(", ")", and "-"
-  return str.replace(/\(/,"%5Cu0028").replace(/\)/,"%5Cu0029").replace(/-|%E2%80%93/,"%5Cu2013");
+  // This function currently replaces "(", ")", "'",and "-"
+  return str.replace(/\(/g,"%5Cu0028").replace(/\)/g,"%5Cu0029").replace(/%E2%80%93/g,"%5Cu2013").replace(/'/g,"%5Cu0027");
 }

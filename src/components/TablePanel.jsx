@@ -140,16 +140,10 @@ class TablePanel extends Component {
         let originURL = reverseReplace(this.props.urlPasted.slice(30));
         tableEle = 
           <div className="row">
-            <div className="col-md-6">
+            <div className="col-md-12">
               <div>Origin URL of table: {originURL}</div>
               <br />
               <div dangerouslySetInnerHTML={{__html: this.props.originTableArray[this.props.selectedTableIndex].outerHTML}}></div>
-            </div>
-            <div 
-              className="col-md-6"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => this.props.handleDropLink(e)}>
-              Drop links from Action Panel here to see similar tables.
             </div>
           </div>
       }

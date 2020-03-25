@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { Collapse, Button, CardBody, Card } from 'reactstrap';
+import { FaTable } from "react-icons/fa";
 
 class TableSelection extends Component {
   constructor(props) {
@@ -28,7 +29,11 @@ class TableSelection extends Component {
         let tableContent = <div dangerouslySetInnerHTML={{__html: this.props.originTableArray[i].outerHTML}} />
         buttonArray.push(
             <div>
-                <Button onClick={(e) => this.props.toggleTable(e,i)}>{buttonText}</Button>
+                <Button 
+                    onClick={(e) => this.props.toggleTable(e,i)}>
+                    {buttonText}
+                    <FaTable />
+                </Button>
                 <Collapse isOpen={this.props.tableOpenList[i]}>
                 <Card>
                     <CardBody>
