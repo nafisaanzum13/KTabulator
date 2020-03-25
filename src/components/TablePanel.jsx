@@ -136,11 +136,13 @@ class TablePanel extends Component {
       } 
       // Case 3.2: User has selected a table
       else {
+        let originURL = reverseReplace(this.props.urlPasted.slice(30));
         tableEle = 
           <div className="row">
-            <div 
-              className="col-md-6"
-              dangerouslySetInnerHTML={{__html: this.props.originTableArray[this.props.selectedTableIndex].outerHTML}}>
+            <div className="col-md-6">
+              <div>Origin URL of table: {originURL}</div>
+              <br />
+              <div dangerouslySetInnerHTML={{__html: this.props.originTableArray[this.props.selectedTableIndex].outerHTML}}></div>
             </div>
             <div className="col-md-6">
               Drop links from Action Panel here to see similar tables.
@@ -159,3 +161,8 @@ class TablePanel extends Component {
 }
 
 export default TablePanel;
+
+function reverseReplace(str) {
+  // This function currently replaces "(", ")", and "-"
+  return str.replace(/%E2%80%93/,"-");
+}

@@ -568,14 +568,58 @@ class App extends Component {
     });
   }
 
+  // The following function handles the toggle of a property neighbour button
+
   togglePropertyNeighbours(e,index) {
+    // First let's do the toggling task
     let siblingArray = this.state.siblingArray.slice();
     siblingArray[index].isOpen = !siblingArray[index].isOpen;
-    // We want to have more meaningful content here (aka the siblings of the original page)
-    siblingArray[index].linkArray = "Hi from property "+index;
-    this.setState({
-      siblingArray:siblingArray,
-    })
+
+    // If the user decides to show some siblings, we need to update linkArray to meaningful contents
+    if (siblingArray[index].isOpen === true) {
+
+      // First let's run the fetch request
+      let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBody = 
+        "SELECT+%3Fs+%0D%0AWHERE+%7B%0D%0A%09%3Fs+dbp%3A"
+        +regexReplace(this.state.propertyNeighbours[index].predicate)
+        +"+dbr%3A"
+        +regexReplace(this.state.propertyNeighbours[index].object)
+        +"%0D%0A%7D%0D%0A&";
+      let queryURL = prefixURL+queryBody+suffixURL;
+      fetch(queryURL)
+      .then((response) => {
+        return response.json();
+      })
+      .then((myJson) => {
+        // We want to get all the siblings 
+        let bindingArray = myJson.results.bindings;
+        let linkArray = [];
+        for (let i=0;i<bindingArray.length;++i) {
+          let siblingURL = bindingArray[i].s.value.slice(28);
+          linkArray.push(
+            <div className="row">
+              <a 
+                href="https://www.google.com" 
+                onClick={(e) => {e.preventDefault();e.stopPropagation();return false;}}>
+                {siblingURL}
+              </a>
+            </div>
+          )
+        }
+        // Lastly, we want to update the siblingArray
+        siblingArray[index].linkArray = linkArray;
+        this.setState({
+          siblingArray:siblingArray,
+        })
+      });
+    } 
+    else {
+      this.setState({
+        siblingArray:siblingArray,
+      })
+    } 
   }
 
   render() {
