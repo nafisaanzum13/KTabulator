@@ -61,6 +61,10 @@
   overflow:auto;
 }
 
+.twenty-vw {
+  width:20vw;
+}
+
 /* This makes sure that the context menu does not seem transparent */
 .react-contextmenu {
   background-color: #fff;

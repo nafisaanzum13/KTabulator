@@ -15,8 +15,8 @@ class App extends Component {
     let tableData = [];
     let tableHeader = [];
     let optionsMap = [];
-    const initialRowNum = 20;
-    const initialColNum = 3;
+    const initialRowNum = 30;
+    const initialColNum = 4;
     for (let i=0;i<initialRowNum;++i) {
       let tempRow = [];
       for (let j=0;j<initialColNum;++j) {
@@ -242,7 +242,16 @@ class App extends Component {
 
   selectColHeader(e,colIndex) {
     let tableHeader = this.state.tableHeader.slice();
-    tableHeader[colIndex] = e;
+    
+    // This part creates differentiable column names
+    // The first few lines fix some pass by reference problems 
+    let evalue = e.value;
+    let elabel = e.label;
+    tableHeader[colIndex] = {"value":evalue,"label":elabel};
+    if (colIndex !== this.state.keyColIndex) {
+      tableHeader[colIndex].label = tableHeader[colIndex].label+"--"+tableHeader[this.state.keyColIndex].label;
+    }
+
     // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
     // ask in ActionPanel whether user wants to populate the column based on the chosen column name
     let tempObj = {};

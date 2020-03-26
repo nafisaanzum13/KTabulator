@@ -27,6 +27,7 @@ class TablePanel extends Component {
         <th>
           <div onClick={(e) => this.props.getKeyOptions(e,colIndex)}>
             <Select
+              className="twenty-vw"
               value={this.props.tableHeader[colIndex]}
               onChange={(e) => this.props.selectColHeader(e,colIndex)}
               placeholder={"Choose header"}
@@ -40,6 +41,7 @@ class TablePanel extends Component {
         <th>
           <div onClick={(e) => this.props.getOtherOptions(e,colIndex)}>
             <Select
+              className="twenty-vw"
               value={this.props.tableHeader[colIndex]}
               onChange={(e) => this.props.selectColHeader(e,colIndex)}
               placeholder={"Choose header"}
@@ -73,6 +75,7 @@ class TablePanel extends Component {
             <td>
               <ContextMenuTrigger id={tempID}>
                 <input 
+                  className="twenty-vw"
                   type="text"
                   style={cellColor} 
                   value={this.props.tableData[i][j].data} 
