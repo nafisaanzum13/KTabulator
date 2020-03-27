@@ -1,5 +1,3 @@
-// We are starting again
-
 // import { Route, Switch, Link } from "react-router-dom";
 import React, { Component } from "react";
 import Header from "../components/Header";
@@ -7,6 +5,8 @@ import Footer from "../components/Footer";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
 import PagePanel from "../components/PagePanel";
+import { Collapse, Button, CardBody, Card } from 'reactstrap';
+import { FaList } from "react-icons/fa";
 
 class App extends Component {
 
@@ -50,8 +50,17 @@ class App extends Component {
       originTableArray:[],       // 1D array storing all tables found on pasted URL
       tableOpenList:[],          // 1D array storing whether each table in originTableArray has been toggled open or not
       selectedTableIndex:-1,     // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
-      propertyNeighbours:[],     // 1D array of objects storing the property neighbours of the pasted URL
-      siblingArray:[],           // 1D array of objects storing the 1) hide/show status and 2)content for each property neighbour 
+      
+      // array of objects with four properties storing the status/content for each property neighbour
+      // 1) predicate: string storing the predicate (ex. dbp:league)
+      // 2) object: string storing the object (ex. dbo:NBA)
+      // 3) isOpen: boolean storing whether the current property neighbour is toggled on or not
+      // 4) siblingArary: array of objects with two properties storing the staus/content for each sibling URL
+      //    4.1) isOpen:      boolean storing whether the current sibling is toggled on or not
+      //    4.2) tableArray:  array of objects storing the status/content for each "same" table on the sibling URL
+      //         4.2.1) isOepn:        boolean storing whether the current table is toggled on or not
+      //         4.2.1) tableElement:  a button asking user if they want to union the current table, and a view of the table     
+      propertyNeighbours:[],     
     };
 
     // functions below are useful during start up
@@ -74,6 +83,7 @@ class App extends Component {
     this.toggleTable = this.toggleTable.bind(this);
     this.onSelectTable = this.onSelectTable.bind(this);
     this.togglePropertyNeighbours = this.togglePropertyNeighbours.bind(this);
+    this.toggleSibling = this.toggleSibling.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -109,7 +119,7 @@ class App extends Component {
       .then((htmlText) => {
         // We first parse the pasted URL and store the list of tables from the pasted URL
         let doc = new DOMParser().parseFromString(htmlText,"text/html");
-        let originTableArray = doc.getElementsByTagName('table');
+        let originTableArray = doc.getElementsByClassName('wikitable');
         let tableOpenList = [];
         for (let i=0;i<originTableArray.length;++i) {
           tableOpenList.push(false);
@@ -559,20 +569,14 @@ class App extends Component {
       for (let i=0;i<bindingArray.length;++i) {
         let predicate = bindingArray[i].p.value.slice(28);
         let object = bindingArray[i].o.value.slice(28);
-        propertyNeighbours.push({"predicate":predicate,"object":object});
+        propertyNeighbours.push({"predicate":predicate,"object":object,"isOpen":false,"siblingArray":[]});
       }
       // Then we update the action in Action Panel
       let curActionInfo = {"task":"showPropertyNeighbours"};
-      // Then we create the collapses corresponding to the property buttons in action panel
-      let siblingArray = [];
-      for (let i=0;i<propertyNeighbours.length;++i) {
-        siblingArray.push({"isOpen":false,"linkArray":[]});
-      }
       this.setState({
         selectedTableIndex:tableIndex,
         propertyNeighbours:propertyNeighbours,
         curActionInfo:curActionInfo,
-        siblingArray:siblingArray,
       })
     });
   }
@@ -581,11 +585,11 @@ class App extends Component {
 
   togglePropertyNeighbours(e,index) {
     // First let's do the toggling task
-    let siblingArray = this.state.siblingArray.slice();
-    siblingArray[index].isOpen = !siblingArray[index].isOpen;
+    let propertyNeighbours = this.state.propertyNeighbours.slice();
+    propertyNeighbours[index].isOpen = !propertyNeighbours[index].isOpen;
 
-    // If the user decides to show some siblings, we need to update linkArray to meaningful contents
-    if (siblingArray[index].isOpen === true) {
+    // If the user decides to show some siblings, we need to update siblingArray to meaningful contents
+    if (propertyNeighbours[index].isOpen === true) {
 
       // First let's run the fetch request
       let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
@@ -604,31 +608,70 @@ class App extends Component {
       .then((myJson) => {
         // We want to get all the siblings 
         let bindingArray = myJson.results.bindings;
-        let linkArray = [];
+        let siblingArray = [];
         for (let i=0;i<bindingArray.length;++i) {
-          let siblingURL = bindingArray[i].s.value.slice(28);
-          linkArray.push(
-            <div className="row">
-              <a 
-                href="https://www.google.com" 
-                onClick={(e) => {e.preventDefault();e.stopPropagation();return false;}}>
-                {siblingURL}
-              </a>
+          let siblingName = bindingArray[i].s.value.slice(28);
+          siblingArray.push(
+            <div>
+                <Button
+                  onClick={(e) => this.toggleSibling(e,siblingName)}>
+                  {siblingName}
+                  <FaList />
+                </Button>
+                {/* <Collapse isOpen={this.props.propertyNeighbours[i].isOpen}>
+                  <Card>
+                      <CardBody>
+                          {this.props.propertyNeighbours[i].siblingArray}
+                      </CardBody>
+                  </Card>
+                </Collapse> */}
             </div>
           )
         }
-        // Lastly, we want to update the siblingArray
-        siblingArray[index].linkArray = linkArray;
+        propertyNeighbours[index].siblingArray = siblingArray;
         this.setState({
-          siblingArray:siblingArray,
+          propertyNeighbours:propertyNeighbours,
         })
       });
     } 
     else {
       this.setState({
-        siblingArray:siblingArray,
+        propertyNeighbours:propertyNeighbours,
       })
     } 
+  }
+
+  // The following function handles the toggling of a sibling URL
+
+  toggleSibling(e,siblingName) {
+    let siblingURL = "https://en.wikipedia.org/wiki/"+siblingName;
+    fetch(siblingURL)
+    .then((response) => {
+      return response.text();
+    }) 
+    .then((htmlText) => {
+      let doc = new DOMParser().parseFromString(htmlText,"text/html");
+      let tablesFound = doc.getElementsByClassName('wikitable');
+
+      // Let's first get the sorted names of the selected table (in table panel)
+      let selectedHeaderCells = this.state.originTableArray[this.state.selectedTableIndex].rows[0].cells;
+      let originSortedCols = [];
+      for (let j=0;j<selectedHeaderCells.length;++j) {
+        let headerName = selectedHeaderCells[j].innerText;
+        if (headerName[headerName.length-1] === "\n") {
+            headerName = headerName.slice(0,-1);
+        }
+        originSortedCols.push(headerName);
+      }
+      // We sort the array for easier comparison.
+      originSortedCols.sort();
+      // console.log(originSortedCols);
+
+      // Let's now look at the column names for each of the tables found on the sibling url
+      for (let i=0;i<tablesFound.length;++i) {
+        // console.log(tablesFound[i]);
+      }
+    })
   }
 
   render() {
@@ -674,7 +717,6 @@ class App extends Component {
                 selectedTableIndex={this.state.selectedTableIndex}
                 onSelectTable={this.onSelectTable}
                 propertyNeighbours={this.state.propertyNeighbours}
-                siblingArray={this.state.siblingArray}
                 togglePropertyNeighbours={this.togglePropertyNeighbours}/>
             </div>
           </div>

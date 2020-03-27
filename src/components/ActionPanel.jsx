@@ -29,10 +29,10 @@ class ActionPanel extends Component {
                 {propertyText}
                 <FaList />
               </Button>
-              <Collapse isOpen={this.props.siblingArray[i].isOpen}>
+              <Collapse isOpen={this.props.propertyNeighbours[i].isOpen}>
                 <Card>
                     <CardBody>
-                        {this.props.siblingArray[i].linkArray}
+                        {this.props.propertyNeighbours[i].siblingArray}
                     </CardBody>
                 </Card>
               </Collapse>
