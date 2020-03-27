@@ -141,6 +141,8 @@ class TablePanel extends Component {
       // Make the second part into its own component
       else {
         let originURL = reverseReplace(this.props.urlPasted.slice(30));
+        // console.log(this.props.tableDataExplore);
+        // Instead of logging tableDataExplore in the console, we want to use it to render a table
         tableEle = 
           <div className="row">
             <div className="col-md-12">

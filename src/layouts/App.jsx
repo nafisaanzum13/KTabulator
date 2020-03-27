@@ -38,8 +38,8 @@ class App extends Component {
 
       // states below are useful for startSubject
       keyColIndex:0,             // initially the key column is the first column
-      tableHeader:tableHeader,   // 1D array storing the table headers. Initially there are 3 empty columns.
-      tableData:tableData,       // 2D array storing the table data (not including the table headers). Initally 10*3.
+      tableHeader:tableHeader,   // 1D array storing the table headers. 
+      tableData:tableData,       // 2D array of objects storing the table data (not including the table headers). 
       optionsMap:optionsMap,     // 2D array storing the options map
       keyColNeighbours:[],       // 1D array storing the neighbours of the key column
       curActionInfo:null,        // object storing the current action that should be displayed in ActionPanel. Initially null.
@@ -48,7 +48,7 @@ class App extends Component {
       originTableArray:[],       // 1D array storing all tables found on pasted URL
       tableOpenList:[],          // 1D array storing whether each table in originTableArray has been toggled open or not
       selectedTableIndex:-1,     // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
-      
+      tableDataExplore:[],       // 2D arary of objects storing the table data from explore table task. Similar to tableData above.
       // array of objects with four properties storing the status/content for each property neighbour
       // 1) predicate: string storing the predicate (ex. dbp:league)
       // 2) object: string storing the object (ex. dbo:NBA)
@@ -572,10 +572,13 @@ class App extends Component {
       }
       // Then we update the action in Action Panel
       let curActionInfo = {"task":"showPropertyNeighbours"};
+      // Then we call the parse table helper function to update the tableDataExplore
+      let tableDataExplore = parseTable(this.state.originTableArray[tableIndex]);
       this.setState({
         selectedTableIndex:tableIndex,
         propertyNeighbours:propertyNeighbours,
         curActionInfo:curActionInfo,
+        tableDataExplore:tableDataExplore,
       })
     });
   }
@@ -652,10 +655,7 @@ class App extends Component {
         let selectedHeaderCells = this.state.originTableArray[this.state.selectedTableIndex].rows[0].cells;
         let originSortedCols = [];
         for (let j=0;j<selectedHeaderCells.length;++j) {
-          let headerName = selectedHeaderCells[j].innerText;
-          if (headerName[headerName.length-1] === "\n") {
-              headerName = headerName.slice(0,-1);
-          }
+          let headerName = removeNewLine(selectedHeaderCells[j].innerText);
           originSortedCols.push(headerName);
         }
         // We sort the array for easier comparison.
@@ -671,10 +671,7 @@ class App extends Component {
           if (originTableLength === curHeaderCells.length) {
             let newSortedCols = [];
             for (let j=0;j<curHeaderCells.length;++j) {
-              let headerName = curHeaderCells[j].innerText;
-              if (headerName[headerName.length-1] === "\n") {
-                  headerName = headerName.slice(0,-1);
-              }
+              let headerName = removeNewLine(curHeaderCells[j].innerText);
               newSortedCols.push(headerName);
             }
             newSortedCols.sort();
@@ -747,6 +744,7 @@ class App extends Component {
                 contextCellOrigin={this.contextCellOrigin}
                 // Folloiwng states are passed to "exploreTable"
                 originTableArray={this.state.originTableArray}
+                tableDataExplore={this.state.tableDataExplore}
                 tableOpenList={this.state.tableOpenList}
                 toggleTable={this.toggleTable}
                 selectedTableIndex={this.state.selectedTableIndex}/>
@@ -797,4 +795,38 @@ function allPromiseReady(promiseArray){
 function regexReplace(str) {
   // This function currently replaces "(", ")", "'",and "-"
   return str.replace(/\(/g,"%5Cu0028").replace(/\)/g,"%5Cu0029").replace(/%E2%80%93/g,"%5Cu2013").replace(/'/g,"%5Cu0027");
+}
+
+function removeNewLine(str) {
+  if (str[str.length-1] === "\n") {
+    return str.slice(0,-1)
+  } else {
+    return str;
+  }
+}
+
+function parseTable(selecteTableHTML) {
+  let selectedTable = selecteTableHTML;
+  let tempTable = [];
+  for (let i=0;i<selectedTable.rows.length;++i) {
+      let tempRow = [];
+      for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
+          let curCellText = removeNewLine(selectedTable.rows[i].cells[j].innerText);
+          tempRow.push({"data":curCellText});
+      }
+      tempTable.push(tempRow);
+  }
+  
+  // Right now we have fetched the plain version of the table. Haven't dealt with rowspans yet. Let deal with it now
+  for (let i=0;i<selectedTable.rows.length;++i) {
+      for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
+          let curCellText = removeNewLine(selectedTable.rows[i].cells[j].innerText);
+          if (selectedTable.rows[i].cells[j].rowSpan > 1) {
+              for (let k=1;k<selectedTable.rows[i].cells[j].rowSpan;++k) {
+                  tempTable[i+k].splice(j,0,{"data":curCellText});
+              }
+          }
+      }
+  }
+  return tempTable; // tempTable is a 2D array of objects storing the table data. Object has one field: data.
 }

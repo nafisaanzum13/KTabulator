@@ -19,7 +19,7 @@ class TableSelection extends Component {
         let buttonText = "Table "+i+": ";
         let headerCells = originTableArray[i].rows[0].cells;
         for (let j=0;j<headerCells.length;++j) {
-          let headerData = headerCells[j].innerText;
+          let headerData = removeNewLine(headerCells[j].innerText);
           if (headerData[headerData.length-1] === "\n") {
               headerData = headerData.slice(0,-1);
           }
@@ -62,3 +62,11 @@ class TableSelection extends Component {
 }
 
 export default TableSelection;
+
+function removeNewLine(str) {
+  if (str[str.length-1] === "\n") {
+    return str.slice(0,-1)
+  } else {
+    return str;
+  }
+}
