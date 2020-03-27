@@ -5,8 +5,6 @@ import Footer from "../components/Footer";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
 import PagePanel from "../components/PagePanel";
-import { Collapse, Button, CardBody, Card } from 'reactstrap';
-import { FaList } from "react-icons/fa";
 
 class App extends Component {
 
@@ -59,7 +57,7 @@ class App extends Component {
       //    4.1) isOpen:      boolean storing whether the current sibling is toggled on or not
       //    4.2) tableArray:  array of objects storing the status/content for each "same" table on the sibling URL
       //         4.2.1) isOepn:        boolean storing whether the current table is toggled on or not
-      //         4.2.1) tableElement:  a button asking user if they want to union the current table, and a view of the table     
+      //         4.2.1) tableElement:  a view of the table (option to union the table should be created in ActionPanel)     
       propertyNeighbours:[],     
     };
 
@@ -84,6 +82,7 @@ class App extends Component {
     this.onSelectTable = this.onSelectTable.bind(this);
     this.togglePropertyNeighbours = this.togglePropertyNeighbours.bind(this);
     this.toggleSibling = this.toggleSibling.bind(this);
+    this.toggleOtherTable = this.toggleOtherTable.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -611,23 +610,11 @@ class App extends Component {
         let siblingArray = [];
         for (let i=0;i<bindingArray.length;++i) {
           let siblingName = bindingArray[i].s.value.slice(28);
-          siblingArray.push(
-            <div>
-                <Button
-                  onClick={(e) => this.toggleSibling(e,siblingName)}>
-                  {siblingName}
-                  <FaList />
-                </Button>
-                {/* <Collapse isOpen={this.props.propertyNeighbours[i].isOpen}>
-                  <Card>
-                      <CardBody>
-                          {this.props.propertyNeighbours[i].siblingArray}
-                      </CardBody>
-                  </Card>
-                </Collapse> */}
-            </div>
-          )
+          // NOTE! If we decided to go with the pre-fetch way, we will have to do it here
+          // By only pushing the sibling with the similar tables onto the sibling array
+          siblingArray.push({"isOpen":false,"name":siblingName,"content":"hello world","tableArray":[]})
         }
+        // Note: THE FOLLOWING STEP IS NECESSARY BECAUSE OTHERWISE WE ARE COPYING TOO MANY THINGS
         propertyNeighbours[index].siblingArray = siblingArray;
         this.setState({
           propertyNeighbours:propertyNeighbours,
@@ -635,6 +622,7 @@ class App extends Component {
       });
     } 
     else {
+      propertyNeighbours[index].siblingArray = [];
       this.setState({
         propertyNeighbours:propertyNeighbours,
       })
@@ -643,34 +631,93 @@ class App extends Component {
 
   // The following function handles the toggling of a sibling URL
 
-  toggleSibling(e,siblingName) {
-    let siblingURL = "https://en.wikipedia.org/wiki/"+siblingName;
-    fetch(siblingURL)
-    .then((response) => {
-      return response.text();
-    }) 
-    .then((htmlText) => {
-      let doc = new DOMParser().parseFromString(htmlText,"text/html");
-      let tablesFound = doc.getElementsByClassName('wikitable');
+  toggleSibling(e,firstIndex,secondIndex) {
 
-      // Let's first get the sorted names of the selected table (in table panel)
-      let selectedHeaderCells = this.state.originTableArray[this.state.selectedTableIndex].rows[0].cells;
-      let originSortedCols = [];
-      for (let j=0;j<selectedHeaderCells.length;++j) {
-        let headerName = selectedHeaderCells[j].innerText;
-        if (headerName[headerName.length-1] === "\n") {
-            headerName = headerName.slice(0,-1);
+    // First do the toggling task
+    let propertyNeighbours = this.state.propertyNeighbours.slice();
+    let selectedSibling = propertyNeighbours[firstIndex].siblingArray[secondIndex];
+    selectedSibling.isOpen = !selectedSibling.isOpen;
+
+    if (selectedSibling.isOpen === true) {
+      let siblingURL = "https://en.wikipedia.org/wiki/"+selectedSibling.name;
+      fetch(siblingURL)
+      .then((response) => {
+        return response.text();
+      }) 
+      .then((htmlText) => {
+        let doc = new DOMParser().parseFromString(htmlText,"text/html");
+        let tablesFound = doc.getElementsByClassName('wikitable');
+
+        // Let's first get the sorted names of the selected table (in table panel)
+        let selectedHeaderCells = this.state.originTableArray[this.state.selectedTableIndex].rows[0].cells;
+        let originSortedCols = [];
+        for (let j=0;j<selectedHeaderCells.length;++j) {
+          let headerName = selectedHeaderCells[j].innerText;
+          if (headerName[headerName.length-1] === "\n") {
+              headerName = headerName.slice(0,-1);
+          }
+          originSortedCols.push(headerName);
         }
-        originSortedCols.push(headerName);
-      }
-      // We sort the array for easier comparison.
-      originSortedCols.sort();
-      // console.log(originSortedCols);
+        // We sort the array for easier comparison.
+        originSortedCols.sort();
+        const originTableLength = originSortedCols.length;
 
-      // Let's now look at the column names for each of the tables found on the sibling url
-      for (let i=0;i<tablesFound.length;++i) {
-        // console.log(tablesFound[i]);
-      }
+        // Let's now look at the column names for each of the tables found on the sibling url
+        // and push it the matched tables onto this siblings tableArray
+        let tableArray = [];
+        for (let i=0;i<tablesFound.length;++i) {
+          let curHeaderCells = tablesFound[i].rows[0].cells;
+          // we only want to check if two tables have the same columns if they have the same number of columns
+          if (originTableLength === curHeaderCells.length) {
+            let newSortedCols = [];
+            for (let j=0;j<curHeaderCells.length;++j) {
+              let headerName = curHeaderCells[j].innerText;
+              if (headerName[headerName.length-1] === "\n") {
+                  headerName = headerName.slice(0,-1);
+              }
+              newSortedCols.push(headerName);
+            }
+            newSortedCols.sort();
+            // we check, element by element, whether this table has the same column names as the selected table
+            let matched = true;
+            for (let i=0;i<originTableLength;++i)  {
+              if (originSortedCols[i] !== newSortedCols[i]) {
+                matched = false;
+                break;
+              }
+            }
+            if (matched === true) {
+              // console.log("Found a match!");
+              // console.log(tablesFound[i]);
+              // console.log(selectedSibling.tableArray);
+              tableArray.push({"isOpen":false,"data":tablesFound[i]})
+              // In here we need to do something like editing the tableArray for propertyNeighbours[firstIndex].siblingArray[secondIndex]
+            }
+          }
+        }
+        // console.log(tableArray);
+        selectedSibling.tableArray = tableArray;
+        this.setState({
+          propertyNeighbours:propertyNeighbours,
+        })
+      })
+    } else {
+      selectedSibling.tableArray = [];
+      this.setState({
+        propertyNeighbours:propertyNeighbours,
+      })
+    }
+  }
+
+  // The following function handles the toggling of other table (that's the same as the selected table)
+
+  toggleOtherTable(e,firstIndex,secondIndex,thirdIndex) {
+    // First handle the toggling task
+    let propertyNeighbours = this.state.propertyNeighbours.slice();
+    const selectedTable = propertyNeighbours[firstIndex].siblingArray[secondIndex].tableArray[thirdIndex];
+    selectedTable.isOpen = !selectedTable.isOpen;
+    this.setState({
+      propertyNeighbours:propertyNeighbours,
     })
   }
 
@@ -717,7 +764,9 @@ class App extends Component {
                 selectedTableIndex={this.state.selectedTableIndex}
                 onSelectTable={this.onSelectTable}
                 propertyNeighbours={this.state.propertyNeighbours}
-                togglePropertyNeighbours={this.togglePropertyNeighbours}/>
+                togglePropertyNeighbours={this.togglePropertyNeighbours}
+                toggleSibling={this.toggleSibling}
+                toggleOtherTable={this.toggleOtherTable}/>
             </div>
           </div>
           <div className="bottom-content">

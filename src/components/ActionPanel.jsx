@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import URLForm from "../components/URLForm";
 import TaskMenu from "../components/TaskMenu";
 import { Collapse, Button, CardBody, Card } from 'reactstrap';
-import { FaList } from "react-icons/fa";
+import { FaList, FaTable } from "react-icons/fa";
 
 class ActionPanel extends Component {
   constructor(props) {
@@ -10,18 +10,73 @@ class ActionPanel extends Component {
     this.state = {
     }
     this.createPropertyArray = this.createPropertyArray.bind(this);
+    this.createSiblingArray = this.createSiblingArray.bind(this);
+    this.createTableArray = this.createTableArray.bind(this);
+  }
+
+  createTableArray(firstIndex,secondIndex) {
+    const tableArray = this.props.propertyNeighbours[firstIndex].siblingArray[secondIndex].tableArray;
+    let tableElement = [];
+    for (let thirdIndex=0;thirdIndex<tableArray.length;++thirdIndex) {
+      tableElement.push(
+        <div>
+            <Button
+              onClick={(e) => this.props.toggleOtherTable(e,firstIndex,secondIndex,thirdIndex)}>
+              Table {thirdIndex}
+              <FaTable />
+            </Button>
+            <Collapse isOpen={tableArray[thirdIndex].isOpen}>
+              <Card>
+                  <CardBody>
+                      <div>
+                        <Button>Union this table</Button>
+                        <div dangerouslySetInnerHTML={{__html: tableArray[thirdIndex].data.outerHTML}}></div>
+                      </div>
+                  </CardBody>
+              </Card>
+            </Collapse>
+        </div>
+      )
+    }
+    return tableElement;
+  }
+
+  createSiblingArray(firstIndex) {
+    const siblingArray = this.props.propertyNeighbours[firstIndex].siblingArray;
+    let siblingElement = [];
+    for (let secondIndex=0;secondIndex<siblingArray.length;++secondIndex) {
+      let tooltipText = "Examine tables on page "+siblingArray[secondIndex].name;
+      siblingElement.push(
+        <div>
+            <Button
+              title={tooltipText}
+              onClick={(e) => this.props.toggleSibling(e,firstIndex,secondIndex)}>
+              {siblingArray[secondIndex].name}
+              <FaList />
+            </Button>
+            <Collapse isOpen={siblingArray[secondIndex].isOpen}>
+              <Card>
+                  <CardBody>
+                      {this.createTableArray(firstIndex,secondIndex)}
+                  </CardBody>
+              </Card>
+            </Collapse>
+        </div>
+      )
+    }
+    return siblingElement;
   }
 
   createPropertyArray() {
     const propertyNeighbours = this.props.propertyNeighbours;
-    let propertyArray = [];
+    let propertyElement = [];
     for (let i=0;i<propertyNeighbours.length;++i) {
       // We create the text for property buttons: table index plus column names
       const predicate = propertyNeighbours[i].predicate;
       const object = propertyNeighbours[i].object;
       let propertyText = predicate+": "+object+" ";
       let tooltipText = "Show other pages with "+predicate+": "+object;
-      propertyArray.push(
+      propertyElement.push(
           <div>
               <Button 
                 title={tooltipText}
@@ -32,14 +87,14 @@ class ActionPanel extends Component {
               <Collapse isOpen={this.props.propertyNeighbours[i].isOpen}>
                 <Card>
                     <CardBody>
-                        {this.props.propertyNeighbours[i].siblingArray}
+                        {this.createSiblingArray(i)}
                     </CardBody>
                 </Card>
               </Collapse>
           </div>
       )
     }
-    return propertyArray;
+    return propertyElement;
   }
 
   render() {
