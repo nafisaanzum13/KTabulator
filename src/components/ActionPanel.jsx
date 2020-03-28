@@ -29,7 +29,10 @@ class ActionPanel extends Component {
               <Card>
                   <CardBody>
                       <div>
-                        <Button>Union this table</Button>
+                        <Button 
+                          onClick={(e) => this.props.unionTable(firstIndex,secondIndex,tableArray[thirdIndex].data)}>
+                          Union this table
+                        </Button>
                         <div dangerouslySetInnerHTML={{__html: tableArray[thirdIndex].data.outerHTML}}></div>
                       </div>
                   </CardBody>

@@ -57,7 +57,7 @@ class App extends Component {
       //    4.1) isOpen:      boolean storing whether the current sibling is toggled on or not
       //    4.2) tableArray:  array of objects storing the status/content for each "same" table on the sibling URL
       //         4.2.1) isOepn:        boolean storing whether the current table is toggled on or not
-      //         4.2.1) tableElement:  a view of the table (option to union the table should be created in ActionPanel)     
+      //         4.2.1) data:          HTML of a table    
       propertyNeighbours:[],     
     };
 
@@ -83,6 +83,7 @@ class App extends Component {
     this.togglePropertyNeighbours = this.togglePropertyNeighbours.bind(this);
     this.toggleSibling = this.toggleSibling.bind(this);
     this.toggleOtherTable = this.toggleOtherTable.bind(this);
+    this.unionTable = this.unionTable.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -573,7 +574,9 @@ class App extends Component {
       // Then we update the action in Action Panel
       let curActionInfo = {"task":"showPropertyNeighbours"};
       // Then we call the parse table helper function to update the tableDataExplore
-      let tableDataExplore = parseTable(this.state.originTableArray[tableIndex]);
+      let selectedTableHTML = this.state.originTableArray[tableIndex];
+      let urlOrigin = reverseReplace(this.state.urlPasted.slice(30));
+      let tableDataExplore = setTableFromHTML(selectedTableHTML,urlOrigin);
       this.setState({
         selectedTableIndex:tableIndex,
         propertyNeighbours:propertyNeighbours,
@@ -718,6 +721,21 @@ class App extends Component {
     })
   }
 
+  // The following funcion unions the table that user has selected to the table in the TablePanel
+  // by changing tableDataExplore
+
+  unionTable(firstIndex,secondIndex,otherTableHTML) {
+    let otherTableOrigin = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
+    let otherTableData = setTableFromHTML(otherTableHTML,otherTableOrigin);
+    otherTableData = otherTableData.slice(1); // we remove the column header row
+    // We are literally one line away. Now just need to push this otherTableData with this.state.tableDataExplore
+    let tableDataExplore = this.state.tableDataExplore.slice();
+    tableDataExplore = tableDataExplore.concat(otherTableData);
+    this.setState({
+      tableDataExplore:tableDataExplore,
+    })
+  }
+
   render() {
     return (
       <div className="wrapper ">
@@ -764,7 +782,8 @@ class App extends Component {
                 propertyNeighbours={this.state.propertyNeighbours}
                 togglePropertyNeighbours={this.togglePropertyNeighbours}
                 toggleSibling={this.toggleSibling}
-                toggleOtherTable={this.toggleOtherTable}/>
+                toggleOtherTable={this.toggleOtherTable}
+                unionTable={this.unionTable}/>
             </div>
           </div>
           <div className="bottom-content">
@@ -797,6 +816,11 @@ function regexReplace(str) {
   return str.replace(/\(/g,"%5Cu0028").replace(/\)/g,"%5Cu0029").replace(/%E2%80%93/g,"%5Cu2013").replace(/'/g,"%5Cu0027");
 }
 
+function reverseReplace(str) {
+  // This function currently replaces "(", ")", and "-"
+  return str.replace(/%E2%80%93/,"-");
+}
+
 function removeNewLine(str) {
   if (str[str.length-1] === "\n") {
     return str.slice(0,-1)
@@ -805,28 +829,36 @@ function removeNewLine(str) {
   }
 }
 
-function parseTable(selecteTableHTML) {
+function setTableFromHTML(selecteTableHTML,urlOrigin) {
   let selectedTable = selecteTableHTML;
   let tempTable = [];
+
+  // We first fetch the plain, unprocessed version of the table.
   for (let i=0;i<selectedTable.rows.length;++i) {
       let tempRow = [];
       for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
           let curCellText = removeNewLine(selectedTable.rows[i].cells[j].innerText);
-          tempRow.push({"data":curCellText});
+          tempRow.push({"data":curCellText,"origin":urlOrigin});
       }
       tempTable.push(tempRow);
   }
   
-  // Right now we have fetched the plain version of the table. Haven't dealt with rowspans yet. Let deal with it now
+  // We now deal with rowspans.
   for (let i=0;i<selectedTable.rows.length;++i) {
       for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
           let curCellText = removeNewLine(selectedTable.rows[i].cells[j].innerText);
           if (selectedTable.rows[i].cells[j].rowSpan > 1) {
               for (let k=1;k<selectedTable.rows[i].cells[j].rowSpan;++k) {
-                  tempTable[i+k].splice(j,0,{"data":curCellText});
+                  tempTable[i+k].splice(j,0,{"data":curCellText,"origin":urlOrigin});
               }
           }
       }
   }
-  return tempTable; // tempTable is a 2D array of objects storing the table data. Object has one field: data.
+
+  // We now add in an additional column: the originURL of the page
+  tempTable[0].splice(0,0,{"data":"OriginURL","origin":"null"});
+  for (let i=1;i<tempTable.length;++i) {
+    tempTable[i].splice(0,0,{"data":urlOrigin,"origin":"null"});
+  }
+  return tempTable; // tempTable is a 2D array of objects storing the table data. Object has two fields: data(string) and origin(string).
 }

@@ -9,6 +9,7 @@ class TablePanel extends Component {
     this.state = {
     }
     this.createSuperTable = this.createSuperTable.bind(this);
+    this.createSelectedTableView = this.createSelectedTableView.bind(this);
   }
 
   createSuperTable() {
@@ -90,6 +91,43 @@ class TablePanel extends Component {
       return table;
   }
 
+  createSelectedTableView() {
+    // console.log(rowNum);
+    // console.log(colNum);
+    // console.log(this.props.tableDataExplore[0][0].data);
+    // console.log(this.props.tableDataExplore[0][0].origin);
+    const rowNum = this.props.tableDataExplore.length;
+    const colNum = this.props.tableDataExplore[0].length;
+
+    let table = [];
+
+    // This part creates the table header row
+    let tempRow = [];
+    for (let j=0; j<colNum; ++j) {
+      let tempHeader = <th>{this.props.tableDataExplore[0][j].data}</th>;
+      tempRow.push(tempHeader);
+    }
+    table.push(<tr>{tempRow}</tr>)
+
+    // i corresponds to the row number, j corresponds to the column number
+
+    for (let i = 1; i < rowNum; i++) {
+        let tempRow = [];
+        //Inner loop to create each cell of the row
+        for (let j = 0; j < colNum; j++) {
+          // Create the each cell
+          tempRow.push(
+            <td>
+              {this.props.tableDataExplore[i][j].data}
+            </td>
+          );
+        }
+        //Create the parent and add the children
+        table.push(<tr>{tempRow}</tr>);
+      }
+      return table;
+  }
+
   render() {
     let tableEle = null;
 
@@ -140,15 +178,14 @@ class TablePanel extends Component {
       // Case 3.2: User has selected a table
       // Make the second part into its own component
       else {
-        let originURL = reverseReplace(this.props.urlPasted.slice(30));
+        // let originURL = reverseReplace(this.props.urlPasted.slice(30));
         // console.log(this.props.tableDataExplore);
         // Instead of logging tableDataExplore in the console, we want to use it to render a table
         tableEle = 
           <div className="row">
             <div className="col-md-12">
-              <div>Origin URL of table: {originURL}</div>
-              <br />
-              <div dangerouslySetInnerHTML={{__html: this.props.originTableArray[this.props.selectedTableIndex].outerHTML}}></div>
+              {/* <div>Origin URL of table: {originURL}</div> */}
+              <table border="1"><tbody>{this.createSelectedTableView()}</tbody></table>
             </div>
           </div>
       }
@@ -164,8 +201,3 @@ class TablePanel extends Component {
 }
 
 export default TablePanel;
-
-function reverseReplace(str) {
-  // This function currently replaces "(", ")", and "-"
-  return str.replace(/%E2%80%93/,"-");
-}
