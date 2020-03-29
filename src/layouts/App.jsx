@@ -620,7 +620,8 @@ class App extends Component {
           // By only pushing the sibling with the similar tables onto the sibling array
           siblingArray.push({"isOpen":false,"name":siblingName,"content":"hello world","tableArray":[]})
         }
-        // Note: THE FOLLOWING STEP IS NECESSARY BECAUSE OTHERWISE WE ARE COPYING TOO MANY THINGS
+        // This following line sorts the siblingArray
+        siblingArray.sort((a, b) => (a.name > b.name) ? 1 : -1);
         propertyNeighbours[index].siblingArray = siblingArray;
         this.setState({
           propertyNeighbours:propertyNeighbours,
@@ -628,6 +629,7 @@ class App extends Component {
       });
     } 
     else {
+      // Note: THE FOLLOWING STEP IS NECESSARY BECAUSE OTHERWISE WE ARE COPYING TOO MANY THINGS
       propertyNeighbours[index].siblingArray = [];
       this.setState({
         propertyNeighbours:propertyNeighbours,
