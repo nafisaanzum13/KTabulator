@@ -308,7 +308,7 @@ class App extends Component {
                         +regexReplace(neighbour)
                         +".%0D%0A%7D%0D%0ALIMIT+"+emptyEntryCount;
     let queryURLOne = prefixURLOne+queryBodyOne+suffixURLOne;
-    let keyColPromise = fetchOne(queryURLOne);
+    let keyColPromise = fetchJSON(queryURLOne);
     promiseArray.push(keyColPromise);
 
     // Below is the second query we will make.
@@ -320,7 +320,7 @@ class App extends Component {
       +regexReplace(this.state.tableData[0][colIndex].data)
       +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
     let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
-    let otherColPromise = fetchOne(queryURLTwo);
+    let otherColPromise = fetchJSON(queryURLTwo);
     promiseArray.push(otherColPromise);
 
     allPromiseReady(promiseArray).then((values) => {
@@ -382,7 +382,7 @@ class App extends Component {
                       +cellValue
                       +"+%28dbo%3A"+neighbour+"%7Cdbp%3A"+neighbour+"%29+%3Fsomevar.%0D%0A%7D%0D%0A%0D%0A&";
       let queryURL = prefixURL+queryBody+suffixURL;
-      let curPromise = fetchOne(queryURL);
+      let curPromise = fetchJSON(queryURL);
       promiseArray.push(curPromise);
     }
     allPromiseReady(promiseArray).then((values) => {
@@ -547,8 +547,8 @@ class App extends Component {
   // The following function handles the selection of table
 
   onSelectTable(e,tableIndex) {
-    // Firt thing we need to do is to let table panel display the selected table
-    // Now we need to update the Action Panel to display the first degree properties of the original page
+    // We need to do is to let table panel display the selected table
+    // And we need to update the Action Panel to display the first degree properties of the original page
     // We do a fetch request here (Sixth Query)
     let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
@@ -557,68 +557,94 @@ class App extends Component {
       +regexReplace(this.state.urlPasted.slice(30))
       +"+%3Fp+%3Fo.%0D%0A++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++FILTER%28isIRI%28%3Fo%29+%26%26+regex%28%3FpString%2C%22property%22%2C%22i%22%29+%26%26+%28%21regex%28%3FpString%2C%22text%22%2C%22i%22%29%29%29.%0D%0A%7D%0D%0A&";
     let queryURL = prefixURL+queryBody+suffixURL;
-
     fetch(queryURL)
     .then((response) => {
       return response.json();
     })
     .then((myJson) => {
       // First we fetch the property neighbours
-      let propertyNeighbours = [];
+      // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings
+      // and remove the propertyNeighbours with only one child (aka the originally pasted page)
+      let propertyNeighboursPO = [];
       let bindingArray = myJson.results.bindings;
+      let promiseArray = [];
       for (let i=0;i<bindingArray.length;++i) {
         let predicate = bindingArray[i].p.value.slice(28);
         let object = bindingArray[i].o.value.slice(28);
-        propertyNeighbours.push({"predicate":predicate,"object":object,"isOpen":false,"siblingArray":[]});
+        let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+        let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+        let queryBody = 
+          "SELECT+%3Fs+%0D%0AWHERE+%7B%0D%0A%09%3Fs+dbp%3A"
+          +regexReplace(predicate)
+          +"+dbr%3A"
+          +regexReplace(object)
+          +"%0D%0A%7D%0D%0A&";
+        let queryURL = prefixURL+queryBody+suffixURL;
+        let curPromise = fetchJSON(queryURL);
+        propertyNeighboursPO.push({"predicate":predicate,"object":object});
+        promiseArray.push(curPromise);
       }
-      // Then we update the action in Action Panel
-      let curActionInfo = {"task":"showPropertyNeighbours"};
-      // Then we call the parse table helper function to update the tableDataExplore
-      let selectedTableHTML = this.state.originTableArray[tableIndex];
-      let urlOrigin = reverseReplace(this.state.urlPasted.slice(30));
-      let tableDataExplore = setTableFromHTML(selectedTableHTML,urlOrigin);
-      this.setState({
-        selectedTableIndex:tableIndex,
-        propertyNeighbours:propertyNeighbours,
-        curActionInfo:curActionInfo,
-        tableDataExplore:tableDataExplore,
+      allPromiseReady(promiseArray).then((values) => {
+        let propertyNeighbours = [];
+        for (let i=0;i<values.length;++i) {
+          let curSiblingArray = values[i].results.bindings;
+          if (curSiblingArray.length > 1 && curSiblingArray.length<100) {
+            let siblingArray = [];
+            for (let i=0;i<curSiblingArray.length;++i) {
+              let siblingName = curSiblingArray[i].s.value.slice(28);
+              siblingArray.push({"isOpen":false,"name":siblingName,"content":"hello world","tableArray":[]})
+            }
+            propertyNeighbours.push(
+              {"predicate":propertyNeighboursPO[i].predicate,
+              "object":propertyNeighboursPO[i].object,
+              "isOpen":false,
+              "siblingArray":siblingArray});
+          }
+        }
+        // Then we update the action in Action Panel
+        let curActionInfo = {"task":"showPropertyNeighbours"};
+        // Then we call the parse table helper function to update the tableDataExplore
+        let selectedTableHTML = this.state.originTableArray[tableIndex];
+        let urlOrigin = reverseReplace(this.state.urlPasted.slice(30));
+        let tableDataExplore = setTableFromHTML(selectedTableHTML,urlOrigin);
+        this.setState({
+          selectedTableIndex:tableIndex,
+          propertyNeighbours:propertyNeighbours,
+          curActionInfo:curActionInfo,
+          tableDataExplore:tableDataExplore,
+        })
       })
     });
   }
-
-  // The following function handles the toggle of a property neighbour button
 
   togglePropertyNeighbours(e,index) {
     // First let's do the toggling task
     let propertyNeighbours = this.state.propertyNeighbours.slice();
     propertyNeighbours[index].isOpen = !propertyNeighbours[index].isOpen;
 
-    // If the user decides to show some siblings, we need to update siblingArray to meaningful contents
+    // we want to loop through all siblings if we are toggling a propertyNeighbour on
     if (propertyNeighbours[index].isOpen === true) {
-
-      // First let's run the fetch request
-      let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      let queryBody = 
-        "SELECT+%3Fs+%0D%0AWHERE+%7B%0D%0A%09%3Fs+dbp%3A"
-        +regexReplace(this.state.propertyNeighbours[index].predicate)
-        +"+dbr%3A"
-        +regexReplace(this.state.propertyNeighbours[index].object)
-        +"%0D%0A%7D%0D%0A&";
-      let queryURL = prefixURL+queryBody+suffixURL;
-      fetch(queryURL)
-      .then((response) => {
-        return response.json();
-      })
-      .then((myJson) => {
-        // We want to get all the siblings 
-        let bindingArray = myJson.results.bindings;
-        let siblingArray = [];
-        for (let i=0;i<bindingArray.length;++i) {
-          let siblingName = bindingArray[i].s.value.slice(28);
-          // NOTE! If we decided to go with the pre-fetch way, we will have to do it here
-          // By only pushing the sibling with the similar tables onto the sibling array
-          siblingArray.push({"isOpen":false,"name":siblingName,"content":"hello world","tableArray":[]})
+      let bindingArray = propertyNeighbours[index].siblingArray;
+      let siblingArray = [];
+      let siblingNameArray = []; // this array keeps track of the sibiling names
+      let promiseArray = [];
+      for (let i=0;i<bindingArray.length;++i) {
+        let siblingName = bindingArray[i].name;
+        let siblingURL = "https://en.wikipedia.org/wiki/"+siblingName;
+        let curPromise = fetchText(siblingURL);
+        promiseArray.push(curPromise);
+        siblingNameArray.push(siblingName);
+        // NOTE! We are only keeping siblings with useful tables
+      }
+      allPromiseReady(promiseArray).then((values) => {
+        for (let i=0;i<values.length;++i) {
+          let tableHTML = this.state.originTableArray[this.state.selectedTableIndex];
+          let pageHTML = values[i];
+          let tableArray = findTableFromHTML(tableHTML,pageHTML); // This is a helper function that fetches useful tables from pageHTML
+          // We only want to keep siblings that do have useful tables
+          if (tableArray.length !== 0) {
+            siblingArray.push({"isOpen":false,"name":siblingNameArray[i],"content":"hello world","tableArray":tableArray});
+          }
         }
         // This following line sorts the siblingArray
         siblingArray.sort((a, b) => (a.name > b.name) ? 1 : -1);
@@ -627,88 +653,24 @@ class App extends Component {
           propertyNeighbours:propertyNeighbours,
         })
       });
-    } 
-    else {
-      // Note: THE FOLLOWING STEP IS NECESSARY BECAUSE OTHERWISE WE ARE COPYING TOO MANY THINGS
-      propertyNeighbours[index].siblingArray = [];
+    } else {
       this.setState({
         propertyNeighbours:propertyNeighbours,
       })
-    } 
+    }
   }
 
   // The following function handles the toggling of a sibling URL
 
   toggleSibling(e,firstIndex,secondIndex) {
 
-    // First do the toggling task
+    // Handle the toggling task
     let propertyNeighbours = this.state.propertyNeighbours.slice();
     let selectedSibling = propertyNeighbours[firstIndex].siblingArray[secondIndex];
     selectedSibling.isOpen = !selectedSibling.isOpen;
-
-    if (selectedSibling.isOpen === true) {
-      let siblingURL = "https://en.wikipedia.org/wiki/"+selectedSibling.name;
-      fetch(siblingURL)
-      .then((response) => {
-        return response.text();
-      }) 
-      .then((htmlText) => {
-        let doc = new DOMParser().parseFromString(htmlText,"text/html");
-        let tablesFound = doc.getElementsByClassName('wikitable');
-
-        // Let's first get the sorted names of the selected table (in table panel)
-        let selectedHeaderCells = this.state.originTableArray[this.state.selectedTableIndex].rows[0].cells;
-        let originSortedCols = [];
-        for (let j=0;j<selectedHeaderCells.length;++j) {
-          let headerName = removeNewLine(selectedHeaderCells[j].innerText);
-          originSortedCols.push(headerName);
-        }
-        // We sort the array for easier comparison.
-        originSortedCols.sort();
-        const originTableLength = originSortedCols.length;
-
-        // Let's now look at the column names for each of the tables found on the sibling url
-        // and push it the matched tables onto this siblings tableArray
-        let tableArray = [];
-        for (let i=0;i<tablesFound.length;++i) {
-          let curHeaderCells = tablesFound[i].rows[0].cells;
-          // we only want to check if two tables have the same columns if they have the same number of columns
-          if (originTableLength === curHeaderCells.length) {
-            let newSortedCols = [];
-            for (let j=0;j<curHeaderCells.length;++j) {
-              let headerName = removeNewLine(curHeaderCells[j].innerText);
-              newSortedCols.push(headerName);
-            }
-            newSortedCols.sort();
-            // we check, element by element, whether this table has the same column names as the selected table
-            let matched = true;
-            for (let i=0;i<originTableLength;++i)  {
-              if (originSortedCols[i] !== newSortedCols[i]) {
-                matched = false;
-                break;
-              }
-            }
-            if (matched === true) {
-              // console.log("Found a match!");
-              // console.log(tablesFound[i]);
-              // console.log(selectedSibling.tableArray);
-              tableArray.push({"isOpen":false,"data":tablesFound[i]})
-              // In here we need to do something like editing the tableArray for propertyNeighbours[firstIndex].siblingArray[secondIndex]
-            }
-          }
-        }
-        // console.log(tableArray);
-        selectedSibling.tableArray = tableArray;
-        this.setState({
-          propertyNeighbours:propertyNeighbours,
-        })
-      })
-    } else {
-      selectedSibling.tableArray = [];
-      this.setState({
-        propertyNeighbours:propertyNeighbours,
-      })
-    }
+    this.setState({
+      propertyNeighbours:propertyNeighbours,
+    })
   }
 
   // The following function handles the toggling of other table (that's the same as the selected table)
@@ -805,8 +767,12 @@ class App extends Component {
 
 export default App;
 
-function fetchOne(url) {
+function fetchJSON(url) {
   return fetch(url).then((response) => response.json())
+}
+
+function fetchText(url) {
+  return fetch(url).then((response) => response.text())
 }
 
 function allPromiseReady(promiseArray){
@@ -814,8 +780,13 @@ function allPromiseReady(promiseArray){
 }
 
 function regexReplace(str) {
-  // This function currently replaces "(", ")", "'",and "-"
-  return str.replace(/\(/g,"%5Cu0028").replace(/\)/g,"%5Cu0029").replace(/%E2%80%93/g,"%5Cu2013").replace(/'/g,"%5Cu0027");
+  // This function currently replaces "(", ")", "'", "-", and "/"
+  return str.replace(/\(/g,"%5Cu0028")
+            .replace(/\)/g,"%5Cu0029")
+            .replace(/%E2%80%93/g,"%5Cu2013")
+            .replace(/'/g,"%5Cu0027")
+            .replace(/\//g,"%5Cu002F")
+            .replace(/,/g,"%5Cu002C");
 }
 
 function reverseReplace(str) {
@@ -829,6 +800,62 @@ function removeNewLine(str) {
   } else {
     return str;
   }
+}
+
+function findTableFromHTML(tableHTML, pageHTML) {
+  let doc = new DOMParser().parseFromString(pageHTML,"text/html");
+  let wikiTablesFound = doc.getElementsByClassName('wikitable');
+  let tablesFound = [];
+  for (let i=0;i<wikiTablesFound.length;++i) {
+    if (wikiTablesFound[i].tagName !== "TH") {
+      tablesFound.push(wikiTablesFound[i]);
+    }
+  }
+
+  // Let's first get the sorted names of the selected table (in table panel)
+  let selectedHeaderCells = tableHTML.rows[0].cells;
+  let originSortedCols = [];
+  for (let j=0;j<selectedHeaderCells.length;++j) {
+    let headerName = removeNewLine(selectedHeaderCells[j].innerText);
+    originSortedCols.push(headerName);
+  }
+  // We sort the array for easier comparison.
+  originSortedCols.sort();
+  const originTableLength = originSortedCols.length;
+
+  // Let's now look at the column names for each of the tables found on the sibling url
+  // and push it the matched tables onto this siblings tableArray
+  let tableArray = [];
+  for (let i=0;i<tablesFound.length;++i) {
+    let curHeaderCells = tablesFound[i].rows[0].cells;
+    // we only want to check if two tables have the same columns if they have the same number of columns
+    if (originTableLength === curHeaderCells.length) {
+      let newSortedCols = [];
+      for (let j=0;j<curHeaderCells.length;++j) {
+        let headerName = removeNewLine(curHeaderCells[j].innerText);
+        newSortedCols.push(headerName);
+      }
+      newSortedCols.sort();
+      // we check, element by element, whether this table has the same column names as the selected table
+      let matched = true;
+      for (let i=0;i<originTableLength;++i)  {
+        if (originSortedCols[i] !== newSortedCols[i]) {
+          matched = false;
+          break;
+        }
+      }
+      if (matched === true) {
+        // console.log("Found a match!");
+        // console.log(tablesFound[i]);
+        // console.log(selectedSibling.tableArray);
+        // tableArray.push({"isOpen":false,"data":tablesFound[i]})
+        // console.log(tablesFound[i]);
+        // In here we need to do something like editing the tableArray for propertyNeighbours[firstIndex].siblingArray[secondIndex]
+        tableArray.push({"isOpen":false,"data":tablesFound[i]})
+      }
+    }
+  }
+  return tableArray;
 }
 
 function setTableFromHTML(selecteTableHTML,urlOrigin) {
