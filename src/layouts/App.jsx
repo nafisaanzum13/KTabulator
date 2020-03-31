@@ -586,14 +586,20 @@ class App extends Component {
       }
       allPromiseReady(promiseArray).then((values) => {
         let propertyNeighbours = [];
+        let urlOrigin = reverseReplace(this.state.urlPasted.slice(30));
+        // console.log(urlOrigin);
         for (let i=0;i<values.length;++i) {
           let curSiblingArray = values[i].results.bindings;
           if (curSiblingArray.length > 1 && curSiblingArray.length<100) {
             let siblingArray = [];
             for (let i=0;i<curSiblingArray.length;++i) {
               let siblingName = curSiblingArray[i].s.value.slice(28);
-              siblingArray.push({"isOpen":false,"name":siblingName,"content":"hello world","tableArray":[]})
+              // We don't want to display the pasted page in the sibling array
+              if (siblingName !== urlOrigin) {
+                siblingArray.push({"isOpen":false,"name":siblingName,"content":"hello world","tableArray":[]});
+              }
             }
+            // console.log(siblingArray);
             propertyNeighbours.push(
               {"predicate":propertyNeighboursPO[i].predicate,
               "object":propertyNeighboursPO[i].object,
@@ -605,7 +611,6 @@ class App extends Component {
         let curActionInfo = {"task":"showPropertyNeighbours"};
         // Then we call the parse table helper function to update the tableDataExplore
         let selectedTableHTML = this.state.originTableArray[tableIndex];
-        let urlOrigin = reverseReplace(this.state.urlPasted.slice(30));
         let tableDataExplore = setTableFromHTML(selectedTableHTML,urlOrigin);
         this.setState({
           selectedTableIndex:tableIndex,
@@ -790,8 +795,8 @@ function regexReplace(str) {
 }
 
 function reverseReplace(str) {
-  // This function currently replaces "(", ")", and "-"
-  return str.replace(/%E2%80%93/,"-");
+  // This function currently replaces "(", ")", and "–"
+  return str.replace(/%E2%80%93/,"–");
 }
 
 function removeNewLine(str) {
@@ -867,27 +872,30 @@ function setTableFromHTML(selecteTableHTML,urlOrigin) {
       let tempRow = [];
       for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
           let curCellText = removeNewLine(selectedTable.rows[i].cells[j].innerText);
-          tempRow.push({"data":curCellText,"origin":urlOrigin});
+          let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
+          tempRow.push({"data":curCellText,"origin":urlOrigin,"rowSpan":curRowSpan});
       }
       tempTable.push(tempRow);
   }
   
   // We now deal with rowspans.
-  for (let i=0;i<selectedTable.rows.length;++i) {
-      for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
-          let curCellText = removeNewLine(selectedTable.rows[i].cells[j].innerText);
-          if (selectedTable.rows[i].cells[j].rowSpan > 1) {
-              for (let k=1;k<selectedTable.rows[i].cells[j].rowSpan;++k) {
-                  tempTable[i+k].splice(j,0,{"data":curCellText,"origin":urlOrigin});
-              }
-          }
-      }
+  for (let i=0;i<tempTable.length;++i) {
+    for (let j=0;j<tempTable[i].length;++j) {
+        let curCellText = tempTable[i][j].data;
+        if (tempTable[i][j].rowSpan > 1) {
+            for (let k=1;k<tempTable[i][j].rowSpan;++k) {
+                tempTable[i+k].splice(j,0,{"data":curCellText,"origin":urlOrigin,"rowSpan":1});
+            }
+        }
+    }
   }
 
   // We now add in an additional column: the originURL of the page
-  tempTable[0].splice(0,0,{"data":"OriginURL","origin":"null"});
+  tempTable[0].splice(0,0,{"data":"OriginURL","origin":"null","rowSpan":1});
   for (let i=1;i<tempTable.length;++i) {
-    tempTable[i].splice(0,0,{"data":urlOrigin,"origin":"null"});
+    tempTable[i].splice(0,0,{"data":urlOrigin,"origin":"null","rowSpan":1});
   }
   return tempTable; // tempTable is a 2D array of objects storing the table data. Object has two fields: data(string) and origin(string).
 }
+
+
