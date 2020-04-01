@@ -312,7 +312,6 @@ class App extends Component {
     if (colIndex !== this.state.keyColIndex) {
       tableHeader[colIndex].label = tableHeader[colIndex].label+"--"+tableHeader[this.state.keyColIndex].label;
     }
-
     // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
     // ask in ActionPanel whether user wants to populate the column based on the chosen column name
     let tempObj = {};
@@ -323,6 +322,17 @@ class App extends Component {
     }
     tempObj["colIndex"] = colIndex;
     tempObj["neighbour"] = e.value;
+    // We want to deal with duplicate neighbour names if we are selecting column headers for non-key columns
+    if (colIndex !== this.state.keyColIndex) {
+      let arr = elabel.split("-");
+      if (arr.length > 1) {
+        // arr[1] stores the index of the neighbour with duplicate names
+        tempObj["neighbourIndex"] = Number(arr[1])-1;
+      } else {
+        tempObj["neighbourIndex"] = 0;
+      }
+    }
+    // console.log(tempObj);
     this.setState({
       tableHeader:tableHeader,
       curActionInfo:tempObj,
@@ -364,6 +374,7 @@ class App extends Component {
 
     // Below is the second query we will make.
     // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
+    // These neighbours are either dbo or dbp
     let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyTwo = 
@@ -394,11 +405,24 @@ class App extends Component {
       // let's now work with the second promise result: update the selection options for non-key columns
 
       let keyColNeighbours = [];
+      let neighbourCount = 1;
       for (let i=0;i<values[1].results.bindings.length;++i) {
         let tempObj = {};
-        let neighbour = values[1].results.bindings[i].p.value.slice(28);
-        tempObj["label"] = neighbour;
-        tempObj["value"] = neighbour;
+        // Let's deal with duplicate neighbour names here
+        let curNeighbourValue = values[1].results.bindings[i].p.value.slice(28);
+        let curNeighbourLabel = values[1].results.bindings[i].p.value.slice(28);
+        let prevNeighbourValue = "";
+        if (i > 0) {
+          prevNeighbourValue = values[1].results.bindings[i-1].p.value.slice(28);
+        }
+        if (prevNeighbourValue === curNeighbourValue) {
+          neighbourCount++;
+          curNeighbourLabel = curNeighbourValue+"-"+neighbourCount;
+        } else {
+          neighbourCount = 1;
+        }
+        tempObj["label"] = curNeighbourLabel;
+        tempObj["value"] = curNeighbourValue;
         keyColNeighbours.push(tempObj);
       }
       let optionsMap = this.state.optionsMap.slice();
@@ -417,7 +441,11 @@ class App extends Component {
     })
   }
 
-  populateOtherColumn(e, colIndex, neighbour) {
+  populateOtherColumn(e, colIndex, neighbour, neighbourIndex) {
+
+    console.log(colIndex);
+    console.log(neighbour);
+    console.log(neighbourIndex);
 
     // Now we need to fill in the content for this function
     // we need to make ten queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
@@ -439,12 +467,15 @@ class App extends Component {
     allPromiseReady(promiseArray).then((values) => {
       let tableData = this.state.tableData.slice();
       for (let i=0;i<values.length;++i) {
-        if (values[i].results.bindings.length === 0) {
+        if (values[i].results.bindings.length < neighbourIndex+1) {
           // this means results is not found
+          // or if there is not enough results, in duplicate neighbour name case
           tableData[i][colIndex].data = "N/A";
         } else {
           // let's determine if we need to truncate
-          let dbResult = values[i].results.bindings[0].somevar.value;
+          // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
+          // Think about what to do when there are duplicates
+          let dbResult = values[i].results.bindings[neighbourIndex].somevar.value;
           let prefixToRemove = "http://dbpedia.org/resource/";
           // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
           if (dbResult.includes(prefixToRemove) === true) {
@@ -525,11 +556,24 @@ class App extends Component {
       })
       .then((myJson) => {
         let keyColNeighbours = [];
+        let neighbourCount = 0;
         for (let i=0;i<myJson.results.bindings.length;++i) {
           let tempObj = {};
-          let neighbour = myJson.results.bindings[i].p.value.slice(28);
-          tempObj["label"] = neighbour;
-          tempObj["value"] = neighbour;
+          // Let's deal with duplicate neighbour names here
+          let curNeighbourValue = myJson.results.bindings[i].p.value.slice(28);
+          let curNeighbourLabel = myJson.results.bindings[i].p.value.slice(28);
+          let prevNeighbourValue = "";
+          if (i > 0) {
+            prevNeighbourValue = myJson.results.bindings[i-1].p.value.slice(28);
+          }
+          if (prevNeighbourValue === curNeighbourValue) {
+            neighbourCount++;
+            curNeighbourLabel = curNeighbourValue+"-"+neighbourCount;
+          } else {
+            neighbourCount = 1;
+          }
+          tempObj["label"] = curNeighbourLabel;
+          tempObj["value"] = curNeighbourValue;
           keyColNeighbours.push(tempObj);
         }
         let optionsMap = this.state.optionsMap.slice();
@@ -838,13 +882,15 @@ function allPromiseReady(promiseArray){
 }
 
 function regexReplace(str) {
-  // This function currently replaces "(", ")", "'", "-", and "/"
-  return str.replace(/\(/g,"%5Cu0028")
+  // This function currently replaces "(", ")", "'", "-", " ", "&", and "/"
+  return str.replace(/&/g,"%5Cu0026")
+            .replace(/'/g,"%5Cu0027")
+            .replace(/\(/g,"%5Cu0028")
             .replace(/\)/g,"%5Cu0029")
             .replace(/%E2%80%93/g,"%5Cu2013")
-            .replace(/'/g,"%5Cu0027")
             .replace(/\//g,"%5Cu002F")
-            .replace(/,/g,"%5Cu002C");
+            .replace(/,/g,"%5Cu002C")
+            .replace(/\s/g,"_");
 }
 
 function reverseReplace(str) {
