@@ -102,10 +102,27 @@ class ActionPanel extends Component {
 
   render() {
     let actionEle;
-    let titleEle = <h3>Action List:</h3>;
-    // Case 1: URL has not been pasted yet. User needs to paste URL here.
+    let titleEle;
+
+    // We first decide the content for the titleElement
     if (this.props.urlPasted === "") {
       titleEle = null;
+    } 
+    else if ((this.props.usecaseSelected === "") || (this.props.usecaseSelected === "exploreTable" && this.props.selectedTableIndex === -1)) {
+      titleEle = 
+        <div className="row">
+          <h3 className="col-md-4">Action List:</h3>
+        </div>;
+    } 
+    else {
+      titleEle = 
+        <div className="row">
+          <h3 className="col-md-4">Action List:</h3>
+          <Button className="col-md-3 offset-md-4" onClick={() => this.props.copyTable()}>Copy Table</Button>
+        </div>;
+    }
+    // Case 1: URL has not been pasted yet. User needs to paste URL here.
+    if (this.props.urlPasted === "") {
       actionEle = 
         <URLForm 
           handleURLPaste={this.props.handleURLPaste}

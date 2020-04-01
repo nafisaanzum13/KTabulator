@@ -133,7 +133,7 @@ class TablePanel extends Component {
 
     // Case one: user hasn't selected any task yet
     if (this.props.usecaseSelected === "") {
-      tableEle = <h1>Welcome to WikiData Wrangler!</h1>
+      tableEle = <h3>Welcome to WikiData Wrangler!</h3>
     } 
     // Case two: user has chosen task "startSubject"
     else if (this.props.usecaseSelected === "startSubject") {

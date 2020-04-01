@@ -48,7 +48,7 @@ class App extends Component {
       originTableArray:[],       // 1D array storing all tables found on pasted URL
       tableOpenList:[],          // 1D array storing whether each table in originTableArray has been toggled open or not
       selectedTableIndex:-1,     // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
-      tableDataExplore:[],       // 2D arary of objects storing the table data from explore table task. Similar to tableData above.
+      tableDataExplore:[],       // 2D arary of objects storing the table data from explore table task. Similar to tableData above. Three properties: data, origin, rowSpan.
       // array of objects with four properties storing the status/content for each property neighbour
       // 1) predicate: string storing the predicate (ex. dbp:league)
       // 2) object: string storing the object (ex. dbo:NBA)
@@ -84,6 +84,9 @@ class App extends Component {
     this.toggleSibling = this.toggleSibling.bind(this);
     this.toggleOtherTable = this.toggleOtherTable.bind(this);
     this.unionTable = this.unionTable.bind(this);
+
+    // functions below are generally usefull
+    this.copyTable = this.copyTable.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -96,6 +99,54 @@ class App extends Component {
     this.setState({
       tablePasted: tablePasted
     });
+  }
+
+  copyTable() {
+    const textArea = document.createElement('textarea'); // this line allows the use of select() function
+    let copiedText = "";
+    // We handle the case for exploreTable and startSubject differently
+    if (this.state.usecaseSelected === "exploreTable") {
+      // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
+      const rowNum = this.state.tableDataExplore.length;
+      const colNum = this.state.tableDataExplore[0].length;
+      for (let i=0;i<rowNum;++i) {
+        for (let j=0;j<colNum-1;++j) {
+          copiedText = copiedText+this.state.tableDataExplore[i][j].data+"\t";
+        }
+        copiedText = copiedText+this.state.tableDataExplore[i][colNum-1].data+"\n";
+      }
+    } else if (this.state.usecaseSelected === "startSubject") {
+      // We first push on the text for column headers (using the labels)
+      let tableHeader = this.state.tableHeader;
+      for (let i=0;i<tableHeader.length;++i) {
+        let curText = tableHeader[i].label;
+        if (curText !== undefined && curText !== "") {
+          copiedText = copiedText+curText+"\t";
+        }
+      }
+      copiedText+="\n";
+      // Now we need to fetch the rows that are not column headers
+      let tableData = this.state.tableData;
+      const rowNum = tableData.length;
+      const colNum = tableData[0].length;
+      for (let i=0;i<rowNum;++i) {
+        for (let j=0;j<colNum;++j) {
+          let curText = tableData[i][j].data;
+          if (curText !== undefined && curText !== "") {
+            copiedText = copiedText+curText+"\t";
+          }
+        }
+        copiedText+="\n";
+      }
+    } else {
+
+    }
+    textArea.value = copiedText;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    alert("Table content has been pasted!");
   }
 
   handleSelectTask(e, taskSelected) {
@@ -752,7 +803,9 @@ class App extends Component {
                 togglePropertyNeighbours={this.togglePropertyNeighbours}
                 toggleSibling={this.toggleSibling}
                 toggleOtherTable={this.toggleOtherTable}
-                unionTable={this.unionTable}/>
+                unionTable={this.unionTable}
+                // Following states are passed for general purposes
+                copyTable={this.copyTable}/>
             </div>
           </div>
           <div className="bottom-content">
