@@ -323,6 +323,7 @@ class App extends Component {
     }
     tempObj["colIndex"] = colIndex;
     tempObj["neighbour"] = e.value;
+    tempObj["type"] = e.type;
     // We want to deal with duplicate neighbour names if we are selecting column headers for non-key columns
     if (colIndex !== this.state.keyColIndex) {
       let arr = elabel.split("-");
@@ -375,7 +376,18 @@ class App extends Component {
 
     // Below is the second query we will make.
     // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
-    // These neighbours are either dbo or dbp
+    // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+
+    // SELECT ?p 
+    // WHERE {
+    //         dbr:Barack_Obama ?p ?o.
+    //         BIND(STR(?p) AS ?pString ).
+    //         FILTER(
+    //               !(regex(?pString,"abstract|wikiPage|align|caption|image|width|thumbnail|blank","i")) 
+    //               && regex(?pString, "ontology|property", "i")
+    //               )
+    // }
+
     let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyTwo = 
@@ -383,8 +395,20 @@ class App extends Component {
       +regexReplace(this.state.tableData[0][colIndex].data)
       +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
     let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
-    let otherColPromise = fetchJSON(queryURLTwo);
-    promiseArray.push(otherColPromise);
+    let otherColPromiseSubject = fetchJSON(queryURLTwo);
+    promiseArray.push(otherColPromiseSubject);
+
+    // Below is the third query we will make.
+    // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
+    let prefixURLThree = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURLThree = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyThree = 
+      "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A"
+      +regexReplace(this.state.tableData[0][colIndex].data)
+      +".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+    let queryURLThree = prefixURLThree+queryBodyThree+suffixURLThree;
+    let otherColPromiseObject = fetchJSON(queryURLThree);
+    promiseArray.push(otherColPromiseObject);
 
     allPromiseReady(promiseArray).then((values) => {
 
@@ -403,33 +427,12 @@ class App extends Component {
         tableData[i][colIndex].origin.push(tempOrigin);
       }
 
-      // let's now work with the second promise result: update the selection options for non-key columns
+      // let's now work with the second and third promise result: update the selection options for non-key columns
 
       let keyColNeighbours = [];
-      let neighbourCount = 1;
-      for (let i=0;i<values[1].results.bindings.length;++i) {
-        let tempObj = {};
-          let curNeighbourLiteral = values[1].results.bindings[i].p.value.slice(28);
-          // We do not want to deal with any neighbours that's only one character long: we don't know what it means
-          if (curNeighbourLiteral.length > 1) {
-            // Let's deal with duplicate neighbour names here
-            let curNeighbourValue = curNeighbourLiteral;
-            let curNeighbourLabel = curNeighbourLiteral;
-            let prevNeighbourValue = "";
-            if (i > 0) {
-              prevNeighbourValue = values[1].results.bindings[i-1].p.value.slice(28);
-            }
-            if (prevNeighbourValue === curNeighbourValue) {
-              neighbourCount++;
-              curNeighbourLabel = curNeighbourValue+"-"+neighbourCount;
-            } else {
-              neighbourCount = 1;
-            }
-            tempObj["label"] = curNeighbourLabel;
-            tempObj["value"] = curNeighbourValue;
-            keyColNeighbours.push(tempObj);
-          }
-      }
+      keyColNeighbours = updateKeyColNeighbours(keyColNeighbours,values[1].results.bindings,"subject");
+      keyColNeighbours = updateKeyColNeighbours(keyColNeighbours,values[2].results.bindings,"object");
+
       let optionsMap = this.state.optionsMap.slice();
       for (let i=0;i<optionsMap.length;++i) {
         if (i !== colIndex) {
@@ -446,11 +449,12 @@ class App extends Component {
     })
   }
 
-  populateOtherColumn(e, colIndex, neighbour, neighbourIndex) {
+  populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type) {
 
     // console.log(colIndex);
     // console.log(neighbour);
     // console.log(neighbourIndex);
+    // console.log(type);
 
     // Now we need to fill in the content for this function
     // we need to make ten queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
@@ -462,9 +466,16 @@ class App extends Component {
       if (cellValue === "N/A") {
         cellValue = "NONEXISTINGSTRING"; // N/A's will block the search, let's replace it with some string that does not block the search
       }
-      let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
-                      +cellValue
-                      +"+%28dbo%3A"+neighbour+"%7Cdbp%3A"+neighbour+"%29+%3Fsomevar.%0D%0A%7D%0D%0A%0D%0A&";
+      let queryBody;
+      if (type === "subject") {
+        queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
+                    +cellValue
+                    +"+%28dbo%3A"+neighbour+"%7Cdbp%3A"+neighbour+"%29+%3Fsomevar.%0D%0A%7D%0D%0A%0D%0A&";
+      } else {
+        queryBody = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A++++++++%3Fsomevar+%28dbo%3A"
+                    +neighbour+"%7Cdbp%3A"+neighbour+"%29+dbr%3A"
+                    +cellValue+"%0D%0A%7D%0D%0A&";
+      }
       let queryURL = prefixURL+queryBody+suffixURL;
       let curPromise = fetchJSON(queryURL);
       promiseArray.push(curPromise);
@@ -489,7 +500,13 @@ class App extends Component {
           // We first set the data of the cell
           tableData[i][colIndex].data = dbResult;
           // We then set the origin of the cell
-          let originToAdd = neighbour+":"+dbResult;
+          // This origin depends on whether type is "subject" or "object"
+          let originToAdd;
+          if (type === "subject") {
+            originToAdd = neighbour+":"+dbResult;
+          } else {
+            originToAdd = "is "+neighbour+" of:"+dbResult;
+          }
           let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
           keyOrigin.push(originToAdd);
           tableData[i][colIndex].origin = keyOrigin;
@@ -547,44 +564,33 @@ class App extends Component {
 
   // The following functions sets the cotextmenu selected column to be the key column
   contextSetKey(e,colIndex) {
+
     if (colIndex !== this.state.keyColIndex) {
-      let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      let queryBody = 
+      let promiseArray = [];
+      let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURLOne = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBodyOne = 
         "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
         +regexReplace(this.state.tableData[0][colIndex].data)
         +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
-      let queryURL = prefixURL+queryBody+suffixURL;
-      fetch(queryURL)
-      .then((response) => {
-        return response.json();
-      })
-      .then((myJson) => {
+      let queryURLOne = prefixURLOne+queryBodyOne+suffixURLOne;
+      let otherColPromiseSubject = fetchJSON(queryURLOne);
+      promiseArray.push(otherColPromiseSubject);
+
+      let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBodyTwo = 
+        "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A"
+        +regexReplace(this.state.tableData[0][colIndex].data)
+        +".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+      let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
+      let otherColPromiseObject = fetchJSON(queryURLTwo);
+      promiseArray.push(otherColPromiseObject);
+
+      allPromiseReady(promiseArray).then((values) => {
         let keyColNeighbours = [];
-        let neighbourCount = 0;
-        for (let i=0;i<myJson.results.bindings.length;++i) {
-          let tempObj = {};
-          let curNeighbourLiteral = myJson.results.bindings[i].p.value.slice(28);
-          // We do not want to deal with any neighbours that's only one character long: we don't know what it means
-          if (curNeighbourLiteral.length > 1) {
-            // Let's deal with duplicate neighbour names here
-            let curNeighbourValue = curNeighbourLiteral;
-            let curNeighbourLabel = curNeighbourLiteral;
-            let prevNeighbourValue = "";
-            if (i > 0) {
-              prevNeighbourValue = myJson.results.bindings[i-1].p.value.slice(28);
-            }
-            if (prevNeighbourValue === curNeighbourValue) {
-              neighbourCount++;
-              curNeighbourLabel = curNeighbourValue+"-"+neighbourCount;
-            } else {
-              neighbourCount = 1;
-            }
-            tempObj["label"] = curNeighbourLabel;
-            tempObj["value"] = curNeighbourValue;
-            keyColNeighbours.push(tempObj);
-          }
-        }
+        keyColNeighbours = updateKeyColNeighbours(keyColNeighbours,values[0].results.bindings,"subject");
+        keyColNeighbours = updateKeyColNeighbours(keyColNeighbours,values[1].results.bindings,"object");
         let optionsMap = this.state.optionsMap.slice();
         for (let i=0;i<optionsMap.length;++i) {
           if (i !== colIndex) {
@@ -876,20 +882,24 @@ class App extends Component {
 
 export default App;
 
+// This function takes in a queryURL and returns its JSON format
 function fetchJSON(url) {
   return fetch(url).then((response) => response.json())
 }
 
+// This function takes in a queryURL and returns its Text format
 function fetchText(url) {
   return fetch(url).then((response) => response.text())
 }
 
+// This function ensures that all promises in promiseArray are ready
 function allPromiseReady(promiseArray){
   return Promise.all(promiseArray);
 }
 
+// This function replaces string so that the result can be used in queryURL.
+// It currently replaces "(", ")", "'", "-", " ", "&", and "/"
 function regexReplace(str) {
-  // This function currently replaces "(", ")", "'", "-", " ", "&", and "/"
   return str.replace(/&/g,"%5Cu0026")
             .replace(/'/g,"%5Cu0027")
             .replace(/\(/g,"%5Cu0028")
@@ -901,8 +911,53 @@ function regexReplace(str) {
 }
 
 function reverseReplace(str) {
-  // This function currently replaces "(", ")", and "–"
   return str.replace(/%E2%80%93/,"–");
+}
+
+// This function updates the key column's neighbours.
+
+// It taks three parameters: 
+//  1) array "keyColNeighbour" storing list of neighbours for the key column
+//  2) array "resultsBinding", storing the returned result of queryURL from Virtuoso
+//  3) string "type", either "subject" or "object"
+
+// It returns the updates keyColNeighbours
+function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
+  let neighbourCount = 1;
+  for (let i=0;i<resultsBinding.length;++i) {
+    let tempObj = {};
+    let curNeighbourLiteral = resultsBinding[i].p.value.slice(28);
+    // We do not want to deal with any neighbours that's only one character long: we don't know what it means
+    if (curNeighbourLiteral.length > 1) {
+      // Let's deal with duplicate neighbour names here
+      let curNeighbourValue = curNeighbourLiteral;
+      let curNeighbourLabel;
+      if (type === "subject") {
+        curNeighbourLabel = curNeighbourLiteral;
+      } else {
+        curNeighbourLabel = "is "+curNeighbourLiteral+" of";
+      }
+      let prevNeighbourValue = "";
+      if (i > 0) {
+        prevNeighbourValue = resultsBinding[i-1].p.value.slice(28);
+      }
+      if (prevNeighbourValue === curNeighbourValue) {
+        neighbourCount++;
+        if (type === "subject") {
+          curNeighbourLabel = curNeighbourLiteral+"-"+neighbourCount;
+        } else {
+          curNeighbourLabel = "is "+curNeighbourLiteral+" of-"+neighbourCount;
+        }
+      } else {
+        neighbourCount = 1;
+      }
+      tempObj["label"] = curNeighbourLabel;
+      tempObj["value"] = curNeighbourValue;
+      tempObj["type"] = type;
+      keyColNeighbours.push(tempObj);
+    }
+  }
+  return keyColNeighbours;
 }
 
 function removeNewLine(str) {
@@ -969,6 +1024,13 @@ function findTableFromHTML(tableHTML, pageHTML) {
   return tableArray;
 }
 
+// This function returns a 2D array of objects representing the data for tableDataExplore. 
+
+// It taks two parameters: 
+//  1) HTML "selectedTableHTML" storing the HTML of a table
+//  2) string "urlOrigin", storing which page this table is from
+
+// It returns a 2D array of objects representing the data for tableDataExplore.
 function setTableFromHTML(selecteTableHTML,urlOrigin) {
   let selectedTable = selecteTableHTML;
   let tempTable = [];
@@ -1003,5 +1065,7 @@ function setTableFromHTML(selecteTableHTML,urlOrigin) {
   }
   return tempTable; // tempTable is a 2D array of objects storing the table data. Object has two fields: data(string) and origin(string).
 }
+
+
 
 

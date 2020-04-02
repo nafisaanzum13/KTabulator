@@ -150,7 +150,9 @@ class ActionPanel extends Component {
           <div>
             <p>Populate column {actionInfo.colIndex} with column header:</p>
             <p>{actionInfo.neighbour} ?</p>
-            <button onClick={(e) => this.props.populateOtherColumn(e,actionInfo.colIndex,actionInfo.neighbour,actionInfo.neighbourIndex)}>
+            <button 
+              onClick={(e) => 
+                        this.props.populateOtherColumn(e,actionInfo.colIndex,actionInfo.neighbour,actionInfo.neighbourIndex,actionInfo.type)}>
               OK
             </button>
           </div>
