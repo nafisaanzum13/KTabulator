@@ -80,6 +80,7 @@ class TablePanel extends Component {
                   type="text"
                   style={cellColor} 
                   value={this.props.tableData[i][j].data} 
+                  // onClick={() => {alert("hmm");}}
                   onChange={(e) => this.props.onCellChange(e,i,j)}/>
               </ContextMenuTrigger>
             </td>

@@ -220,6 +220,7 @@ class App extends Component {
       }
 
       // In here we fetch the options for first column's selection
+      // It uses the common dct:subject of all cells entered in the key column
 
       let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
       let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B";
@@ -408,22 +409,26 @@ class App extends Component {
       let neighbourCount = 1;
       for (let i=0;i<values[1].results.bindings.length;++i) {
         let tempObj = {};
-        // Let's deal with duplicate neighbour names here
-        let curNeighbourValue = values[1].results.bindings[i].p.value.slice(28);
-        let curNeighbourLabel = values[1].results.bindings[i].p.value.slice(28);
-        let prevNeighbourValue = "";
-        if (i > 0) {
-          prevNeighbourValue = values[1].results.bindings[i-1].p.value.slice(28);
-        }
-        if (prevNeighbourValue === curNeighbourValue) {
-          neighbourCount++;
-          curNeighbourLabel = curNeighbourValue+"-"+neighbourCount;
-        } else {
-          neighbourCount = 1;
-        }
-        tempObj["label"] = curNeighbourLabel;
-        tempObj["value"] = curNeighbourValue;
-        keyColNeighbours.push(tempObj);
+          let curNeighbourLiteral = values[1].results.bindings[i].p.value.slice(28);
+          // We do not want to deal with any neighbours that's only one character long: we don't know what it means
+          if (curNeighbourLiteral.length > 1) {
+            // Let's deal with duplicate neighbour names here
+            let curNeighbourValue = curNeighbourLiteral;
+            let curNeighbourLabel = curNeighbourLiteral;
+            let prevNeighbourValue = "";
+            if (i > 0) {
+              prevNeighbourValue = values[1].results.bindings[i-1].p.value.slice(28);
+            }
+            if (prevNeighbourValue === curNeighbourValue) {
+              neighbourCount++;
+              curNeighbourLabel = curNeighbourValue+"-"+neighbourCount;
+            } else {
+              neighbourCount = 1;
+            }
+            tempObj["label"] = curNeighbourLabel;
+            tempObj["value"] = curNeighbourValue;
+            keyColNeighbours.push(tempObj);
+          }
       }
       let optionsMap = this.state.optionsMap.slice();
       for (let i=0;i<optionsMap.length;++i) {
@@ -443,9 +448,9 @@ class App extends Component {
 
   populateOtherColumn(e, colIndex, neighbour, neighbourIndex) {
 
-    console.log(colIndex);
-    console.log(neighbour);
-    console.log(neighbourIndex);
+    // console.log(colIndex);
+    // console.log(neighbour);
+    // console.log(neighbourIndex);
 
     // Now we need to fill in the content for this function
     // we need to make ten queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
@@ -559,22 +564,26 @@ class App extends Component {
         let neighbourCount = 0;
         for (let i=0;i<myJson.results.bindings.length;++i) {
           let tempObj = {};
-          // Let's deal with duplicate neighbour names here
-          let curNeighbourValue = myJson.results.bindings[i].p.value.slice(28);
-          let curNeighbourLabel = myJson.results.bindings[i].p.value.slice(28);
-          let prevNeighbourValue = "";
-          if (i > 0) {
-            prevNeighbourValue = myJson.results.bindings[i-1].p.value.slice(28);
+          let curNeighbourLiteral = myJson.results.bindings[i].p.value.slice(28);
+          // We do not want to deal with any neighbours that's only one character long: we don't know what it means
+          if (curNeighbourLiteral.length > 1) {
+            // Let's deal with duplicate neighbour names here
+            let curNeighbourValue = curNeighbourLiteral;
+            let curNeighbourLabel = curNeighbourLiteral;
+            let prevNeighbourValue = "";
+            if (i > 0) {
+              prevNeighbourValue = myJson.results.bindings[i-1].p.value.slice(28);
+            }
+            if (prevNeighbourValue === curNeighbourValue) {
+              neighbourCount++;
+              curNeighbourLabel = curNeighbourValue+"-"+neighbourCount;
+            } else {
+              neighbourCount = 1;
+            }
+            tempObj["label"] = curNeighbourLabel;
+            tempObj["value"] = curNeighbourValue;
+            keyColNeighbours.push(tempObj);
           }
-          if (prevNeighbourValue === curNeighbourValue) {
-            neighbourCount++;
-            curNeighbourLabel = curNeighbourValue+"-"+neighbourCount;
-          } else {
-            neighbourCount = 1;
-          }
-          tempObj["label"] = curNeighbourLabel;
-          tempObj["value"] = curNeighbourValue;
-          keyColNeighbours.push(tempObj);
         }
         let optionsMap = this.state.optionsMap.slice();
         for (let i=0;i<optionsMap.length;++i) {
@@ -689,10 +698,7 @@ class App extends Component {
             let siblingArray = [];
             for (let i=0;i<curSiblingArray.length;++i) {
               let siblingName = curSiblingArray[i].s.value.slice(28);
-              // We don't want to display the pasted page in the sibling array
-              if (siblingName !== urlOrigin) {
-                siblingArray.push({"isOpen":false,"name":siblingName,"content":"hello world","tableArray":[]});
-              }
+              siblingArray.push({"isOpen":false,"name":siblingName,"content":"hello world","tableArray":[]});
             }
             // console.log(siblingArray);
             propertyNeighbours.push(
@@ -741,6 +747,7 @@ class App extends Component {
           let tableHTML = this.state.originTableArray[this.state.selectedTableIndex];
           let pageHTML = values[i];
           let tableArray = findTableFromHTML(tableHTML,pageHTML); // This is a helper function that fetches useful tables from pageHTML
+          // we potentially want to do something different here if urlOrigin === siblingNameArray[i]
           // We only want to keep siblings that do have useful tables
           if (tableArray.length !== 0) {
             siblingArray.push({"isOpen":false,"name":siblingNameArray[i],"content":"hello world","tableArray":tableArray});

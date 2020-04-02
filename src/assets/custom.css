@@ -51,6 +51,10 @@
   height:45vh;
 }
 
+.toggle-button {
+  height:4vh;
+}
+
 .table-panel {
   height:45vh;
   overflow:auto;
