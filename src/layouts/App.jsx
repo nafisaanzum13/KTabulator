@@ -35,6 +35,7 @@ class App extends Component {
       urlPasted:"",
       tablePasted:"",
       usecaseSelected:"",
+      iframeURL:"",
 
       // states below are useful for startSubject
       keyColIndex:0,             // initially the key column is the first column
@@ -92,6 +93,7 @@ class App extends Component {
   handleURLPaste(urlPasted) {
     this.setState({
       urlPasted: urlPasted,
+      iframeURL: urlPasted,
     });
   }
 
@@ -296,6 +298,13 @@ class App extends Component {
             optionsMap:optionsMap,
           }) 
         });
+      }
+      else {
+        let optionsMap = this.state.optionsMap.slice();
+        optionsMap[colIndex] = this.state.keyColNeighbours;
+        this.setState({
+          optionsMap:optionsMap,
+        })
       }
     }
   }
@@ -868,7 +877,7 @@ class App extends Component {
           <div className="bottom-content">
             <div>
               <PagePanel 
-                urlPasted={this.state.urlPasted}/>
+                iframeURL={this.state.iframeURL}/>
             </div>
           </div>
           <div className="footer">

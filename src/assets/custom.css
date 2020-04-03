@@ -40,15 +40,15 @@
 }
 
 .top-content {
-  height:45vh;
+  height:35vh;
 }
 
 .bottom-content {
-  height:45vh;
+  height:55vh;
 }
 
 .wiki-page {
-  height:45vh;
+  height:55vh;
 }
 
 .toggle-button {
@@ -56,12 +56,12 @@
 }
 
 .table-panel {
-  height:45vh;
+  height:35vh;
   overflow:auto;
 }
 
 .action-panel {
-  height:45vh;
+  height:35vh;
   overflow:auto;
 }
 
