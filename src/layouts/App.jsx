@@ -512,17 +512,17 @@ class App extends Component {
           // We then set the origin of the cell
           // This origin depends on whether type is "subject" or "object"
           let originToAdd;
-          console.log(type);
+          // console.log(type);
           if (type === "subject") {
             originToAdd = neighbour+":"+dbResult;
           } else {
             originToAdd = "is "+neighbour+" of:"+dbResult;
           }
-          console.log(originToAdd);
+          // console.log(originToAdd);
           let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
-          console.log(keyOrigin);
+          // console.log(keyOrigin);
           keyOrigin.push(originToAdd);
-          console.log(keyOrigin);
+          // console.log(keyOrigin);
           tableData[i][colIndex].origin = keyOrigin;
         }
       }
@@ -695,7 +695,7 @@ class App extends Component {
       +regexReplace(this.state.urlPasted.slice(30))
       +"+dct%3Asubject+%3Fo%0D%0A%7D&";
     let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
-    console.log(queryURLTwo);
+    // console.log(queryURLTwo);
     let queryTwo = fetchJSON(queryURLTwo);
     queryPromise.push(queryTwo);
 
@@ -705,7 +705,7 @@ class App extends Component {
       // console.log(queryResults[1].results.bindings);
 
       // First we fetch the property neighbours
-      // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings
+      // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings (150)
       // and remove the propertyNeighbours with only one child (aka the originally pasted page)
 
       let propertyNeighboursPO = [];
@@ -755,7 +755,8 @@ class App extends Component {
         // console.log(urlOrigin);
         for (let i=0;i<values.length;++i) {
           let curSiblingArray = values[i].results.bindings;
-          if (curSiblingArray.length > 1 && curSiblingArray.length<200) {
+          // Note, this 150 below should also be adjustable by users
+          if (curSiblingArray.length > 1 && curSiblingArray.length<150) {
             let siblingArray = [];
             for (let i=0;i<curSiblingArray.length;++i) {
               let siblingName = curSiblingArray[i].s.value.slice(28);
@@ -992,19 +993,26 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
       } else {
         curNeighbourLabel = "is "+curNeighbourLiteral+" of";
       }
-      let prevNeighbourValue = "";
-      if (i > 0) {
-        prevNeighbourValue = resultsBinding[i-1].p.value.slice(28);
+      let nextNeighbourValue = "";
+      if (i<resultsBinding.length-1) {
+        nextNeighbourValue = resultsBinding[i+1].p.value.slice(28);
       }
-      if (prevNeighbourValue === curNeighbourValue) {
-        neighbourCount++;
+      if (curNeighbourValue === nextNeighbourValue) {
         if (type === "subject") {
           curNeighbourLabel = curNeighbourLiteral+"-"+neighbourCount;
         } else {
           curNeighbourLabel = "is "+curNeighbourLiteral+" of-"+neighbourCount;
         }
+        neighbourCount++;
       } else {
-        neighbourCount = 1;
+        if (neighbourCount > 1) {
+          if (type === "subject") {
+            curNeighbourLabel = curNeighbourLiteral+"-"+neighbourCount;
+          } else {
+            curNeighbourLabel = "is "+curNeighbourLiteral+" of-"+neighbourCount;
+          }
+        }
+        neighbourCount=1;
       }
       tempObj["label"] = curNeighbourLabel;
       tempObj["value"] = curNeighbourValue;
