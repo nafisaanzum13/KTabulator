@@ -290,6 +290,7 @@ class App extends Component {
               let neighbour = myJson.results.bindings[i].somevar.value.slice(28);
               tempObj["label"] = neighbour;
               tempObj["value"] = neighbour;
+              tempObj["type"] = "subject";    // for now we only allow the subject search
               otherColOptions.push(tempObj);
           }
           let optionsMap = this.state.optionsMap.slice();
@@ -511,13 +512,17 @@ class App extends Component {
           // We then set the origin of the cell
           // This origin depends on whether type is "subject" or "object"
           let originToAdd;
+          console.log(type);
           if (type === "subject") {
             originToAdd = neighbour+":"+dbResult;
           } else {
             originToAdd = "is "+neighbour+" of:"+dbResult;
           }
+          console.log(originToAdd);
           let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
+          console.log(keyOrigin);
           keyOrigin.push(originToAdd);
+          console.log(keyOrigin);
           tableData[i][colIndex].origin = keyOrigin;
         }
       }
