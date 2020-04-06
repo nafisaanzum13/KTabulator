@@ -663,30 +663,52 @@ class App extends Component {
     }
   }
 
-  // The following function handles the selection of table
+  // The following function handles the selection of table.
 
   onSelectTable(e,tableIndex) {
-    // We need to do is to let table panel display the selected table
+    // We need to let table panel display the selected table
     // And we need to update the Action Panel to display the first degree properties of the original page
-    // We do a fetch request here (Sixth Query)
-    let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBody = 
+    // We do a fetch request here (Sixth Query). It gets the property neighbours of the original page that are links, as well as dct:subject
+
+    // First query gets the property neighbours 
+    let queryPromise = [];
+    let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURLOne = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyOne = 
       "SELECT+%3Fp+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
       +regexReplace(this.state.urlPasted.slice(30))
       +"+%3Fp+%3Fo.%0D%0A++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++FILTER%28isIRI%28%3Fo%29+%26%26+regex%28%3FpString%2C%22property%22%2C%22i%22%29+%26%26+%28%21regex%28%3FpString%2C%22text%22%2C%22i%22%29%29%29.%0D%0A%7D%0D%0A&";
-    let queryURL = prefixURL+queryBody+suffixURL;
-    fetch(queryURL)
-    .then((response) => {
-      return response.json();
-    })
-    .then((myJson) => {
+    let queryURLOne = prefixURLOne+queryBodyOne+suffixURLOne;
+    let queryOne = fetchJSON(queryURLOne);
+    queryPromise.push(queryOne);
+
+    // Second query gets the dct:subject neighbours 
+    let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyTwo = 
+      "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
+      +regexReplace(this.state.urlPasted.slice(30))
+      +"+dct%3Asubject+%3Fo%0D%0A%7D&";
+    let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
+    console.log(queryURLTwo);
+    let queryTwo = fetchJSON(queryURLTwo);
+    queryPromise.push(queryTwo);
+
+    // now we process the query results
+    allPromiseReady(queryPromise).then((queryResults) => {
+      // console.log(queryResults[0].results.bindings);
+      // console.log(queryResults[1].results.bindings);
+
       // First we fetch the property neighbours
       // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings
       // and remove the propertyNeighbours with only one child (aka the originally pasted page)
+
       let propertyNeighboursPO = [];
-      let bindingArray = myJson.results.bindings;
       let promiseArray = [];
+      let bindingArray = [];
+
+      // The part below deals with the property neighbours
+      bindingArray = queryResults[0].results.bindings;
       for (let i=0;i<bindingArray.length;++i) {
         let predicate = bindingArray[i].p.value.slice(28);
         let object = bindingArray[i].o.value.slice(28);
@@ -703,13 +725,32 @@ class App extends Component {
         propertyNeighboursPO.push({"predicate":predicate,"object":object});
         promiseArray.push(curPromise);
       }
+
+      // The part below deals with the dct:subject neighbours
+      bindingArray = queryResults[1].results.bindings;
+      for (let i=0;i<bindingArray.length;++i) {
+        let object = bindingArray[i].o.value.slice(37);
+        let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+        let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+        let queryBody = 
+          "SELECT+%3Fs%0D%0AWHERE+%7B%0D%0A++++++%3Fs+dct%3Asubject+dbc%3A"
+          +regexReplace(object)
+          +"%0D%0A%7D&";
+        let queryURL = prefixURL+queryBody+suffixURL;
+        let curPromise = fetchJSON(queryURL);
+        propertyNeighboursPO.push({"predicate":"subject","object":object});
+        promiseArray.push(curPromise);
+      }
+
+      // The part below processes all the siblings
+
       allPromiseReady(promiseArray).then((values) => {
         let propertyNeighbours = [];
         let urlOrigin = reverseReplace(this.state.urlPasted.slice(30));
         // console.log(urlOrigin);
         for (let i=0;i<values.length;++i) {
           let curSiblingArray = values[i].results.bindings;
-          if (curSiblingArray.length > 1 && curSiblingArray.length<100) {
+          if (curSiblingArray.length > 1 && curSiblingArray.length<200) {
             let siblingArray = [];
             for (let i=0;i<curSiblingArray.length;++i) {
               let siblingName = curSiblingArray[i].s.value.slice(28);
