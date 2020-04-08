@@ -73,7 +73,9 @@ class App extends Component {
     this.getKeyOptions = this.getKeyOptions.bind(this);
     this.getOtherOptions = this.getOtherOptions.bind(this);
     this.populateKeyColumn = this.populateKeyColumn.bind(this);
+    this.getOtherColPromise = this.getOtherColPromise.bind(this);
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
+    this.populateSameNeighbour = this.populateSameNeighbour.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextSetKey = this.contextSetKey.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
@@ -102,6 +104,8 @@ class App extends Component {
       tablePasted: tablePasted
     });
   }
+
+  // This function copies the table content to clipboard
 
   copyTable() {
     const textArea = document.createElement('textarea'); // this line allows the use of select() function
@@ -341,7 +345,8 @@ class App extends Component {
         // arr[1] stores the index of the neighbour with duplicate names
         tempObj["neighbourIndex"] = Number(arr[1])-1;
       } else {
-        tempObj["neighbourIndex"] = 0;
+        // If neighbourIndex is equal to -1, that means this property has no duplicate names
+        tempObj["neighbourIndex"] = -1;
       }
     }
     // console.log(tempObj);
@@ -459,15 +464,9 @@ class App extends Component {
     })
   }
 
-  populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type) {
+  // The following function serves as a helper function for "populateOtherColumn" and "populateSameNeighbour"
 
-    // console.log(colIndex);
-    // console.log(neighbour);
-    // console.log(neighbourIndex);
-    // console.log(type);
-
-    // Now we need to fill in the content for this function
-    // we need to make ten queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
+  getOtherColPromise(neighbour, type) {
     let promiseArray = [];
     let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
@@ -490,10 +489,18 @@ class App extends Component {
       let curPromise = fetchJSON(queryURL);
       promiseArray.push(curPromise);
     }
+    return promiseArray;
+  }
+
+  populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type) {
+
+    // we need to make a number of queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
+    let promiseArray = this.getOtherColPromise(neighbour,type);
     allPromiseReady(promiseArray).then((values) => {
       let tableData = this.state.tableData.slice();
+      let requiredLength = neighbourIndex===-1?1 :neighbourIndex+1;
       for (let i=0;i<values.length;++i) {
-        if (values[i].results.bindings.length < neighbourIndex+1) {
+        if (values[i].results.bindings.length < requiredLength) {
           // this means results is not found
           // or if there is not enough results, in duplicate neighbour name case
           tableData[i][colIndex].data = "N/A";
@@ -501,7 +508,7 @@ class App extends Component {
           // let's determine if we need to truncate
           // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
           // Think about what to do when there are duplicates
-          let dbResult = values[i].results.bindings[neighbourIndex].somevar.value;
+          let dbResult = values[i].results.bindings[requiredLength-1].somevar.value;
           let prefixToRemove = "http://dbpedia.org/resource/";
           // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
           if (dbResult.includes(prefixToRemove) === true) {
@@ -526,9 +533,135 @@ class App extends Component {
           tableData[i][colIndex].origin = keyOrigin;
         }
       }
+
+      // If we just populated a column with duplicate names, we want to give users an option to "populate all other columns of this name"
+
+      let remainNeighbourCount = values[0].results.bindings.length-neighbourIndex-1;
+
+      let tempObj = {};
+      if ((neighbourIndex !== -1) && (remainNeighbourCount > 0)) {
+        tempObj["task"] = "populateSameNeighbour";
+        tempObj["colIndex"] = colIndex;
+        tempObj["neighbour"] = neighbour;
+        tempObj["neighbourIndex"] = neighbourIndex;
+        tempObj["type"] = type;
+        tempObj["numCols"] = remainNeighbourCount;
+      } 
+
+      this.setState({
+        curActionInfo:tempObj,
+        tableData:tableData,
+      })
+    })
+  }
+
+  // This function populates all neighbour with the same names, if that neighbour has multiple occurences.
+  // Note: currently it only populates "later" neighbour with same name.
+
+  populateSameNeighbour(e,colIndex,neighbour,neighbourIndex,type,numCols) {
+
+    // Now we need to write the body for this function
+
+    // First thing should be to insert "numCols" number of empty columns right after column with index "colIndex"
+    const rowNum = this.state.tableData.length;
+    const colNum = this.state.tableData[0].length;
+
+    // We first take care of table data's additions
+    let tableData = [];
+    for (let i=0;i<rowNum;++i) {
+      let tempRow = [];
+      for (let j=0;j<colIndex+1;++j) {
+        tempRow.push(this.state.tableData[i][j]);
+      }
+      // we add in numCols number of empty columns
+      for (let j=0;j<numCols;++j) {
+        tempRow.push({"data":"","origin":[]});
+      }
+      for (let k=colIndex+1;k<colNum;++k) {
+        tempRow.push(this.state.tableData[i][k]);
+      }
+      tableData.push(tempRow);
+    }
+
+    // we now take care of table header's addition. 
+    let tableHeader = [];
+    for (let j=0;j<colIndex+1;++j) {
+      tableHeader.push(this.state.tableHeader[j]);
+    }
+    for (let j=0;j<numCols;++j) {
+      let curLabel = "";
+      if (type === "subject") {
+        curLabel = curLabel+neighbour+"-"+(neighbourIndex+2+j)+"--"+tableHeader[this.state.keyColIndex].label;
+      } else {
+        curLabel = curLabel+"is "+neighbour+" of-"+(neighbourIndex+2+j)+"--"+tableHeader[this.state.keyColIndex].label;
+      }
+      tableHeader.push({"value":neighbour,"label":curLabel});
+    }
+    for (let k=colIndex+1;k<colNum;++k) {
+      tableHeader.push(this.state.tableHeader[k]);
+    }
+
+    // we now take care of optionMap's addition. We just need to add some empty arrays to it
+    let optionsMap = [];
+    for (let j=0;j<colIndex+1;++j) {
+      optionsMap.push(this.state.optionsMap[j]);
+    }
+    for (let j=0;j<numCols;++j) {
+      optionsMap.push([]);
+    }
+    for (let k=colIndex+1;k<colNum;++k) {
+      optionsMap.push(this.state.optionsMap[k]);
+    }
+
+    // Finally, we fill in the actual data for tableData. We need to take care of both data and origin
+    let promiseArray = this.getOtherColPromise(neighbour,type);
+    allPromiseReady(promiseArray).then((values) => {
+      // for (let i=0;i<values.length;++i) {
+      //   console.log(values[i].results.bindings);
+      // }
+      for (let curCol=colIndex+1;curCol<colIndex+1+numCols;++curCol) {
+        // curNeighbourIndex represents the required length
+        let requiredLength = neighbourIndex+curCol-colIndex+1; 
+        for (let i=0;i<values.length;++i) {
+          if (values[i].results.bindings.length < requiredLength) {
+            // this means results is not found
+            // or if there is not enough results, in duplicate neighbour name case
+            tableData[i][curCol].data = "N/A";
+          } else {
+            // let's determine if we need to truncate
+            // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
+            // Think about what to do when there are duplicates
+            let dbResult = values[i].results.bindings[requiredLength-1].somevar.value;
+            let prefixToRemove = "http://dbpedia.org/resource/";
+            // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
+            if (dbResult.includes(prefixToRemove) === true) {
+                dbResult = dbResult.slice(28);
+            }
+            // We first set the data of the cell
+            tableData[i][curCol].data = dbResult;
+            // We then set the origin of the cell
+            // This origin depends on whether type is "subject" or "object"
+            let originToAdd;
+            // console.log(type);
+            if (type === "subject") {
+              originToAdd = neighbour+":"+dbResult;
+            } else {
+              originToAdd = "is "+neighbour+" of:"+dbResult;
+            }
+            // console.log(originToAdd);
+            let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
+            // console.log(keyOrigin);
+            keyOrigin.push(originToAdd);
+            // console.log(keyOrigin);
+            tableData[i][curCol].origin = keyOrigin;
+          }
+        }
+      }
       this.setState({
         curActionInfo:null,
         tableData:tableData,
+        tableHeader:tableHeader,
+        optionsMap:optionsMap,
       })
     })
   }
@@ -547,14 +680,15 @@ class App extends Component {
       for (let j=0;j<colIndex+1;++j) {
         tempRow.push(this.state.tableData[i][j]);
       }
-      tempRow.push({"data":""});
+      // we add in one column of empty data
+      tempRow.push({"data":"","origin":[]});
       for (let k=colIndex+1;k<colNum;++k) {
         tempRow.push(this.state.tableData[i][k]);
       }
       tableData.push(tempRow);
     }
 
-    // we now take care of optionsMap's addition, as well as tableHeader's addition
+    // we now take care of tabler header and optionMap's addition
     // This added column will have options equal to the neighbours of the key column
     let optionsMap = [];
     let tableHeader = [];
@@ -909,6 +1043,7 @@ class App extends Component {
                 handleSelectTask={this.handleSelectTask}
                 populateKeyColumn={this.populateKeyColumn}
                 populateOtherColumn={this.populateOtherColumn}
+                populateSameNeighbour={this.populateSameNeighbour}
                 // Folloiwng states are passed to "exploreTable"
                 selectedTableIndex={this.state.selectedTableIndex}
                 onSelectTable={this.onSelectTable}
@@ -979,6 +1114,11 @@ function reverseReplace(str) {
 
 // It returns the updates keyColNeighbours
 function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
+
+  // we first sort the resultsBinding by p.value.slice(28)
+  resultsBinding.sort((a, b) => (a.p.value.slice(28) > b.p.value.slice(28)) ? 1 : -1);
+
+  // Then we give each option in the resultBinding the correct labels
   let neighbourCount = 1;
   for (let i=0;i<resultsBinding.length;++i) {
     let tempObj = {};

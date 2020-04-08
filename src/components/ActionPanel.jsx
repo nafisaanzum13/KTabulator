@@ -157,6 +157,19 @@ class ActionPanel extends Component {
               OK
             </button>
           </div>
+      } else if (actionInfo.task === "populateSameNeighbour") {
+        let neighbourText = actionInfo.type==="subject"?actionInfo.neighbour:"is "+actionInfo.neighbour+" of";
+        actionEle =
+          <div>
+            <p>Populate all other properties with name:</p>
+            <p>{neighbourText} ?</p>
+            <button 
+              onClick={(e) => 
+                        this.props.populateSameNeighbour(e,actionInfo.colIndex,actionInfo.neighbour,
+                                                      actionInfo.neighbourIndex,actionInfo.type,actionInfo.numCols)}>
+              OK
+            </button>
+          </div>
       } else if (actionInfo.task === "contextCellOrigin") {
         actionEle =
           <div>
