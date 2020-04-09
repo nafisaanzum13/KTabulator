@@ -75,7 +75,8 @@ class App extends Component {
     this.populateKeyColumn = this.populateKeyColumn.bind(this);
     this.getOtherColPromise = this.getOtherColPromise.bind(this);
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
-    this.populateSameNeighbour = this.populateSameNeighbour.bind(this);
+    this.sameNeighbourDiffCol = this.sameNeighbourDiffCol.bind(this);
+    this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextSetKey = this.contextSetKey.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
@@ -158,7 +159,7 @@ class App extends Component {
   handleSelectTask(e, taskSelected) {
     if (taskSelected === "startSubject") {
       // If user chooses "startSubject", we set the URL to be the first cell in the table
-      const subject = this.state.urlPasted.slice(30);
+      const subject = reverseReplace(this.state.urlPasted.slice(30)); // add a reverseReplace here
       let tableData = this.state.tableData.slice();
       tableData[0][0].data = subject;
       this.setState({
@@ -558,7 +559,7 @@ class App extends Component {
   // This function populates all neighbour with the same names, if that neighbour has multiple occurences.
   // Note: currently it only populates "later" neighbour with same name.
 
-  populateSameNeighbour(e,colIndex,neighbour,neighbourIndex,type,numCols) {
+  sameNeighbourDiffCol(e,colIndex,neighbour,neighbourIndex,type,numCols) {
 
     // Now we need to write the body for this function
 
@@ -662,6 +663,41 @@ class App extends Component {
         tableData:tableData,
         tableHeader:tableHeader,
         optionsMap:optionsMap,
+      })
+    })
+  }
+
+  sameNeighbourOneCol(e,colIndex,neighbour,neighbourIndex,type,numCols) {
+    // console.log(colIndex);
+    // console.log(neighbour);
+    // console.log(neighbourIndex);
+    // console.log(type);
+    // console.log(numCols);
+
+    // In this option, we just need to change data in column "ColIndex", by putting "numCols" numbers of new values into it
+    let tableData = this.state.tableData.slice();
+    let promiseArray = this.getOtherColPromise(neighbour,type);
+    allPromiseReady(promiseArray).then((values) => {
+
+      for (let requiredLength = neighbourIndex+2;requiredLength<neighbourIndex+numCols+2;++requiredLength) {
+        for (let i=0;i<values.length;++i) {
+          if (values[i].results.bindings.length >= requiredLength) {
+            let dbResult = values[i].results.bindings[requiredLength-1].somevar.value;
+            let prefixToRemove = "http://dbpedia.org/resource/";
+            // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
+            if (dbResult.includes(prefixToRemove) === true) {
+                dbResult = dbResult.slice(28);
+            }
+            tableData[i][colIndex].data = tableData[i][colIndex].data+";"+dbResult;
+            let updatedOrigin = tableData[i][colIndex].origin.slice();
+            updatedOrigin[updatedOrigin.length-1] = updatedOrigin[updatedOrigin.length-1]+";"+dbResult;
+            tableData[i][colIndex].origin = updatedOrigin;
+          }
+        }
+      }
+      this.setState({
+        curActionInfo:null,
+        tableData:tableData,
       })
     })
   }
@@ -897,6 +933,7 @@ class App extends Component {
               siblingArray.push({"isOpen":false,"name":siblingName,"content":"hello world","tableArray":[]});
             }
             // console.log(siblingArray);
+            // console.log(siblingArray);
             propertyNeighbours.push(
               {"predicate":propertyNeighboursPO[i].predicate,
               "object":propertyNeighboursPO[i].object,
@@ -904,6 +941,8 @@ class App extends Component {
               "siblingArray":siblingArray});
           }
         }
+        // we do a rudimentary ranking here: sort the property neighbours by the length of siblingArray
+        propertyNeighbours.sort((a, b) => (a.siblingArray.length < b.siblingArray.length) ? 1 : -1);
         // Then we update the action in Action Panel
         let curActionInfo = {"task":"showPropertyNeighbours"};
         // Then we call the parse table helper function to update the tableDataExplore
@@ -1043,7 +1082,8 @@ class App extends Component {
                 handleSelectTask={this.handleSelectTask}
                 populateKeyColumn={this.populateKeyColumn}
                 populateOtherColumn={this.populateOtherColumn}
-                populateSameNeighbour={this.populateSameNeighbour}
+                sameNeighbourDiffCol={this.sameNeighbourDiffCol}
+                sameNeighbourOneCol={this.sameNeighbourOneCol}
                 // Folloiwng states are passed to "exploreTable"
                 selectedTableIndex={this.state.selectedTableIndex}
                 onSelectTable={this.onSelectTable}
@@ -1089,13 +1129,14 @@ function allPromiseReady(promiseArray){
 }
 
 // This function replaces string so that the result can be used in queryURL.
-// It currently replaces "(", ")", "'", "-", " ", "&", and "/"
+// It currently replaces "(", ")", "'", "-", " ", "&", ".", and "/"
 function regexReplace(str) {
   return str.replace(/&/g,"%5Cu0026")
             .replace(/'/g,"%5Cu0027")
             .replace(/\(/g,"%5Cu0028")
             .replace(/\)/g,"%5Cu0029")
             .replace(/%E2%80%93/g,"%5Cu2013")
+            .replace(/\./g,"%5Cu002E")
             .replace(/\//g,"%5Cu002F")
             .replace(/,/g,"%5Cu002C")
             .replace(/\s/g,"_");

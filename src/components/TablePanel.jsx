@@ -28,7 +28,7 @@ class TablePanel extends Component {
         <th>
           <div onClick={(e) => this.props.getKeyOptions(e,colIndex)}>
             <Select
-              className="twenty-vw"
+              className="eighteen-vw"
               value={this.props.tableHeader[colIndex]}
               onChange={(e) => this.props.selectColHeader(e,colIndex)}
               placeholder={"Choose header"}
@@ -42,7 +42,7 @@ class TablePanel extends Component {
         <th>
           <div onClick={(e) => this.props.getOtherOptions(e,colIndex)}>
             <Select
-              className="twenty-vw"
+              className="eighteen-vw"
               value={this.props.tableHeader[colIndex]}
               onChange={(e) => this.props.selectColHeader(e,colIndex)}
               placeholder={"Choose header"}

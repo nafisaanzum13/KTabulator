@@ -163,12 +163,22 @@ class ActionPanel extends Component {
           <div>
             <p>Populate all other properties with name:</p>
             <p>{neighbourText} ?</p>
-            <button 
-              onClick={(e) => 
-                        this.props.populateSameNeighbour(e,actionInfo.colIndex,actionInfo.neighbour,
-                                                      actionInfo.neighbourIndex,actionInfo.type,actionInfo.numCols)}>
-              OK
-            </button>
+            <div className="row">
+              <button 
+                className="col-md-4"
+                onClick={(e) => 
+                          this.props.sameNeighbourDiffCol(e,actionInfo.colIndex,actionInfo.neighbour,
+                                                        actionInfo.neighbourIndex,actionInfo.type,actionInfo.numCols)}>
+                In Separate Columns
+              </button>
+              <button
+                className="offset-md-1 col-md-4"
+                onClick={(e) => 
+                  this.props.sameNeighbourOneCol(e,actionInfo.colIndex,actionInfo.neighbour,
+                                                actionInfo.neighbourIndex,actionInfo.type,actionInfo.numCols)}>
+                In One Column
+              </button>
+            </div>
           </div>
       } else if (actionInfo.task === "contextCellOrigin") {
         actionEle =
