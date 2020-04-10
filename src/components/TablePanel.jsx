@@ -28,7 +28,7 @@ class TablePanel extends Component {
         <th>
           <div onClick={(e) => this.props.getKeyOptions(e,colIndex)}>
             <Select
-              className="eighteen-vw"
+              className="selection-header"
               value={this.props.tableHeader[colIndex]}
               onChange={(e) => this.props.selectColHeader(e,colIndex)}
               placeholder={"Choose header"}
@@ -42,7 +42,7 @@ class TablePanel extends Component {
         <th>
           <div onClick={(e) => this.props.getOtherOptions(e,colIndex)}>
             <Select
-              className="eighteen-vw"
+              className="selection-header"
               value={this.props.tableHeader[colIndex]}
               onChange={(e) => this.props.selectColHeader(e,colIndex)}
               placeholder={"Choose header"}
@@ -54,7 +54,7 @@ class TablePanel extends Component {
       }
       tempRow.push(tempHeader);
     }
-    table.push(<tr>{tempRow}</tr>)
+    table.push(<thead><tr>{tempRow}</tr></thead>)
 
     // i corresponds to the row number, j corresponds to the column number
 
@@ -160,8 +160,9 @@ class TablePanel extends Component {
         }
       }
       tableEle = 
+        // class table-fixed helps with sticky column headers
         <div>
-          <table border="1"><tbody>{this.createSuperTable()}</tbody></table>
+          <table border="1" className="table-fixed">{this.createSuperTable()}</table>
           {menuArray}
         </div>
     } 

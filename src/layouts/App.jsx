@@ -1129,9 +1129,10 @@ function allPromiseReady(promiseArray){
 }
 
 // This function replaces string so that the result can be used in queryURL.
-// It currently replaces "(", ")", "'", "-", " ", "&", ".", and "/"
+// It currently replaces "(", ")", "'", "-", " ", "&", ".", """,and "/"
 function regexReplace(str) {
-  return str.replace(/&/g,"%5Cu0026")
+  return str.replace(/"/g,"%5Cu0022")
+            .replace(/&/g,"%5Cu0026")
             .replace(/'/g,"%5Cu0027")
             .replace(/\(/g,"%5Cu0028")
             .replace(/\)/g,"%5Cu0029")
