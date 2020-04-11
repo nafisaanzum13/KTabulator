@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import TableSelection from "../components/TableSelection";
 import Select from 'react-select';
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
+import { FaSearch } from "react-icons/fa";
 
 class TablePanel extends Component {
   constructor(props) {
@@ -26,7 +27,7 @@ class TablePanel extends Component {
       if (colIndex === this.props.keyColIndex) {
         tempHeader =
         <th>
-          <div onClick={(e) => this.props.getKeyOptions(e,colIndex)}>
+          <div onClick={(e) => this.props.getKeyOptions(e,colIndex)} className="super-header-div">
             <Select
               className="selection-header"
               value={this.props.tableHeader[colIndex]}
@@ -35,12 +36,16 @@ class TablePanel extends Component {
               options={this.props.optionsMap[this.props.keyColIndex]}
               isMulti={false}
             />
+            <FaSearch 
+              className="search-icon"
+              title={"Set as key column"}
+              onClick={(e) => this.props.contextSetKey(e,colIndex)}/>
           </div>
         </th>
       } else {
         tempHeader =
         <th>
-          <div onClick={(e) => this.props.getOtherOptions(e,colIndex)}>
+          <div onClick={(e) => this.props.getOtherOptions(e,colIndex)} className="super-header-div">
             <Select
               className="selection-header"
               value={this.props.tableHeader[colIndex]}
@@ -49,6 +54,10 @@ class TablePanel extends Component {
               options={this.props.optionsMap[colIndex]}
               isMulti={false}
             />
+            <FaSearch 
+              className="search-icon"
+              title={"Set as key column"}
+              onClick={(e) => this.props.contextSetKey(e,colIndex)}/>
           </div>
         </th>
       }
@@ -148,10 +157,10 @@ class TablePanel extends Component {
                 Add Column to the Right
               </MenuItem>
               <MenuItem divider />
-              <MenuItem onClick={(e) => this.props.contextSetKey(e,j)}>
+              {/* <MenuItem onClick={(e) => this.props.contextSetKey(e,j)}>
                 Set as Key Column
               </MenuItem>
-              <MenuItem divider />
+              <MenuItem divider /> */}
               <MenuItem onClick={(e) => this.props.contextCellOrigin(e,i,j)}>
                 Show Origin of Cell
               </MenuItem>

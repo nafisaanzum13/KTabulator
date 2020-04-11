@@ -749,6 +749,7 @@ class App extends Component {
   // The following functions sets the cotextmenu selected column to be the key column
   contextSetKey(e,colIndex) {
 
+    // We only want to make changes if argument colIndex is not equal to the current key column index
     if (colIndex !== this.state.keyColIndex) {
       let promiseArray = [];
       let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
@@ -797,19 +798,21 @@ class App extends Component {
     // The place to do that should be in the two populating columns
 
     let cellSelected = this.state.tableData[rowIndex][colIndex];
-    let originLiteral = "";
+
+    let originElement = [];
     for (let i=0;i<cellSelected.origin.length;++i) {
-      if (i !== 0) {
-        originLiteral+=" --> ";
+      if (i === 0) {
+        originElement.push(<p>{cellSelected.origin[i]}</p>)
+      } else {
+        originElement.push(<p>--> {cellSelected.origin[i]}</p>)
       }
-      originLiteral = originLiteral+cellSelected.origin[i];
     }
     
     // This origin literal correctly contains the cell Origin we want to display
     // Now we just need to show it in the ActionPanel
     let tempObj = {};
     tempObj["task"] = "contextCellOrigin";
-    tempObj["origin"] = originLiteral;
+    tempObj["origin"] = originElement;
     this.setState({
       curActionInfo:tempObj,
     })

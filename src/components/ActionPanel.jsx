@@ -164,19 +164,19 @@ class ActionPanel extends Component {
             <p>Populate all other properties with name:</p>
             <p>{neighbourText} ?</p>
             <div className="row">
-              <button 
-                className="col-md-4"
-                onClick={(e) => 
-                          this.props.sameNeighbourDiffCol(e,actionInfo.colIndex,actionInfo.neighbour,
-                                                        actionInfo.neighbourIndex,actionInfo.type,actionInfo.numCols)}>
-                In Separate Columns
-              </button>
               <button
-                className="offset-md-1 col-md-4"
+                className="col-md-4"
                 onClick={(e) => 
                   this.props.sameNeighbourOneCol(e,actionInfo.colIndex,actionInfo.neighbour,
                                                 actionInfo.neighbourIndex,actionInfo.type,actionInfo.numCols)}>
                 In One Column
+              </button>
+              <button 
+                className="offset-md-1 col-md-4"
+                onClick={(e) => 
+                          this.props.sameNeighbourDiffCol(e,actionInfo.colIndex,actionInfo.neighbour,
+                                                        actionInfo.neighbourIndex,actionInfo.type,actionInfo.numCols)}>
+                In Separate Columns
               </button>
             </div>
           </div>
@@ -184,7 +184,7 @@ class ActionPanel extends Component {
         actionEle =
           <div>
             <p>Origin of selected cell is:</p>
-            <p>{actionInfo.origin}</p>
+            <div>{actionInfo.origin}</div>
           </div>
       } else if (actionInfo.task === "selectTableIndex") {
         actionEle =

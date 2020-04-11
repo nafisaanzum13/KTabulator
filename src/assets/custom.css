@@ -66,8 +66,19 @@
 }
 
 /* This class deteremineds the width of selection column */
-.selection-header {
+.super-header-div {
   width:20vw;
+}
+
+.selection-header {
+  float:left;
+  width:18vw;
+}
+
+.search-icon {
+  float:left;
+  margin-top: 1vh;
+  width:2vw;
 }
 
 /* The two following classes make the column headers sticky */
