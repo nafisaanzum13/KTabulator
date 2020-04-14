@@ -30,7 +30,7 @@ class ActionPanel extends Component {
                   <CardBody>
                       <div>
                         <Button 
-                          onClick={(e) => this.props.unionTable(firstIndex,secondIndex,tableArray[thirdIndex].data)}>
+                          onClick={(e) => this.props.unionTable(firstIndex,secondIndex,tableArray[thirdIndex].data,tableArray[thirdIndex].colMapping)}>
                           Union this table
                         </Button>
                         <div dangerouslySetInnerHTML={{__html: tableArray[thirdIndex].data.outerHTML}}></div>

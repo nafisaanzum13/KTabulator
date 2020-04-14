@@ -933,7 +933,7 @@ class App extends Component {
             let siblingArray = [];
             for (let i=0;i<curSiblingArray.length;++i) {
               let siblingName = curSiblingArray[i].s.value.slice(28);
-              siblingArray.push({"isOpen":false,"name":siblingName,"content":"hello world","tableArray":[]});
+              siblingArray.push({"isOpen":false,"name":siblingName,"tableArray":[]});
             }
             // console.log(siblingArray);
             // console.log(siblingArray);
@@ -978,8 +978,9 @@ class App extends Component {
         let curPromise = fetchText(siblingURL);
         promiseArray.push(curPromise);
         siblingNameArray.push(siblingName);
-        // NOTE! We are only keeping siblings with useful tables
       }
+
+      // Since we only want to display siblings with useful tables, we do some checking here
       allPromiseReady(promiseArray).then((values) => {
         for (let i=0;i<values.length;++i) {
           let tableHTML = this.state.originTableArray[this.state.selectedTableIndex];
@@ -988,7 +989,7 @@ class App extends Component {
           // we potentially want to do something different here if urlOrigin === siblingNameArray[i]
           // We only want to keep siblings that do have useful tables
           if (tableArray.length !== 0) {
-            siblingArray.push({"isOpen":false,"name":siblingNameArray[i],"content":"hello world","tableArray":tableArray});
+            siblingArray.push({"isOpen":false,"name":siblingNameArray[i],"tableArray":tableArray});
           }
         }
         // This following line sorts the siblingArray
@@ -1033,13 +1034,43 @@ class App extends Component {
   // The following funcion unions the table that user has selected to the table in the TablePanel
   // by changing tableDataExplore
 
-  unionTable(firstIndex,secondIndex,otherTableHTML) {
+  unionTable(firstIndex,secondIndex,otherTableHTML,colMapping) {
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML,otherTableOrigin);
     otherTableData = otherTableData.slice(1); // we remove the column header row
-    // We are literally one line away. Now just need to push this otherTableData with this.state.tableDataExplore
+    // console.log(otherTableData);
+    // Now need to push this otherTableData with this.state.tableDataExplore
     let tableDataExplore = this.state.tableDataExplore.slice();
-    tableDataExplore = tableDataExplore.concat(otherTableData);
+    // tableDataExplore = tableDataExplore.concat(otherTableData);
+
+    // We want to correctly modify tableDataExplore, based on colMapping.
+    // If colMapping is null for some column, we want to set the data as "N/A"
+    // console.log(tableDataExplore);
+
+    // We first make some small modifications to colMapping, as we have inserted a new column into otherTableData and tableDataExplore
+    for (let j=0;j<colMapping.length;++j) {
+      if (colMapping[j] !== "null") {
+        colMapping[j]++;
+      }
+    }
+    colMapping.splice(0,0,0); // insert element 0 at the first position of colMapping, deleting 0 elements
+    console.log(colMapping);
+
+    // Now we insert the data into dataToAdd. dataToAdd will be concatenated with tableDataExplore
+    let dataToAdd = [];
+    for (let i=0;i<otherTableData.length;++i) {
+      let tempRow = [];
+      for (let j=0;j<colMapping.length;++j) {
+        let colInNew = colMapping[j];
+        if (colInNew !== "null") {
+          tempRow.push(otherTableData[i][colInNew]);
+        } else {
+          tempRow.push({"data":"N/A"});
+        }
+      }
+      dataToAdd.push(tempRow);
+    }
+    tableDataExplore = tableDataExplore.concat(dataToAdd);
     this.setState({
       tableDataExplore:tableDataExplore,
     })
@@ -1209,14 +1240,35 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
 }
 
 function removeNewLine(str) {
+  // Note that this function also removes leading and trailing whitespaces
   if (str[str.length-1] === "\n") {
-    return str.slice(0,-1)
+    return str.slice(0,-1).trim();
   } else {
-    return str;
+    return str.trim();
   }
 }
 
+// This function returns an array of table objects that are unionable with the selected table.
+
+// It taks two parameters: 
+//  1) HTML "tableHTML" storing the HTML of the selected table
+//  2) HTML "pageHTML", storing the HTML of a sibling page
+
+// Table object has four attributes: isOpen, data, unionScore, colMapping
+
+// Once semantic mapping feature is added, the colMapping will be updated
+
 function findTableFromHTML(tableHTML, pageHTML) {
+
+  // We first get the column names of the selected table
+  let selectedHeaderCells = tableHTML.rows[0].cells;
+  let originCols = [];
+  for (let j=0;j<selectedHeaderCells.length;++j) {
+      let headerName = removeNewLine(selectedHeaderCells[j].innerText);
+      originCols.push(headerName);
+  }
+
+  // We now fetch all the tables from pageHTML (the current sibling page)
   let doc = new DOMParser().parseFromString(pageHTML,"text/html");
   let wikiTablesFound = doc.getElementsByClassName('wikitable');
   let tablesFound = [];
@@ -1226,49 +1278,58 @@ function findTableFromHTML(tableHTML, pageHTML) {
     }
   }
 
-  // Let's first get the sorted names of the selected table (in table panel)
-  let selectedHeaderCells = tableHTML.rows[0].cells;
-  let originSortedCols = [];
-  for (let j=0;j<selectedHeaderCells.length;++j) {
-    let headerName = removeNewLine(selectedHeaderCells[j].innerText);
-    originSortedCols.push(headerName);
-  }
-  // We sort the array for easier comparison.
-  originSortedCols.sort();
-  const originTableLength = originSortedCols.length;
-
-  // Let's now look at the column names for each of the tables found on the sibling url
-  // and push it the matched tables onto this siblings tableArray
-  let tableArray = [];
+  // We now loop through all the tables found on this sibling page, and see if they are unionable with the selected table
+  let tableArray = []; // This is the array we will return.
   for (let i=0;i<tablesFound.length;++i) {
     let curHeaderCells = tablesFound[i].rows[0].cells;
-    // we only want to check if two tables have the same columns if they have the same number of columns
-    if (originTableLength === curHeaderCells.length) {
-      let newSortedCols = [];
-      for (let j=0;j<curHeaderCells.length;++j) {
+    let newCols = [];
+    for (let j=0;j<curHeaderCells.length;++j) {
         let headerName = removeNewLine(curHeaderCells[j].innerText);
-        newSortedCols.push(headerName);
+        newCols.push(headerName);
+    }
+
+    // we want to make sure that newTable has more than half of the columns of the selectedTable
+    // because we require a >50% unionScore
+    if (newCols.length > originCols.length/2) {
+      // We use the proposed algo here.
+      // First we set the union score and column Mapping
+      let unionScore = 0;
+      let colMapping = []; 
+      // We loop through the column headers in originCol, and see if they exist in newCols.
+      for (let k=0;k<originCols.length;++k) {
+          let curIndex = newCols.indexOf(originCols[k]);
+          if (curIndex !== -1) {
+              // This means the new table also contains column k from the selected table
+              colMapping.push(curIndex);
+              unionScore+=1/originCols.length;
+          }
+          else {
+              colMapping.push("null");
+          }
       }
-      newSortedCols.sort();
-      // we check, element by element, whether this table has the same column names as the selected table
-      let matched = true;
-      for (let i=0;i<originTableLength;++i)  {
-        if (originSortedCols[i] !== newSortedCols[i]) {
-          matched = false;
-          break;
-        }
+      if (unionScore > 1/2) {
+          // console.log("This table is unionable!");
+          // console.log("Union Score is "+unionScore);
+          // console.log("Column mapping is "+colMapping);
+
+          // If unionScore is 1, and newCols.length is equal to originCols.length, we want to reward it with 0.01 unionScore
+          // This helps us to rank the tables with the exact same column headers a bit higher
+          if (unionScore === 1 && newCols.length === originCols.length) {
+            unionScore+=0.01;
+          }
+          tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]}); 
       }
-      if (matched === true) {
-        // console.log("Found a match!");
-        // console.log(tablesFound[i]);
-        // console.log(selectedSibling.tableArray);
-        // tableArray.push({"isOpen":false,"data":tablesFound[i]})
-        // console.log(tablesFound[i]);
-        // In here we need to do something like editing the tableArray for propertyNeighbours[firstIndex].siblingArray[secondIndex]
-        tableArray.push({"isOpen":false,"data":tablesFound[i]})
+      else {
+          // These are the tables that require semantic mapping
+          // Let's not worry about them for now
+          // console.log("This table is not unionable. We should try semantic mapping");
+          // console.log("Union Score is "+unionScore);
+          // console.log("Column mapping is "+colMapping);
       }
     }
   }
+  // We sort the tableArray here by unionScore
+  tableArray.sort((a, b) => (a.unionScore < b.unionScore) ? 1 : -1);
   return tableArray;
 }
 
