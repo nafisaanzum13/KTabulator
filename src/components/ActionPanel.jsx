@@ -47,10 +47,21 @@ class ActionPanel extends Component {
   createSiblingArray(firstIndex) {
     const siblingArray = this.props.propertyNeighbours[firstIndex].siblingArray;
     let siblingElement = [];
+    let zeroDividerSet = false;
     for (let secondIndex=0;secondIndex<siblingArray.length;++secondIndex) {
       let tooltipText = "Examine tables on page "+siblingArray[secondIndex].name;
+      let divider = null;
+      if (zeroDividerSet === false && siblingArray[secondIndex].tableArray.length === 0) {
+        zeroDividerSet = true;
+        divider = 
+          <div>
+            <hr />
+            <p>Below are sibling pages on which no similar tables are found:</p>
+          </div>
+      }
       siblingElement.push(
         <div>
+            {divider}
             <Button
               title={tooltipText}
               onClick={(e) => this.props.toggleSibling(e,firstIndex,secondIndex)}>

@@ -988,12 +988,22 @@ class App extends Component {
           let tableArray = findTableFromHTML(tableHTML,pageHTML); // This is a helper function that fetches useful tables from pageHTML
           // we potentially want to do something different here if urlOrigin === siblingNameArray[i]
           // We only want to keep siblings that do have useful tables
-          if (tableArray.length !== 0) {
+          // if (tableArray.length !== 0) {
             siblingArray.push({"isOpen":false,"name":siblingNameArray[i],"tableArray":tableArray});
-          }
+          // }
         }
         // This following line sorts the siblingArray
-        siblingArray.sort((a, b) => (a.name > b.name) ? 1 : -1);
+        siblingArray.sort(function (a, b) {
+          let aTableLength = a.tableArray.length;
+          let bTableLength = b.tableArray.length;
+          let aName = a.name;
+          let bName = b.name;     
+          if(aTableLength === bTableLength) {
+              return (aName < bName) ? -1 : (aName > bName) ? 1 : 0;
+          } else {
+              return (aTableLength > bTableLength) ? -1 : 1;
+          }
+        });
         propertyNeighbours[index].siblingArray = siblingArray;
         this.setState({
           propertyNeighbours:propertyNeighbours,
@@ -1014,9 +1024,19 @@ class App extends Component {
     let propertyNeighbours = this.state.propertyNeighbours.slice();
     let selectedSibling = propertyNeighbours[firstIndex].siblingArray[secondIndex];
     selectedSibling.isOpen = !selectedSibling.isOpen;
-    this.setState({
-      propertyNeighbours:propertyNeighbours,
-    })
+
+    // We also want to change the iframe displayed at the bottom if we are toggling a sibling open
+    if (selectedSibling.isOpen === true) {
+      let iframeURL = "https://en.wikipedia.org/wiki/"+selectedSibling.name;
+      this.setState({
+        propertyNeighbours:propertyNeighbours,
+        iframeURL:iframeURL,
+      })
+    } else {
+      this.setState({
+        propertyNeighbours:propertyNeighbours,
+      })
+    }
   }
 
   // The following function handles the toggling of other table (that's the same as the selected table)
@@ -1025,6 +1045,7 @@ class App extends Component {
     // First handle the toggling task
     let propertyNeighbours = this.state.propertyNeighbours.slice();
     const selectedTable = propertyNeighbours[firstIndex].siblingArray[secondIndex].tableArray[thirdIndex];
+    // console.log(selectedTable.data);
     selectedTable.isOpen = !selectedTable.isOpen;
     this.setState({
       propertyNeighbours:propertyNeighbours,
@@ -1054,7 +1075,7 @@ class App extends Component {
       }
     }
     colMapping.splice(0,0,0); // insert element 0 at the first position of colMapping, deleting 0 elements
-    console.log(colMapping);
+    // console.log(colMapping);
 
     // Now we insert the data into dataToAdd. dataToAdd will be concatenated with tableDataExplore
     let dataToAdd = [];
@@ -1239,12 +1260,12 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
   return keyColNeighbours;
 }
 
-function removeNewLine(str) {
+function HTMLCleanCell(str) {
   // Note that this function also removes leading and trailing whitespaces
   if (str[str.length-1] === "\n") {
-    return str.slice(0,-1).trim();
+    return str.slice(0,-1).trim().split("[")[0];
   } else {
-    return str.trim();
+    return str.trim().split("[")[0];
   }
 }
 
@@ -1264,7 +1285,7 @@ function findTableFromHTML(tableHTML, pageHTML) {
   let selectedHeaderCells = tableHTML.rows[0].cells;
   let originCols = [];
   for (let j=0;j<selectedHeaderCells.length;++j) {
-      let headerName = removeNewLine(selectedHeaderCells[j].innerText);
+      let headerName = HTMLCleanCell(selectedHeaderCells[j].innerText);
       originCols.push(headerName);
   }
 
@@ -1284,7 +1305,7 @@ function findTableFromHTML(tableHTML, pageHTML) {
     let curHeaderCells = tablesFound[i].rows[0].cells;
     let newCols = [];
     for (let j=0;j<curHeaderCells.length;++j) {
-        let headerName = removeNewLine(curHeaderCells[j].innerText);
+        let headerName = HTMLCleanCell(curHeaderCells[j].innerText);
         newCols.push(headerName);
     }
 
@@ -1307,16 +1328,38 @@ function findTableFromHTML(tableHTML, pageHTML) {
               colMapping.push("null");
           }
       }
+      // In here we do a bit of string matching for tables with the same number of columns
+      // Chances are: tables from sibling pages with the same number of columns as the selected table, with structual invariability,
+      // is likely to be the "same" table as the selected on, we give it a chance for string matching
+      if (newCols.length === originCols.length) {
+        let sameStructure = true;
+        for (let i=0;i<colMapping.length;++i) {
+          if (colMapping[i] !== "null" && colMapping[i] !== i) {
+            sameStructure = false;
+            break;
+          }
+        }
+        if (sameStructure === true) {
+          for (let i=0;i<colMapping.length;++i) {
+            if (colMapping[i] === "null") {
+              if (newCols[i].includes(originCols[i]) || originCols[i].includes(newCols[i])) {
+                colMapping[i] = i;
+                unionScore+=1/originCols.length;
+              }
+            }
+          }
+        }
+        // console.log(colMapping);
+        // If unionScore is 1, and newCols.length is equal to originCols.length, we want to reward it with 0.01 unionScore
+        // This helps us to rank the tables with the exact same column headers a bit higher
+        if (unionScore === 1) {
+          unionScore+=0.01;
+        }
+      }
       if (unionScore > 1/2) {
           // console.log("This table is unionable!");
           // console.log("Union Score is "+unionScore);
           // console.log("Column mapping is "+colMapping);
-
-          // If unionScore is 1, and newCols.length is equal to originCols.length, we want to reward it with 0.01 unionScore
-          // This helps us to rank the tables with the exact same column headers a bit higher
-          if (unionScore === 1 && newCols.length === originCols.length) {
-            unionScore+=0.01;
-          }
           tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]}); 
       }
       else {
@@ -1348,7 +1391,7 @@ function setTableFromHTML(selecteTableHTML,urlOrigin) {
   for (let i=0;i<selectedTable.rows.length;++i) {
       let tempRow = [];
       for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
-          let curCellText = removeNewLine(selectedTable.rows[i].cells[j].innerText);
+          let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
           let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
           tempRow.push({"data":curCellText,"origin":urlOrigin,"rowSpan":curRowSpan});
       }
