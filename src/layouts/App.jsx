@@ -537,7 +537,8 @@ class App extends Component {
 
       // If we just populated a column with duplicate names, we want to give users an option to "populate all other columns of this name"
 
-      let remainNeighbourCount = values[0].results.bindings.length-neighbourIndex-1;
+      let maxCount = Math.min(values[0].results.bindings.length,100);
+      let remainNeighbourCount = maxCount-neighbourIndex-1;
 
       let tempObj = {};
       if ((neighbourIndex !== -1) && (remainNeighbourCount > 0)) {
@@ -1240,6 +1241,12 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
         } else {
           curNeighbourLabel = "is "+curNeighbourLiteral+" of-"+neighbourCount;
         }
+        if (neighbourCount <= 100) {
+          tempObj["label"] = curNeighbourLabel;
+          tempObj["value"] = curNeighbourValue;
+          tempObj["type"] = type;
+          keyColNeighbours.push(tempObj);
+        }
         neighbourCount++;
       } else {
         if (neighbourCount > 1) {
@@ -1249,12 +1256,14 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
             curNeighbourLabel = "is "+curNeighbourLiteral+" of-"+neighbourCount;
           }
         }
+        if (neighbourCount <= 100) {
+          tempObj["label"] = curNeighbourLabel;
+          tempObj["value"] = curNeighbourValue;
+          tempObj["type"] = type;
+          keyColNeighbours.push(tempObj);
+        }
         neighbourCount=1;
       }
-      tempObj["label"] = curNeighbourLabel;
-      tempObj["value"] = curNeighbourValue;
-      tempObj["type"] = type;
-      keyColNeighbours.push(tempObj);
     }
   }
   return keyColNeighbours;
@@ -1356,6 +1365,7 @@ function findTableFromHTML(tableHTML, pageHTML) {
           unionScore+=0.01;
         }
       }
+      // Let's implement the semantic mapping here. (sometime later though)
       if (unionScore > 1/2) {
           // console.log("This table is unionable!");
           // console.log("Union Score is "+unionScore);
