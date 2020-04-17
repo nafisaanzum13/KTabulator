@@ -1203,6 +1203,7 @@ function regexReplace(str) {
             .replace(/'/g,"%5Cu0027")
             .replace(/\(/g,"%5Cu0028")
             .replace(/\)/g,"%5Cu0029")
+            .replace(/\+/g,"%5Cu002B")
             .replace(/%E2%80%93/g,"%5Cu2013")
             .replace(/\./g,"%5Cu002E")
             .replace(/\//g,"%5Cu002F")
@@ -1386,32 +1387,34 @@ function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation) {
           unionScore+=0.01;
         }
       }
-      // If we are not finding a perfect match, we want to do use semantic mapping here to see if it's possible to map the unmapped columns
-      if (unionScore < 1) {
-        // console.log(colMapping);
-        // We want to remove from remainCols the columns that are already mapped
 
-        // These are the columns that we can still use from the current table
-        remainCols = remainCols.filter(function(x) { return colMapping.indexOf(x) < 0 })
-        let searchCols = [];
-        for (let i=0;i<colMapping.length;++i) {
-          if (colMapping[i] === "null") {
-            searchCols.push(i);
-          }
-        }
-        if (newCols[1] === "Scorer") {
-          console.log(newCols);
-          console.log(remainCols);
-          console.log(searchCols);
-          for (let i=0;i<searchCols.length;++i) {
-            console.log(selectedClassAnnotation[searchCols[i]]);
-          }
-        }
+    // If we are not finding a perfect match, we want to do use semantic mapping here to see if it's possible to map the unmapped columns
+    // Note: this part is expected to take quite some time. Now it's implemented just for testing purposes
+    //   if (unionScore < 1) {
+    //     // console.log(colMapping);
+    //     // We want to remove from remainCols the columns that are already mapped
 
-        // Now, searchCols stores the columns from the selected table that have not been mapped yet
-        // and remainCols stores the columns from the current table that can still be used for mapping
-        // for (let i=0;i<searchCols.length;++i)
-      }
+    //     // These are the columns that we can still use from the current table
+    //     remainCols = remainCols.filter(function(x) { return colMapping.indexOf(x) < 0 })
+    //     let searchCols = [];
+    //     for (let i=0;i<colMapping.length;++i) {
+    //       if (colMapping[i] === "null") {
+    //         searchCols.push(i);
+    //       }
+    //     }
+    //     // if (newCols[1] === "Scorer") {
+    //     //   console.log(newCols);
+    //     //   console.log(remainCols);
+    //     //   console.log(searchCols);
+    //     //   for (let i=0;i<searchCols.length;++i) {
+    //     //     console.log(selectedClassAnnotation[searchCols[i]]);
+    //     //   }
+    //     // }
+
+    //     // Now, searchCols stores the columns from the selected table that have not been mapped yet
+    //     // and remainCols stores the columns from the current table that can still be used for mapping
+    //     // for (let i=0;i<searchCols.length;++i)
+    //   }
 
       // We push on tables with unionScore > 0.5
       if (unionScore > 1/2) {
@@ -1476,6 +1479,7 @@ function setTableFromHTML(selecteTableHTML,urlOrigin) {
   return tempTable; // tempTable is a 2D array of objects storing the table data. Object has two fields: data(string) and origin(string).
 }
 
+// This function takes in the HTML of a table, and returns a Promise that resolves to the class annotation for all the columns of the table
 function findClassAnnotation(tableHTML) {
 
   let selectedTable = tableHTML;
@@ -1512,6 +1516,8 @@ function findClassAnnotation(tableHTML) {
       // Here we make the query
       let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
       let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      // console.log(tempTable[i][j].data);
+      // console.log(regexReplace(tempTable[i][j].data));
       let queryBody = 
         "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
         +regexReplace(tempTable[i][j].data)
