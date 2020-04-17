@@ -886,6 +886,7 @@ class App extends Component {
     allPromiseReady(queryPromise).then((queryResults) => {
       // console.log(queryResults[0].results.bindings);
       // console.log(queryResults[1].results.bindings);
+      console.log(queryResults[2]);
       let selectedClassAnnotation = queryResults[2];
 
       // First we fetch the property neighbours
