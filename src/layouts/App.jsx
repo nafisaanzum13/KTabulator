@@ -6,6 +6,8 @@ import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
 import PagePanel from "../components/PagePanel";
 
+const maxNeighbourCount = 100;
+
 class App extends Component {
 
   constructor(props) {
@@ -46,9 +48,10 @@ class App extends Component {
       curActionInfo:null,        // object storing the current action that should be displayed in ActionPanel. Initially null.
 
       // startes below are useful for exploreTable
-      originTableArray:[],       // 1D array storing all tables found on pasted URL
-      tableOpenList:[],          // 1D array storing whether each table in originTableArray has been toggled open or not
-      selectedTableIndex:-1,     // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
+      originTableArray:[],        // 1D array storing all tables found on pasted URL
+      tableOpenList:[],           // 1D array storing whether each table in originTableArray has been toggled open or not
+      selectedTableIndex:-1,      // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
+      selectedClassAnnotation:[], // semantic class annotation for each column of selected table
       tableDataExplore:[],       // 2D arary of objects storing the table data from explore table task. Similar to tableData above. Three properties: data, origin, rowSpan.
       // array of objects with four properties storing the status/content for each property neighbour
       // 1) predicate: string storing the predicate (ex. dbp:league)
@@ -537,7 +540,7 @@ class App extends Component {
 
       // If we just populated a column with duplicate names, we want to give users an option to "populate all other columns of this name"
 
-      let maxCount = Math.min(values[0].results.bindings.length,100);
+      let maxCount = Math.min(values[0].results.bindings.length,maxNeighbourCount);
       let remainNeighbourCount = maxCount-neighbourIndex-1;
 
       let tempObj = {};
@@ -873,10 +876,17 @@ class App extends Component {
     let queryTwo = fetchJSON(queryURLTwo);
     queryPromise.push(queryTwo);
 
+    // Third query here should get the class annotations
+    // let selectedClassAnnotation = findClassAnnotation(this.state.originTableArray[tableIndex]);
+    // console.log(selectedClassAnnotation);
+    // console.log("hi");
+    queryPromise.push(findClassAnnotation(this.state.originTableArray[tableIndex]));
+
     // now we process the query results
     allPromiseReady(queryPromise).then((queryResults) => {
       // console.log(queryResults[0].results.bindings);
       // console.log(queryResults[1].results.bindings);
+      let selectedClassAnnotation = queryResults[2];
 
       // First we fetch the property neighbours
       // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings (150)
@@ -921,7 +931,7 @@ class App extends Component {
         promiseArray.push(curPromise);
       }
 
-      // The part below processes all the siblings
+      // The part below processes all the siblings and remove neighbours with too many or too few siblings
 
       allPromiseReady(promiseArray).then((values) => {
         let propertyNeighbours = [];
@@ -957,6 +967,7 @@ class App extends Component {
           propertyNeighbours:propertyNeighbours,
           curActionInfo:curActionInfo,
           tableDataExplore:tableDataExplore,
+          selectedClassAnnotation:selectedClassAnnotation,
         })
       })
     });
@@ -986,7 +997,7 @@ class App extends Component {
         for (let i=0;i<values.length;++i) {
           let tableHTML = this.state.originTableArray[this.state.selectedTableIndex];
           let pageHTML = values[i];
-          let tableArray = findTableFromHTML(tableHTML,pageHTML); // This is a helper function that fetches useful tables from pageHTML
+          let tableArray = findTableFromHTML(tableHTML,pageHTML,this.state.selectedClassAnnotation); // This is a helper function that fetches useful tables from pageHTML
           // we potentially want to do something different here if urlOrigin === siblingNameArray[i]
           // We only want to keep siblings that do have useful tables
           // if (tableArray.length !== 0) {
@@ -1241,7 +1252,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
         } else {
           curNeighbourLabel = "is "+curNeighbourLiteral+" of-"+neighbourCount;
         }
-        if (neighbourCount <= 100) {
+        if (neighbourCount <= maxNeighbourCount) {
           tempObj["label"] = curNeighbourLabel;
           tempObj["value"] = curNeighbourValue;
           tempObj["type"] = type;
@@ -1256,7 +1267,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
             curNeighbourLabel = "is "+curNeighbourLiteral+" of-"+neighbourCount;
           }
         }
-        if (neighbourCount <= 100) {
+        if (neighbourCount <= maxNeighbourCount) {
           tempObj["label"] = curNeighbourLabel;
           tempObj["value"] = curNeighbourValue;
           tempObj["type"] = type;
@@ -1288,7 +1299,7 @@ function HTMLCleanCell(str) {
 
 // Once semantic mapping feature is added, the colMapping will be updated
 
-function findTableFromHTML(tableHTML, pageHTML) {
+function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation) {
 
   // We first get the column names of the selected table
   let selectedHeaderCells = tableHTML.rows[0].cells;
@@ -1308,18 +1319,27 @@ function findTableFromHTML(tableHTML, pageHTML) {
     }
   }
 
+  // This is the array we will return.
+  let tableArray = []; 
+
   // We now loop through all the tables found on this sibling page, and see if they are unionable with the selected table
-  let tableArray = []; // This is the array we will return.
   for (let i=0;i<tablesFound.length;++i) {
+
+    // We first fetch the cleaned column names of the current table
     let curHeaderCells = tablesFound[i].rows[0].cells;
-    let newCols = [];
+    let newCols = [];   // stores the cleaned column names of the current table
+    let remainCols = [];   // stores an array of the indices of the columns of the current table that are not yet mapped
+
     for (let j=0;j<curHeaderCells.length;++j) {
         let headerName = HTMLCleanCell(curHeaderCells[j].innerText);
         newCols.push(headerName);
+        remainCols.push(j);
     }
 
     // we want to make sure that newTable has more than half of the columns of the selectedTable
     // because we require a >50% unionScore
+    // If it does not, we ignore this table automatically
+
     if (newCols.length > originCols.length/2) {
       // We use the proposed algo here.
       // First we set the union score and column Mapping
@@ -1330,6 +1350,7 @@ function findTableFromHTML(tableHTML, pageHTML) {
           let curIndex = newCols.indexOf(originCols[k]);
           if (curIndex !== -1) {
               // This means the new table also contains column k from the selected table
+              // Thus we have found a mapping. We push it onto colMapping.
               colMapping.push(curIndex);
               unionScore+=1/originCols.length;
           }
@@ -1365,7 +1386,34 @@ function findTableFromHTML(tableHTML, pageHTML) {
           unionScore+=0.01;
         }
       }
-      // Let's implement the semantic mapping here. (sometime later though)
+      // If we are not finding a perfect match, we want to do use semantic mapping here to see if it's possible to map the unmapped columns
+      if (unionScore < 1) {
+        // console.log(colMapping);
+        // We want to remove from remainCols the columns that are already mapped
+
+        // These are the columns that we can still use from the current table
+        remainCols = remainCols.filter(function(x) { return colMapping.indexOf(x) < 0 })
+        let searchCols = [];
+        for (let i=0;i<colMapping.length;++i) {
+          if (colMapping[i] === "null") {
+            searchCols.push(i);
+          }
+        }
+        if (newCols[1] === "Scorer") {
+          console.log(newCols);
+          console.log(remainCols);
+          console.log(searchCols);
+          for (let i=0;i<searchCols.length;++i) {
+            console.log(selectedClassAnnotation[searchCols[i]]);
+          }
+        }
+
+        // Now, searchCols stores the columns from the selected table that have not been mapped yet
+        // and remainCols stores the columns from the current table that can still be used for mapping
+        // for (let i=0;i<searchCols.length;++i)
+      }
+
+      // We push on tables with unionScore > 0.5
       if (unionScore > 1/2) {
           // console.log("This table is unionable!");
           // console.log("Union Score is "+unionScore);
@@ -1428,6 +1476,71 @@ function setTableFromHTML(selecteTableHTML,urlOrigin) {
   return tempTable; // tempTable is a 2D array of objects storing the table data. Object has two fields: data(string) and origin(string).
 }
 
+function findClassAnnotation(tableHTML) {
+
+  let selectedTable = tableHTML;
+  let tempTable = [];
+
+  // We first fetch the plain, unprocessed version of the table.
+  for (let i=0;i<selectedTable.rows.length;++i) {
+    let tempRow = [];
+    for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
+        let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
+        let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
+        tempRow.push({"data":curCellText,"rowSpan":curRowSpan});
+    }
+    tempTable.push(tempRow);
+  }
+  
+  // We now deal with rowspans.
+  for (let i=0;i<tempTable.length;++i) {
+    for (let j=0;j<tempTable[i].length;++j) {
+      let curCellText = tempTable[i][j].data;
+      if (tempTable[i][j].rowSpan > 1) {
+          for (let k=1;k<tempTable[i][j].rowSpan;++k) {
+              tempTable[i+k].splice(j,0,{"data":curCellText,"rowSpan":1});
+          }
+      }
+    }
+  }
+
+  // Now tempTable contains the clean data we can use
+  let promiseArray = [];
+  let remainEntries = Math.min(3,tempTable.length);
+  for (let j=0;j<tempTable[0].length;++j) {
+    for (let i=1;i<=remainEntries;++i) {
+      // Here we make the query
+      let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBody = 
+        "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
+        +regexReplace(tempTable[i][j].data)
+        +"+rdf%3Atype+%3Fo.%0D%0A++++++BIND%28STR%28%3Fo%29+AS+%3FoString+%29.%0D%0A++++++FILTER%28regex%28%3FoString%2C%22dbpedia.org%2Fontology%2F%22%2C%22i%22%29%29%0D%0A%7D%0D%0A&";
+      let queryURL = prefixURL+queryBody+suffixURL;
+      promiseArray.push(fetchJSON(queryURL));
+    }
+  }
+  return allPromiseReady(promiseArray).then((values) => {
+    // for (let i=0;i<values.length;++i) {
+    //   console.log(values[i]);
+    // }
+    let classAnnotation = [];
+    for (let j=0;j<tempTable[0].length;++j) {
+      let curColumnClass = [];
+      for (let i=0;i<remainEntries;++i) {
+        let curCellClass = [];
+        let bindingArray = values[remainEntries*j+i].results.bindings;
+        for (let k=0;k<bindingArray.length;++k) {
+          curCellClass.push(bindingArray[k].o.value.slice(28));
+        }
+        curColumnClass=[...new Set([...curColumnClass ,...curCellClass])];
+      }
+      classAnnotation.push(curColumnClass);
+    }
+    // return classAnnotation;
+    return Promise.resolve(classAnnotation);
+  });
+}
 
 
 
