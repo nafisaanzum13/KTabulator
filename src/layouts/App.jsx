@@ -1203,6 +1203,7 @@ function regexReplace(str) {
             .replace(/\(/g,"%5Cu0028")
             .replace(/\)/g,"%5Cu0029")
             .replace(/\+/g,"%5Cu002B")
+            .replace(/-/g,"%5Cu002D")
             .replace(/%E2%80%93/g,"%5Cu2013")
             .replace(/\./g,"%5Cu002E")
             .replace(/\//g,"%5Cu002F")
@@ -1618,9 +1619,10 @@ function findClassAnnotation(tableHTML,name) {
       let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       // console.log(tempTable[i][j].data);
       // console.log(regexReplace(tempTable[i][j].data));
+      let curEntry = (tempTable[i][j] === undefined)?"NONEXISTING":regexReplace(tempTable[i][j].data);
       let queryBody = 
         "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
-        +regexReplace(tempTable[i][j].data)
+        +curEntry
         +"+rdf%3Atype+%3Fo.%0D%0A++++++BIND%28STR%28%3Fo%29+AS+%3FoString+%29.%0D%0A++++++FILTER%28regex%28%3FoString%2C%22dbpedia.org%2Fontology%2F%22%2C%22i%22%29%29%0D%0A%7D%0D%0A&";
       let queryURL = prefixURL+queryBody+suffixURL;
       // console.log("Query is constructed!");
