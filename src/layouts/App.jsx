@@ -849,7 +849,7 @@ class App extends Component {
 
   onSelectTable(e,tableIndex) {
     // We need to let table panel display the selected table
-    // And we need to update the Action Panel to display the first degree properties of the original page
+    // And we need to update the Action Panel to display the first degree properties of the origigitnal page
     // We do a fetch request here (Sixth Query). It gets the property neighbours of the original page that are links, as well as dct:subject
 
     // First query gets the property neighbours 
@@ -877,17 +877,15 @@ class App extends Component {
     queryPromise.push(queryTwo);
 
     // Third query here should get the class annotations
-    // let selectedClassAnnotation = findClassAnnotation(this.state.originTableArray[tableIndex]);
-    // console.log(selectedClassAnnotation);
-    // console.log("hi");
     queryPromise.push(findClassAnnotation(this.state.originTableArray[tableIndex]));
 
     // now we process the query results
     allPromiseReady(queryPromise).then((queryResults) => {
       // console.log(queryResults[0].results.bindings);
       // console.log(queryResults[1].results.bindings);
-      console.log(queryResults[2]);
+      // console.log(queryResults[2]);
       let selectedClassAnnotation = queryResults[2];
+      // console.log(selectedClassAnnotation);
 
       // First we fetch the property neighbours
       // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings (150)
@@ -998,7 +996,7 @@ class App extends Component {
         for (let i=0;i<values.length;++i) {
           let tableHTML = this.state.originTableArray[this.state.selectedTableIndex];
           let pageHTML = values[i];
-          let tableArray = findTableFromHTML(tableHTML,pageHTML,this.state.selectedClassAnnotation); // This is a helper function that fetches useful tables from pageHTML
+          let tableArray = findTableFromHTML(tableHTML,pageHTML,this.state.selectedClassAnnotation,siblingNameArray[i]); // This is a helper function that fetches useful tables from pageHTML
           // we potentially want to do something different here if urlOrigin === siblingNameArray[i]
           // We only want to keep siblings that do have useful tables
           // if (tableArray.length !== 0) {
@@ -1301,7 +1299,7 @@ function HTMLCleanCell(str) {
 
 // Once semantic mapping feature is added, the colMapping will be updated
 
-function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation) {
+function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, pageName) {
 
   // We first get the column names of the selected table
   let selectedHeaderCells = tableHTML.rows[0].cells;
@@ -1320,6 +1318,64 @@ function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation) {
       tablesFound.push(wikiTablesFound[i]);
     }
   }
+
+  // console.log(tablesFound);
+  // Let's try to log in console the class annotation found for these tables
+  // let classAnnotationPromise = [];
+  // for (let i=0;i<tablesFound.length;++i) {
+  //   classAnnotationPromise.push(findClassAnnotation(tablesFound[i],pageName));
+  // }
+
+  // allPromiseReady(classAnnotationPromise).then((values) => {
+  //   for (let i=0;i<values.length;++i) {
+  //     // console.log(tablesFound[i]);
+  //     let selectedTable = tablesFound[i];
+  //     let tempTable = [];
+
+  //     // We first fetch the plain, unprocessed version of the table.
+  //     for (let i=0;i<selectedTable.rows.length;++i) {
+  //       let tempRow = [];
+  //       for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
+  //           let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
+  //           let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
+  //           let curColSpan = selectedTable.rows[i].cells[j].colSpan;
+  //           tempRow.push({"data":curCellText,"rowSpan":curRowSpan,"colSpan":curColSpan});
+  //       }
+  //       tempTable.push(tempRow);
+  //     }
+      
+  //     // We first deal with colspans.
+  //     for (let i=0;i<tempTable.length;++i) {
+  //       for (let j=0;j<tempTable[i].length;++j) {
+  //         let curCellText = tempTable[i][j].data;
+  //         if (tempTable[i][j].colSpan > 1) {
+  //             for (let k=1;k<tempTable[i][j].colSpan;++k) {
+  //                 tempTable[i].splice(j+1,0,{"data":curCellText,"rowSpan":1,"colSpan":1});
+  //             }
+  //         }
+  //       }
+  //     }
+
+  //     // We now deal with rowspans.
+  //     for (let i=0;i<tempTable.length;++i) {
+  //       for (let j=0;j<tempTable[i].length;++j) {
+  //           let curCellText = tempTable[i][j].data;
+  //           if (tempTable[i][j].rowSpan > 1) {
+  //               for (let k=1;k<tempTable[i][j].rowSpan;++k) {
+  //                 // Note: the if condition is necessary to take care of error conditions (the original HTML table element has errors)
+  //                 if (i+k < tempTable.length) {
+  //                   tempTable[i+k].splice(j,0,{"data":curCellText,"rowSpan":1,"colSpan":1});
+  //                 }
+  //               }
+  //           }
+  //       }
+  //     }
+  //     console.log("The following is the data for the table: ");
+  //     console.log(tempTable);
+  //     console.log("Now we show the class annotations for its columns: ");
+  //     console.log(values[i]);
+  //   }
+  // })
 
   // This is the array we will return.
   let tableArray = []; 
@@ -1418,7 +1474,7 @@ function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation) {
     //   }
 
       // We push on tables with unionScore > 0.5
-      if (unionScore > 1/2) {
+      if (unionScore >= 1/2) {
           // console.log("This table is unionable!");
           // console.log("Union Score is "+unionScore);
           // console.log("Column mapping is "+colMapping);
@@ -1455,34 +1511,54 @@ function setTableFromHTML(selecteTableHTML,urlOrigin) {
       for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
           let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
           let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
-          tempRow.push({"data":curCellText,"origin":urlOrigin,"rowSpan":curRowSpan});
+          let curColSpan = selectedTable.rows[i].cells[j].colSpan;
+          // console.log(curColSpan);
+          tempRow.push({"data":curCellText,"origin":urlOrigin,"rowSpan":curRowSpan,"colSpan":curColSpan});
       }
       tempTable.push(tempRow);
   }
   
+  // We first deal with colspans.
+  for (let i=0;i<tempTable.length;++i) {
+    for (let j=0;j<tempTable[i].length;++j) {
+        let curCellText = tempTable[i][j].data;
+        if (tempTable[i][j].colSpan > 1) {
+            for (let k=1;k<tempTable[i][j].colSpan;++k) {
+                tempTable[i].splice(j+1,0,{"data":curCellText,"origin":urlOrigin,"rowSpan":1,"colSpan":1});
+            }
+        }
+    }
+  }
+
   // We now deal with rowspans.
   for (let i=0;i<tempTable.length;++i) {
     for (let j=0;j<tempTable[i].length;++j) {
         let curCellText = tempTable[i][j].data;
         if (tempTable[i][j].rowSpan > 1) {
             for (let k=1;k<tempTable[i][j].rowSpan;++k) {
-                tempTable[i+k].splice(j,0,{"data":curCellText,"origin":urlOrigin,"rowSpan":1});
+                // Note: the if condition is necessary to take care of error conditions (the original HTML table element has errors)
+                if (i+k < tempTable.length) {
+                  tempTable[i+k].splice(j,0,{"data":curCellText,"origin":urlOrigin,"rowSpan":1,"colSpan":1});
+                }
             }
         }
     }
   }
 
   // We now add in an additional column: the originURL of the page
-  tempTable[0].splice(0,0,{"data":"OriginURL","origin":"null","rowSpan":1});
+  tempTable[0].splice(0,0,{"data":"OriginURL","origin":"null","rowSpan":1,"colSpan":1});
   for (let i=1;i<tempTable.length;++i) {
-    tempTable[i].splice(0,0,{"data":urlOrigin,"origin":"null","rowSpan":1});
+    tempTable[i].splice(0,0,{"data":urlOrigin,"origin":"null","rowSpan":1,"colSpan":1});
   }
   return tempTable; // tempTable is a 2D array of objects storing the table data. Object has two fields: data(string) and origin(string).
 }
 
 // This function takes in the HTML of a table, and returns a Promise that resolves to the class annotation for all the columns of the table
-function findClassAnnotation(tableHTML) {
+function findClassAnnotation(tableHTML,name) {
 
+  // console.log("Page Name is: "+name);
+  // console.log("Table HTML is: ");
+  // console.log(tableHTML);
   let selectedTable = tableHTML;
   let tempTable = [];
 
@@ -1492,27 +1568,50 @@ function findClassAnnotation(tableHTML) {
     for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
         let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
         let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
-        tempRow.push({"data":curCellText,"rowSpan":curRowSpan});
+        let curColSpan = selectedTable.rows[i].cells[j].colSpan;
+        // console.log(curColSpan);
+        tempRow.push({"data":curCellText,"rowSpan":curRowSpan,"colSpan":curColSpan});
     }
     tempTable.push(tempRow);
   }
-  
-  // We now deal with rowspans.
+
+  // We first deal with colspans.
   for (let i=0;i<tempTable.length;++i) {
     for (let j=0;j<tempTable[i].length;++j) {
-      let curCellText = tempTable[i][j].data;
-      if (tempTable[i][j].rowSpan > 1) {
-          for (let k=1;k<tempTable[i][j].rowSpan;++k) {
-              tempTable[i+k].splice(j,0,{"data":curCellText,"rowSpan":1});
-          }
-      }
+        let curCellText = tempTable[i][j].data;
+        if (tempTable[i][j].colSpan > 1) {
+            for (let k=1;k<tempTable[i][j].colSpan;++k) {
+                tempTable[i].splice(j+1,0,{"data":curCellText,"rowSpan":1,"colSpan":1});
+            }
+        }
     }
   }
 
+  // We now deal with rowspans.
+  for (let i=0;i<tempTable.length;++i) {
+    for (let j=0;j<tempTable[i].length;++j) {
+        let curCellText = tempTable[i][j].data;
+        if (tempTable[i][j].rowSpan > 1) {
+            for (let k=1;k<tempTable[i][j].rowSpan;++k) {
+                // Note: the if condition is necessary to take care of error conditions (the original HTML table element has errors)
+                if (i+k < tempTable.length) {
+                  tempTable[i+k].splice(j,0,{"data":curCellText,"rowSpan":1,"colSpan":1});
+                }
+            }
+        }
+    }
+  }
+
+  // console.log("Table data is: ");
+  // console.log(tempTable);
+
   // Now tempTable contains the clean data we can use
   let promiseArray = [];
-  let remainEntries = Math.min(3,tempTable.length);
+  // We take the minimum of (1, tempTable.length-1) number of values from each column to determine its class annotation
+  // Note!! This -1 here is important. It excludes the row corresponding to the column headers
+  let remainEntries = Math.min(1,tempTable.length-1); 
   for (let j=0;j<tempTable[0].length;++j) {
+    // console.log("We are taking this number of entries from this table: "+remainEntries);
     for (let i=1;i<=remainEntries;++i) {
       // Here we make the query
       let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
@@ -1524,6 +1623,7 @@ function findClassAnnotation(tableHTML) {
         +regexReplace(tempTable[i][j].data)
         +"+rdf%3Atype+%3Fo.%0D%0A++++++BIND%28STR%28%3Fo%29+AS+%3FoString+%29.%0D%0A++++++FILTER%28regex%28%3FoString%2C%22dbpedia.org%2Fontology%2F%22%2C%22i%22%29%29%0D%0A%7D%0D%0A&";
       let queryURL = prefixURL+queryBody+suffixURL;
+      // console.log("Query is constructed!");
       promiseArray.push(fetchJSON(queryURL));
     }
   }
