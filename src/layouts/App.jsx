@@ -858,7 +858,7 @@ class App extends Component {
     let suffixURLOne = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyOne = 
       "SELECT+%3Fp+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
-      +regexReplace(this.state.urlPasted.slice(30))
+      +urlReplace(this.state.urlPasted.slice(30))
       +"+%3Fp+%3Fo.%0D%0A++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++FILTER%28isIRI%28%3Fo%29+%26%26+regex%28%3FpString%2C%22property%22%2C%22i%22%29+%26%26+%28%21regex%28%3FpString%2C%22text%22%2C%22i%22%29%29%29.%0D%0A%7D%0D%0A&";
     let queryURLOne = prefixURLOne+queryBodyOne+suffixURLOne;
     let queryOne = fetchJSON(queryURLOne);
@@ -869,7 +869,7 @@ class App extends Component {
     let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyTwo = 
       "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
-      +regexReplace(this.state.urlPasted.slice(30))
+      +urlReplace(this.state.urlPasted.slice(30))
       +"+dct%3Asubject+%3Fo%0D%0A%7D&";
     let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
     // console.log(queryURLTwo);
@@ -1206,18 +1206,24 @@ function allPromiseReady(promiseArray){
 // This function replaces string so that the result can be used in queryURL.
 // It currently replaces "(", ")", "'", "-", " ", "&", ".", """,and "/"
 function regexReplace(str) {
-  return str.replace(/"/g,"%5Cu0022")
+  return str.replace(/%/g,"%5Cu0025")
+            .replace(/"/g,"%5Cu0022")
             .replace(/&/g,"%5Cu0026")
             .replace(/'/g,"%5Cu0027")
             .replace(/\(/g,"%5Cu0028")
             .replace(/\)/g,"%5Cu0029")
             .replace(/\+/g,"%5Cu002B")
             .replace(/-/g,"%5Cu002D")
-            .replace(/%E2%80%93/g,"%5Cu2013")
+            .replace(/=/g,"%5Cu003D")
             .replace(/\./g,"%5Cu002E")
             .replace(/\//g,"%5Cu002F")
             .replace(/,/g,"%5Cu002C")
             .replace(/\s/g,"_");
+}
+
+// This function replaces the URL pasted 
+function urlReplace(str) {
+  return str.replace(/%E2%80%93/g,"%5Cu2013");
 }
 
 function reverseReplace(str) {
@@ -1493,13 +1499,13 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
         }
       }
       if (newCols[1] === "Scorer") {
-        console.log("We still need to find these columns from the original table: "+searchCols);
-        console.log("These columns are still available for use: "+remainCols);
-        console.log("The current column mappings are "+colMapping);
-        console.log("Here are the class annotations of the search columns: ")
-        for (let i=0;i<searchCols.length;++i) {
-          console.log(selectedClassAnnotation[searchCols[i]]);
-        }
+        // console.log("We still need to find these columns from the original table: "+searchCols);
+        // console.log("These columns are still available for use: "+remainCols);
+        // console.log("The current column mappings are "+colMapping);
+        // console.log("Here are the class annotations of the search columns: ")
+        // for (let i=0;i<searchCols.length;++i) {
+        //   console.log(selectedClassAnnotation[searchCols[i]]);
+        // }
       }
 
       // Now, searchCols stores the columns from the selected table that have not been mapped yet
@@ -1514,12 +1520,14 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
     // Because the return statement is here, it may be possible that we are pushing nothing onto the promiseArray!!!
     // There is no need to worry about it.
     return allPromiseReady(promiseArray).then((values) => {
-      console.log("Here is table HTML");
-      console.log(tableHTML);
-      console.log("Here are the class annotations for the remaining columns");
-      console.log(values);
-      console.log("This is column mapping "+colMapping);
-      console.log("Union score is "+unionScore);
+      // console.log("Here is table HTML");
+      // console.log(tableHTML);
+      // console.log("Here are the class annotations for the remaining columns");
+      // console.log(values);
+      // console.log("This is column mapping "+colMapping);
+      // console.log("Union score is "+unionScore);
+      // Start from here tomorrow
+
       // We push on tables with unionScore > 0.5
       if (unionScore > 1/2) {
         // console.log("This table is unionable!");
@@ -1594,6 +1602,14 @@ function findClassAnnotation(tableHTML, remainCols) {
   // Note!! This -1 here is important. It excludes the row corresponding to the column headers
   let remainEntries = Math.min(1,tempTable.length-1); 
 
+  // This is a placeholder array to solve the 2D problem. It's a 1D array containing remainEntries number of -1's
+  let placeHolderArray = [];
+  let notFoundArray = [];
+  for (let i=0;i<remainEntries;++i) {
+    placeHolderArray.push(-1);
+    notFoundArray.push("null");
+  }
+
   // Let's loop through the table to ask our queries.
   // If remainCols are undefined, we take every columns from the tempTable;
   if (remainCols === undefined) {
@@ -1616,16 +1632,29 @@ function findClassAnnotation(tableHTML, remainCols) {
       // console.log(tempTable[i][j].data);
       // console.log(regexReplace(tempTable[i][j].data));
       let curEntry = (tempTable[i][curColIndex] === undefined)?"NONEXISTING":regexReplace(tempTable[i][curColIndex].data);
-      let queryBody = 
-        "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
-        +curEntry
-        +"+rdf%3Atype+%3Fo.%0D%0A++++++BIND%28STR%28%3Fo%29+AS+%3FoString+%29.%0D%0A++++++FILTER%28regex%28%3FoString%2C%22dbpedia.org%2Fontology%2F%22%2C%22i%22%29%29%0D%0A%7D%0D%0A&";
-      let queryURL = prefixURL+queryBody+suffixURL;
-      // console.log("Query is constructed!");
-      promiseArray.push(fetchJSON(queryURL));
+
+      // If we found out that the current entry is a number, we do not want to send a query.
+      if (!isNaN(Number(curEntry))) {
+        promiseArray.push(Promise.resolve(placeHolderArray));
+      }
+      // Else if we find the curEntry is too long, it will likely not exist in DBPedia 
+      else if (curEntry.length > 40) {
+        promiseArray.push(Promise.resolve(notFoundArray));
+      }
+      // Else we construct the query 
+      else {
+        let queryBody = 
+          "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
+          +curEntry
+          +"+rdf%3Atype+%3Fo.%0D%0A++++++BIND%28STR%28%3Fo%29+AS+%3FoString+%29.%0D%0A++++++FILTER%28regex%28%3FoString%2C%22dbpedia.org%2Fontology%2F%22%2C%22i%22%29%29%0D%0A%7D%0D%0A&";
+        let queryURL = prefixURL+queryBody+suffixURL;
+        // console.log("Query is constructed!");
+        promiseArray.push(fetchJSON(queryURL));
+      }
     }
   }
   return allPromiseReady(promiseArray).then((values) => {
+    // console.log(values);
     // for (let i=0;i<values.length;++i) {
     //   console.log(values[i]);
     // }
@@ -1635,16 +1664,27 @@ function findClassAnnotation(tableHTML, remainCols) {
     for (let j=0;j<remainCols.length;++j) {
       // console.log("Number of remain cols is "+remainCols.length);
       let curColumnClass = [];
-      for (let i=0;i<remainEntries;++i) {
-        let curCellClass = [];
-        // console.log(values);
-        let bindingArray = values[remainEntries*j+i].results.bindings;
-        for (let k=0;k<bindingArray.length;++k) {
-          curCellClass.push(bindingArray[k].o.value.slice(28));
-        }
-        curColumnClass=[...new Set([...curColumnClass ,...curCellClass])];
+      // If we are dealing with number results, we just want to push on an array with one element "Number"
+      if (values[remainEntries*j][0] === -1) {
+        classAnnotation.push(["Number"]);
+      } 
+      // If we are dealing with invalid results, we just want to push on an empty array
+      else if (values[remainEntries*j][0] === "null") {
+        classAnnotation.push([]);
       }
-      classAnnotation.push(curColumnClass);
+      // Else, we find its class annotation from query results
+      else {
+        for (let i=0;i<remainEntries;++i) {
+          let curCellClass = [];
+          // console.log(remainEntries*j+i);
+          let bindingArray = values[remainEntries*j+i].results.bindings;
+          for (let k=0;k<bindingArray.length;++k) {
+            curCellClass.push(bindingArray[k].o.value.slice(28));
+          }
+          curColumnClass=[...new Set([...curColumnClass ,...curCellClass])];
+        }
+        classAnnotation.push(curColumnClass);
+      }
     }
     // return classAnnotation;
     // console.log("Current class annotation is "+classAnnotation);
