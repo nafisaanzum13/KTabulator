@@ -900,7 +900,13 @@ class App extends Component {
       bindingArray = queryResults[0].results.bindings;
       for (let i=0;i<bindingArray.length;++i) {
         let predicate = bindingArray[i].p.value.slice(28);
+        // console.log("Predicate is "+predicate);
         let object = bindingArray[i].o.value.slice(28);
+        // console.log("Object is "+object);
+        // If object includes some weird literal values, we replace it with "NONEXISTING"
+        if (object.includes("/")) {
+          object = "NONEXISTING";
+        };
         let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
         let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
         let queryBody = 
@@ -1080,7 +1086,7 @@ class App extends Component {
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML,otherTableOrigin);
     otherTableData = otherTableData.slice(1); // we remove the column header row
-    // console.log(otherTableData);
+    console.log(otherTableData);
     // Now need to push this otherTableData with this.state.tableDataExplore
     let tableDataExplore = this.state.tableDataExplore.slice();
     // tableDataExplore = tableDataExplore.concat(otherTableData);
@@ -1096,7 +1102,7 @@ class App extends Component {
       }
     }
     colMapping.splice(0,0,0); // insert element 0 at the first position of colMapping, deleting 0 elements
-    // console.log(colMapping);
+    console.log(colMapping);
 
     // Now we insert the data into dataToAdd. dataToAdd will be concatenated with tableDataExplore
     let dataToAdd = [];
@@ -1660,6 +1666,8 @@ function findClassAnnotation(tableHTML, remainCols) {
   let tempTable = [];
 
   // We first fetch the plain, unprocessed version of the table.
+  // Note: this function potentially needs to be modified. 
+  // Instead of using innerText for cell data, if its href exists, we should use its href instead
   for (let i=0;i<selectedTable.rows.length;++i) {
     let tempRow = [];
     for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
@@ -1741,10 +1749,14 @@ function findClassAnnotation(tableHTML, remainCols) {
       // console.log(regexReplace(tempTable[i][j].data));
       // console.log(tempTable[i][curColIndex]);
       let curEntry = (tempTable[i][curColIndex] === undefined)?"NONEXISTING":regexReplace(tempTable[i][curColIndex].data);
+      // console.log(regexReplace(tempTable[i][curColIndex].data));
+      // console.log(!isNaN(Number(curEntry)));
       // console.log("Replaced data is "+curEntry);
+      // console.log(curEntry === "");
 
       // If we found out that the current entry is a number, we do not want to send a query.
-      if (!isNaN(Number(curEntry))) {
+      // Note: Number("") will show up as a number!! This was one of the bugs that we fixed
+      if ((!isNaN(Number(curEntry))) && (curEntry !== "")) {
         promiseArray.push(Promise.resolve(["Number"]));
       }
       // Else if we find the curEntry is too long, it will likely not exist in DBPedia 
@@ -1754,7 +1766,7 @@ function findClassAnnotation(tableHTML, remainCols) {
       // Else we construct the query 
       else {
         // console.log("Cur Entry is "+curEntry);
-        if (curEntry === undefined) {
+        if (curEntry === undefined || curEntry === "") {
           curEntry = "NONEXISTING";
         }
         let queryBody = 
