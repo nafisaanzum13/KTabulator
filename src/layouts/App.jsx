@@ -1,5 +1,6 @@
 // import { Route, Switch, Link } from "react-router-dom";
 import React, { Component } from "react";
+import {combinations} from 'mathjs';
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import TablePanel from "../components/TablePanel";
@@ -1206,7 +1207,8 @@ function allPromiseReady(promiseArray){
 // This function replaces string so that the result can be used in queryURL.
 // It currently replaces "(", ")", "'", "-", " ", "&", ".", """,and "/"
 function regexReplace(str) {
-  return str.replace(/%/g,"%5Cu0025")
+  return str.replace(/\$/g,"%5Cu0024")
+            .replace(/%/g,"%5Cu0025")
             .replace(/"/g,"%5Cu0022")
             .replace(/&/g,"%5Cu0026")
             .replace(/'/g,"%5Cu0027")
@@ -1223,7 +1225,20 @@ function regexReplace(str) {
 
 // This function replaces the URL pasted 
 function urlReplace(str) {
-  return str.replace(/%E2%80%93/g,"%5Cu2013");
+  return str.replace(/%E2%80%93/g,"%5Cu2013")
+            .replace(/\$/g,"%5Cu0024")
+            .replace(/"/g,"%5Cu0022")
+            .replace(/&/g,"%5Cu0026")
+            .replace(/'/g,"%5Cu0027")
+            .replace(/\(/g,"%5Cu0028")
+            .replace(/\)/g,"%5Cu0029")
+            .replace(/\+/g,"%5Cu002B")
+            .replace(/-/g,"%5Cu002D")
+            .replace(/=/g,"%5Cu003D")
+            .replace(/\./g,"%5Cu002E")
+            .replace(/\//g,"%5Cu002F")
+            .replace(/,/g,"%5Cu002C")
+            .replace(/\s/g,"_");
 }
 
 function reverseReplace(str) {
@@ -1420,10 +1435,16 @@ function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, pageNam
 // and return a table Object with properties: isOpen, unionScore, colMapping, and data
 function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
 
+  // Define some constants
+  const ontologySize = 780;
+  const unionCutOff = 0.5;
+  const matchCutOff = 0.999;
+
   // We first fetch the cleaned column names of the current table
   let curHeaderCells = tableHTML.rows[0].cells;
   let newCols = [];   // stores the cleaned column names of the this table
   let remainCols = [];   // stores an array of the indices of the columns of the current table that are not yet mapped
+  let searchCols = [];   // stores an array of the indices of the columns from the selected table that are not yet mapped
 
   // We potentially need to resort to semantic mapping. So let's create a promiseArray.
   // This promiseArray will only contain one element
@@ -1488,17 +1509,16 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
 
     // If we are not finding a perfect match, we want to do use semantic mapping here to see if it's possible to map the unmapped columns
     // Note: this part is expected to take quite some time. Now it's implemented just for testing purposes
-    if (unionScore < 1) {
+    if (unionScore < 0.999) {
       // We want to remove from remainCols the columns that are already mapped
       // The remaining will be the columns that we can still use from the current table
       remainCols = remainCols.filter(function(x) { return colMapping.indexOf(x) < 0 })
-      let searchCols = [];
       for (let i=0;i<colMapping.length;++i) {
         if (colMapping[i] === "null") {
           searchCols.push(i);
         }
       }
-      if (newCols[1] === "Scorer") {
+      // if (newCols[1] === "Scorer") {
         // console.log("We still need to find these columns from the original table: "+searchCols);
         // console.log("These columns are still available for use: "+remainCols);
         // console.log("The current column mappings are "+colMapping);
@@ -1506,7 +1526,7 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
         // for (let i=0;i<searchCols.length;++i) {
         //   console.log(selectedClassAnnotation[searchCols[i]]);
         // }
-      }
+      // }
 
       // Now, searchCols stores the columns from the selected table that have not been mapped yet
       // and remainCols stores the columns from the current table that can still be used for mapping
@@ -1520,23 +1540,109 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
     // Because the return statement is here, it may be possible that we are pushing nothing onto the promiseArray!!!
     // There is no need to worry about it.
     return allPromiseReady(promiseArray).then((values) => {
-      // console.log("Here is table HTML");
-      // console.log(tableHTML);
-      // console.log("Here are the class annotations for the remaining columns");
-      // console.log(values);
-      // console.log("This is column mapping "+colMapping);
-      // console.log("Union score is "+unionScore);
-      // Start from here tomorrow
-
-      // We push on tables with unionScore > 0.5
-      if (unionScore > 1/2) {
-        // console.log("This table is unionable!");
-        // console.log("Union Score is "+unionScore);
-        // console.log("Column mapping is "+colMapping);
-        // tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]}); 
+      // First, if we are in the perfect match case, we want to retrun straight away
+      if (unionScore >= 0.999) {
         return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML})
-      } else {
-        return Promise.resolve(-1);
+      }
+      // Else, we want to look for semantic mapping opportunities 
+      else {
+        // create a copy of values
+        let remainClassAnnotation = values[0].slice();
+        // console.log("Here is table HTML");
+        // console.log(tableHTML);
+        // console.log("Here are the class annotations for columns that still need mapping");
+        // for (let i=0;i<searchCols.length;++i) {
+        //   console.log(selectedClassAnnotation[searchCols[i]]);
+        // }
+        // console.log("The remain columns are "+remainCols);
+        // console.log("Here are the class annotations for the remaining columns");
+        // console.log(values);
+        // console.log("This is column mapping "+colMapping);
+        // console.log("Union score is "+unionScore);
+        // Start from here tomorrow
+
+        // We need to loop through the searchCols
+        for (let i=0;i<searchCols.length;++i) {
+          let curSearchIndex = searchCols[i];
+          // console.log(curSearchIndex);
+          // console.log(selectedClassAnnotation[curSearchIndex]);
+
+          // If the class annotation for this column is empty, we skip it because there's no hope for semantic match.
+          // Otherwise we can work with it
+          if (selectedClassAnnotation[curSearchIndex].length > 0) {
+            // console.log("Current column being searched has index: "+curSearchIndex);
+            // console.log(selectedClassAnnotation[curSearchIndex]);
+
+            // we loop through the remain cols and check their class annotations
+            for (let j=0;j<remainCols.length;++j) {
+              // Let make sure this column does have a class annotation. Otherwise we skip it
+              if (remainClassAnnotation[j].length > 0) {
+                // console.log("Remain column index is "+remainCols[j]);
+                // console.log("Its class annotation is "+remainClassAnnotation[j]);
+                // Let make special cases when the any of search column class and current column class is [Number]
+                // If they are both [Number], we will give it a match
+                // Else it's not a match
+                if (selectedClassAnnotation[curSearchIndex][0] === "Number" || remainClassAnnotation[j][0] === "Number") {
+                  // This case we have a match
+                  if (selectedClassAnnotation[curSearchIndex][0] === remainClassAnnotation[j][0]) {
+                    // We need to update the colMapping and unionScore
+                    colMapping[curSearchIndex] = remainCols[j];
+                    unionScore+=1/originCols.length;
+                    // we also need to remove this column from remainClassAnnotation and remainCols because we cannot use it anymore
+                    remainCols.splice(j,1);
+                    remainClassAnnotation.splice(j,1); 
+                    // Also, since we are removing element from remainCols array and remainClassAnnotation array, we need to decrement
+                    // j to go back to the correct posiition
+                    --j;
+                    // Also we need to call break to prevent further looping: we are done with this search column
+                    break;
+                  }
+                  // Else there is no match. We simply ignore it.
+                } 
+                // If neither of them is [Number], we need to use the test statistic
+                else {
+                  // Let's first find the array intersection of selectedClassAnnotation[curSearchIndex] and remainClassAnnotation[j]
+                  let intersection = selectedClassAnnotation[curSearchIndex].filter
+                                      (function(x) { return remainClassAnnotation[j].indexOf(x) >= 0 });
+                  // console.log("Intersection is "+intersection);
+                  // We only want to consider two column unionable if they at least have some intersections.
+                  if (intersection.length > 0) {
+                    let totalSuccess = selectedClassAnnotation[curSearchIndex].length;
+                    let numTrial = remainClassAnnotation[j].length;
+                    let numSuccess = intersection.length;
+                    let testStat = hyperCDF(numSuccess,ontologySize,totalSuccess,numTrial);
+                    // If testStat is larger than matchCutOff, we consider it a match
+                    if (testStat > matchCutOff) {
+                      // We need to update the colMapping and unionScore
+                      colMapping[curSearchIndex] = remainCols[j];
+                      unionScore+=1/originCols.length;
+                      // we also need to remove this column from remainClassAnnotation and remainCols because we cannot use it anymore
+                      remainCols.splice(j,1);
+                      remainClassAnnotation.splice(j,1); 
+                      // Also, since we are removing element from remainCols array and remainClassAnnotation array, we need to decrement
+                      // j to go back to the correct posiition
+                      --j;
+                      // Also we need to call break to prevent further looping: we are done with this search column
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // We push on tables with unionScore > 0.5
+        if (unionScore > unionCutOff) {
+          // console.log("This table is unionable!");
+          // console.log("Table is "+tableHTML);
+          // console.log("Union Score is "+unionScore);
+          // console.log("Column mapping is "+colMapping);
+          // tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]}); 
+          return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML})
+        } else {
+          return Promise.resolve(-1);
+        }
       }
     })
   }
@@ -1603,12 +1709,12 @@ function findClassAnnotation(tableHTML, remainCols) {
   let remainEntries = Math.min(1,tempTable.length-1); 
 
   // This is a placeholder array to solve the 2D problem. It's a 1D array containing remainEntries number of -1's
-  let placeHolderArray = [];
-  let notFoundArray = [];
-  for (let i=0;i<remainEntries;++i) {
-    placeHolderArray.push(-1);
-    notFoundArray.push("null");
-  }
+  // let placeHolderArray = [];
+  // let notFoundArray = [];
+  // for (let i=0;i<remainEntries;++i) {
+  //   placeHolderArray.push(-1);
+  //   notFoundArray.push("null");
+  // }
 
   // Let's loop through the table to ask our queries.
   // If remainCols are undefined, we take every columns from the tempTable;
@@ -1619,10 +1725,12 @@ function findClassAnnotation(tableHTML, remainCols) {
     }
   }
 
+  // console.log("Remain columns are: "+remainCols);
   for (let j=0;j<remainCols.length;++j) {
     // console.log("We are taking this number of entries from this table: "+remainEntries);
     // Find the current column index
     let curColIndex = remainCols[j];
+    // console.log("Current column index is: "+curColIndex);
 
     // Loop through the first three (or one) entries from this column
     for (let i=1;i<=remainEntries;++i) {
@@ -1631,25 +1739,37 @@ function findClassAnnotation(tableHTML, remainCols) {
       let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       // console.log(tempTable[i][j].data);
       // console.log(regexReplace(tempTable[i][j].data));
+      // console.log(tempTable[i][curColIndex]);
       let curEntry = (tempTable[i][curColIndex] === undefined)?"NONEXISTING":regexReplace(tempTable[i][curColIndex].data);
+      // console.log("Replaced data is "+curEntry);
 
       // If we found out that the current entry is a number, we do not want to send a query.
       if (!isNaN(Number(curEntry))) {
-        promiseArray.push(Promise.resolve(placeHolderArray));
+        promiseArray.push(Promise.resolve(["Number"]));
       }
       // Else if we find the curEntry is too long, it will likely not exist in DBPedia 
       else if (curEntry.length > 40) {
-        promiseArray.push(Promise.resolve(notFoundArray));
+        promiseArray.push(Promise.resolve(["Null"]));
       }
       // Else we construct the query 
       else {
+        // console.log("Cur Entry is "+curEntry);
+        if (curEntry === undefined) {
+          curEntry = "NONEXISTING";
+        }
         let queryBody = 
           "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
+          // +"not added?"
           +curEntry
           +"+rdf%3Atype+%3Fo.%0D%0A++++++BIND%28STR%28%3Fo%29+AS+%3FoString+%29.%0D%0A++++++FILTER%28regex%28%3FoString%2C%22dbpedia.org%2Fontology%2F%22%2C%22i%22%29%29%0D%0A%7D%0D%0A&";
         let queryURL = prefixURL+queryBody+suffixURL;
         // console.log("Query is constructed!");
+        // if (queryURL === "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A") {
+        //   console.log("Here is where the problem occurs");
+        // }
         promiseArray.push(fetchJSON(queryURL));
+        // console.log("Query pushed successfully. This is queryBody: ");
+        // console.log(queryBody);
       }
     }
   }
@@ -1665,25 +1785,36 @@ function findClassAnnotation(tableHTML, remainCols) {
       // console.log("Number of remain cols is "+remainCols.length);
       let curColumnClass = [];
       // If we are dealing with number results, we just want to push on an array with one element "Number"
-      if (values[remainEntries*j][0] === -1) {
-        classAnnotation.push(["Number"]);
-      } 
-      // If we are dealing with invalid results, we just want to push on an empty array
-      else if (values[remainEntries*j][0] === "null") {
-        classAnnotation.push([]);
-      }
-      // Else, we find its class annotation from query results
-      else {
-        for (let i=0;i<remainEntries;++i) {
-          let curCellClass = [];
-          // console.log(remainEntries*j+i);
-          let bindingArray = values[remainEntries*j+i].results.bindings;
-          for (let k=0;k<bindingArray.length;++k) {
-            curCellClass.push(bindingArray[k].o.value.slice(28));
+      if (values[remainEntries*j] !== undefined) {
+        if (values[remainEntries*j][0] !== undefined) {
+          if (values[remainEntries*j][0] === "Number") {
+            classAnnotation.push(["Number"]);
+          } 
+          // If we are dealing with invalid results, we just want to push on an empty array
+          else if (values[remainEntries*j][0] === "Null") {
+            classAnnotation.push([]);
           }
-          curColumnClass=[...new Set([...curColumnClass ,...curCellClass])];
         }
-        classAnnotation.push(curColumnClass);
+        // if (values[remainEntries*j][0] === -1) {
+        //   classAnnotation.push(["Number"]);
+        // } 
+        // // If we are dealing with invalid results, we just want to push on an empty array
+        // else if (values[remainEntries*j][0] === "null") {
+        //   classAnnotation.push([]);
+        // }
+        // Else, we find its class annotation from query results
+        else {
+          for (let i=0;i<remainEntries;++i) {
+            let curCellClass = [];
+            // console.log(remainEntries*j+i);
+            let bindingArray = values[remainEntries*j+i].results.bindings;
+            for (let k=0;k<bindingArray.length;++k) {
+              curCellClass.push(bindingArray[k].o.value.slice(28));
+            }
+            curColumnClass=[...new Set([...curColumnClass ,...curCellClass])];
+          }
+          classAnnotation.push(curColumnClass);
+        }
       }
     }
     // return classAnnotation;
@@ -1749,6 +1880,22 @@ function setTableFromHTML(selecteTableHTML,urlOrigin) {
     tempTable[i].splice(0,0,{"data":urlOrigin,"origin":"null","rowSpan":1,"colSpan":1});
   }
   return tempTable; // tempTable is a 2D array of objects storing the table data. Object has two fields: data(string) and origin(string).
+}
+
+// This function takes in four parameters and return the CDF for hypergeometric distribution, for x
+// N: total number of elements (780 in our case)
+// K: total number of successful elements (length of selected column's class annotation)
+// n: number of trials (length of test column's class annotation)
+// x: (length of intersection of selected column and test column)
+
+function hyperCDF(x, N, K, n) {
+  let count = 0;
+  // console.log(combinations(5,2));
+  let denom = combinations(N,n);
+  for (let i=0;i<=x;++i) {
+      count+=combinations(K,i)*combinations(N-K,n-i)/denom;
+  }
+  return count;
 }
 
 
