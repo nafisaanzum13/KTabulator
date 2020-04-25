@@ -38,6 +38,7 @@ class App extends Component {
       urlPasted:"",
       tablePasted:"",
       usecaseSelected:"",
+      pageHidden:false,
       iframeURL:"",
 
       // states below are useful for startSubject
@@ -95,6 +96,7 @@ class App extends Component {
 
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
+    this.toggleWikiPage = this.toggleWikiPage.bind(this);
   };
 
   handleURLPaste(urlPasted) {
@@ -158,6 +160,31 @@ class App extends Component {
     document.execCommand('copy');
     document.body.removeChild(textArea);
     alert("Table content has been pasted!");
+  }
+
+  // This function handles the toggling of the WikiPage at bottom
+
+  toggleWikiPage() {
+    let pageHidden = this.state.pageHidden;
+    if (pageHidden === false) {
+      // in this case we are hiding the bottom part. Need to adjust the height for the botton part
+      document.getElementsByClassName("bottom-content")[0].style.height = "4vh";
+      document.getElementsByClassName("wiki-page")[0].style.height = "0vh";
+      document.getElementsByClassName("wiki-page")[0].style.visibility = "hidden";
+      document.getElementsByClassName("top-content")[0].style.height = "86vh";
+      document.getElementsByClassName("table-panel")[0].style.height = "86vh";
+      document.getElementsByClassName("action-panel")[0].style.height = "86vh";
+    } else {
+      document.getElementsByClassName("bottom-content")[0].style.height = "55vh";
+      document.getElementsByClassName("wiki-page")[0].style.height = "55vh";
+      document.getElementsByClassName("wiki-page")[0].style.visibility = "visible";
+      document.getElementsByClassName("top-content")[0].style.height = "35vh";
+      document.getElementsByClassName("table-panel")[0].style.height = "35vh";
+      document.getElementsByClassName("action-panel")[0].style.height = "35vh";
+    }
+    this.setState({
+      pageHidden:!pageHidden,
+    })
   }
 
   handleSelectTask(e, taskSelected) {
@@ -886,7 +913,7 @@ class App extends Component {
       // console.log(queryResults[1].results.bindings);
       // console.log(queryResults[2]);
       let selectedClassAnnotation = queryResults[2];
-      console.log(selectedClassAnnotation);
+      // console.log(selectedClassAnnotation);
 
       // First we fetch the property neighbours
       // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings (150)
@@ -1050,19 +1077,42 @@ class App extends Component {
     // Handle the toggling task
     let propertyNeighbours = this.state.propertyNeighbours.slice();
     let selectedSibling = propertyNeighbours[firstIndex].siblingArray[secondIndex];
-    selectedSibling.isOpen = !selectedSibling.isOpen
 
-    // We also want to change the iframe displayed at the bottom if we are toggling a sibling open
-    if (selectedSibling.isOpen === true) {
+    // Note that if this sibling's tableArray is empty, we probably do not want to toggle it.
+    if (selectedSibling.tableArray.length === 0) {
+      // console.log("Selected sibling has no tables: "+selectedSibling.name);
+
+      // If the bottom page is shown, we want to change its URL
+      // else we want to show the bottom page, and change its URL
+      if (this.state.pageHidden === true) {
+        document.getElementsByClassName("bottom-content")[0].style.height = "55vh";
+        document.getElementsByClassName("wiki-page")[0].style.height = "55vh";
+        document.getElementsByClassName("wiki-page")[0].style.visibility = "visible";
+        document.getElementsByClassName("top-content")[0].style.height = "35vh";
+        document.getElementsByClassName("table-panel")[0].style.height = "35vh";
+        document.getElementsByClassName("action-panel")[0].style.height = "35vh";
+      }
       let iframeURL = "https://en.wikipedia.org/wiki/"+selectedSibling.name;
       this.setState({
-        propertyNeighbours:propertyNeighbours,
+        pageHidden:false,
         iframeURL:iframeURL,
       })
-    } else {
-      this.setState({
-        propertyNeighbours:propertyNeighbours,
-      })
+    } 
+    else {
+      // if the sibling's tableArray is not empty, we want to toggle it
+      selectedSibling.isOpen = !selectedSibling.isOpen
+      // We also want to change the iframe displayed at the bottom if we are toggling a sibling open
+      if (selectedSibling.isOpen === true) {
+        let iframeURL = "https://en.wikipedia.org/wiki/"+selectedSibling.name;
+        this.setState({
+          propertyNeighbours:propertyNeighbours,
+          iframeURL:iframeURL,
+        })
+      } else {
+        this.setState({
+          propertyNeighbours:propertyNeighbours,
+        })
+      }
     }
   }
 
@@ -1086,7 +1136,7 @@ class App extends Component {
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML,otherTableOrigin);
     otherTableData = otherTableData.slice(1); // we remove the column header row
-    console.log(otherTableData);
+    // console.log(otherTableData);
     // Now need to push this otherTableData with this.state.tableDataExplore
     let tableDataExplore = this.state.tableDataExplore.slice();
     // tableDataExplore = tableDataExplore.concat(otherTableData);
@@ -1102,7 +1152,7 @@ class App extends Component {
       }
     }
     colMapping.splice(0,0,0); // insert element 0 at the first position of colMapping, deleting 0 elements
-    console.log(colMapping);
+    // console.log(colMapping);
 
     // Now we insert the data into dataToAdd. dataToAdd will be concatenated with tableDataExplore
     let dataToAdd = [];
@@ -1181,7 +1231,9 @@ class App extends Component {
           <div className="bottom-content">
             <div>
               <PagePanel 
-                iframeURL={this.state.iframeURL}/>
+                pageHidden={this.state.pageHidden}
+                iframeURL={this.state.iframeURL}
+                toggleWikiPage={this.toggleWikiPage}/>
             </div>
           </div>
           <div className="footer">
