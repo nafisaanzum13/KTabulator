@@ -17,8 +17,8 @@ class ActionPanel extends Component {
     const tableArray = this.props.propertyNeighbours[firstIndex].siblingArray[secondIndex].tableArray;
     let tableElement = [];
     for (let thirdIndex=0;thirdIndex<tableArray.length;++thirdIndex) {
-      console.log("Hello");
-      console.log(tableArray[thirdIndex].title);
+      // console.log("Hello");
+      // console.log(tableArray[thirdIndex].title);
       let tableTitleText = "Table "+thirdIndex+": ";
       for (let i=0;i<tableArray[thirdIndex].title.length;++i) {
         tableTitleText = tableTitleText+tableArray[thirdIndex].title[i]+"|";
