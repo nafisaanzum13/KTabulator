@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import URLForm from "../components/URLForm";
 import TaskMenu from "../components/TaskMenu";
 import { Collapse, Button, CardBody, Card } from 'reactstrap';
 import { FaList, FaTable } from "react-icons/fa";
@@ -18,21 +17,27 @@ class ActionPanel extends Component {
     const tableArray = this.props.propertyNeighbours[firstIndex].siblingArray[secondIndex].tableArray;
     let tableElement = [];
     for (let thirdIndex=0;thirdIndex<tableArray.length;++thirdIndex) {
+      // console.log("Hello");
+      // console.log(tableArray[thirdIndex].title);
+      let tableTitleText = "Table "+thirdIndex+": ";
+      for (let i=0;i<tableArray[thirdIndex].title.length;++i) {
+        tableTitleText = tableTitleText+tableArray[thirdIndex].title[i]+"|";
+      }
       tableElement.push(
         <div>
             <Button
               onClick={(e) => this.props.toggleOtherTable(e,firstIndex,secondIndex,thirdIndex)}>
-              Table {thirdIndex}
+              {tableTitleText}
               <FaTable />
             </Button>
             <Collapse isOpen={tableArray[thirdIndex].isOpen}>
               <Card>
                   <CardBody>
                       <div>
-                        <Button 
+                        <button 
                           onClick={(e) => this.props.unionTable(firstIndex,secondIndex,tableArray[thirdIndex].data,tableArray[thirdIndex].colMapping)}>
                           Union this table
-                        </Button>
+                        </button>
                         <div dangerouslySetInnerHTML={{__html: tableArray[thirdIndex].data.outerHTML}}></div>
                       </div>
                   </CardBody>
@@ -116,10 +121,7 @@ class ActionPanel extends Component {
     let titleEle;
 
     // We first decide the content for the titleElement
-    if (this.props.urlPasted === "") {
-      titleEle = null;
-    } 
-    else if ((this.props.usecaseSelected === "") || (this.props.usecaseSelected === "exploreTable" && this.props.selectedTableIndex === -1)) {
+    if ((this.props.usecaseSelected === "") || (this.props.usecaseSelected === "exploreTable" && this.props.selectedTableIndex === -1)) {
       titleEle = 
         <div className="row">
           <h3 className="col-md-4">Action List:</h3>
@@ -132,21 +134,16 @@ class ActionPanel extends Component {
           <Button className="col-md-3 offset-md-4" onClick={() => this.props.copyTable()}>Copy Table</Button>
         </div>;
     }
-    // Case 1: URL has not been pasted yet. User needs to paste URL here.
-    if (this.props.urlPasted === "") {
-      actionEle = 
-        <URLForm 
-          handleURLPaste={this.props.handleURLPaste}
-        />
-    } 
-    // Case 2: URL has been pasted, but task has not been selected. User needs to select task.
-    else if (this.props.usecaseSelected === "") {
+
+    // We now decide the content for the actionElement
+    // Case 1: URL has been pasted, but task has not been selected. User needs to select task.
+    if (this.props.usecaseSelected === "") {
       actionEle =
         <TaskMenu
           handleSelectTask={this.props.handleSelectTask}
         />
     } 
-    // Case 3: curActionInfo is not null, meaning we have to display some task in ActionPanel
+    // Case 2: curActionInfo is not null, meaning we have to display some task in ActionPanel
     else if (this.props.curActionInfo !== null) {
       const actionInfo = this.props.curActionInfo;
       if (actionInfo.task === "populateKeyColumn") {
