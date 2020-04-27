@@ -1506,7 +1506,7 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
 
   // We first fetch the cleaned column names of the current table
   let curHeaderCells = tableHTML.rows[0].cells;
-  let newCols = [];   // stores the cleaned column names of the this table
+  let newCols = [];   // stores the cleaned column names of the this table. Let's consider using this value for display as well.
   let remainCols = [];   // stores an array of the indices of the columns of the current table that are not yet mapped
   let searchCols = [];   // stores an array of the indices of the columns from the selected table that are not yet mapped
 
@@ -1606,7 +1606,7 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
     return allPromiseReady(promiseArray).then((values) => {
       // First, if we are in the perfect match case, we want to retrun straight away
       if (unionScore >= 0.999) {
-        return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML})
+        return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML,"title":newCols})
       }
       // Else, we want to look for semantic mapping opportunities 
       else {
@@ -1703,7 +1703,7 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
           // console.log("Union Score is "+unionScore);
           // console.log("Column mapping is "+colMapping);
           // tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]}); 
-          return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML})
+          return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML,"title":newCols})
         } else {
           return Promise.resolve(-1);
         }

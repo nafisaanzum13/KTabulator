@@ -17,21 +17,27 @@ class ActionPanel extends Component {
     const tableArray = this.props.propertyNeighbours[firstIndex].siblingArray[secondIndex].tableArray;
     let tableElement = [];
     for (let thirdIndex=0;thirdIndex<tableArray.length;++thirdIndex) {
+      console.log("Hello");
+      console.log(tableArray[thirdIndex].title);
+      let tableTitleText = "Table "+thirdIndex+": ";
+      for (let i=0;i<tableArray[thirdIndex].title.length;++i) {
+        tableTitleText = tableTitleText+tableArray[thirdIndex].title[i]+"|";
+      }
       tableElement.push(
         <div>
             <Button
               onClick={(e) => this.props.toggleOtherTable(e,firstIndex,secondIndex,thirdIndex)}>
-              Table {thirdIndex}
+              {tableTitleText}
               <FaTable />
             </Button>
             <Collapse isOpen={tableArray[thirdIndex].isOpen}>
               <Card>
                   <CardBody>
                       <div>
-                        <Button 
+                        <button 
                           onClick={(e) => this.props.unionTable(firstIndex,secondIndex,tableArray[thirdIndex].data,tableArray[thirdIndex].colMapping)}>
                           Union this table
-                        </Button>
+                        </button>
                         <div dangerouslySetInnerHTML={{__html: tableArray[thirdIndex].data.outerHTML}}></div>
                       </div>
                   </CardBody>
