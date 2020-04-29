@@ -1,89 +1,44 @@
-@import "../assets/fonts.css";
-
-.header {
-  height: 5.5vh;
-  background-color: #20232a;
-  color: #fff;
-}
-
-.footer {
-  height: 2vh;
-  background-color: #20232a;
-  color: #fff;
-}
-
-.font-body {
-  font-family: "Palatino", cursive;
-}
-
-.header-body h1 {
-  font-size: 1.4rem;
-  padding: 0rem;
-  margin: 0rem;
-}
-
-.header-body {
-  padding-top: 1vh;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  vertical-align: middle;
-  font-weight: 200;
-}
-
-.header-body p {
-  font-size: 1.4rem;
-}
-
-.header hr {
-  margin: 0rem;
-  padding: 0rem;
-}
-
-.mainbody {
-  height:90vh;
-}
-
 .top-content {
-  height:35vh;
+  height: 35vh;
 }
 
 .bottom-content {
-  height:55vh;
+  height: 55vh;
 }
 
 .wiki-page {
-  height:55vh;
+  height: 55vh;
 }
 
 .toggle-button {
-  height:4vh;
+  height: 4vh;
 }
 
 .table-panel {
-  height:35vh;
-  overflow:auto;
+  height: 35vh;
+  overflow: auto;
 }
 
 .action-panel {
-  height:35vh;
-  overflow:auto;
+  height: 35vh;
+  overflow: auto;
 }
 
 /* This class deteremineds the width of selection column */
 .super-header-div {
-  width:20vw;
+  width: 20vw;
 }
 
 .selection-header {
-  float:left;
-  width:18vw;
+  float: left;
+  width: 18vw;
 }
 
 .search-icon {
-  float:left;
-  width:2vw;
+  float: left;
+  width: 2vw;
   margin-top: 1vh;
-  cursor:pointer;
+  cursor: pointer;
 }
 
 /* The two following classes make the column headers sticky */
@@ -96,19 +51,22 @@
   position: -webkit-sticky;
   top: 0;
   z-index: 999;
-
 }
 .twenty-vw {
-  width:20vw;
+  width: 20vw;
 }
 
 /* This makes sure that the context menu does not seem transparent */
 .react-contextmenu {
   background-color: #fff;
-  border: 1px solid rgba(0,0,0,.15);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   transition: opacity 250ms ease !important;
 }
 
 .react-contextmenu-item--divider {
   border-bottom: 1px solid rgba(7, 3, 3, 0.15);
+}
+
+.color-wrangler {
+  color: #ff715b;
 }

@@ -7,10 +7,14 @@ class Header extends Component {
       <>
         <div className="row header-body">
           <div className="col-md-8">
-            <h1>Wiki Data Wrangler (Future Project v0.2)</h1>
+            <a href="index.html" class="logo">
+              <b>
+                <span>WikiData</span>Wrangler
+              </b>
+            </a>
           </div>
         </div>
-        <hr></hr>
+        <hr class="header-hr"></hr>
       </>
     );
   }
