@@ -1274,13 +1274,16 @@ function regexReplace(str) {
   return str.replace(/\$/g,"%5Cu0024")
             .replace(/%/g,"%5Cu0025")
             .replace(/"/g,"%5Cu0022")
+            .replace(/#/g,"%5Cu0023")
             .replace(/&/g,"%5Cu0026")
             .replace(/'/g,"%5Cu0027")
             .replace(/\(/g,"%5Cu0028")
             .replace(/\)/g,"%5Cu0029")
+            .replace(/\*/g,"%5Cu002A")
             .replace(/\+/g,"%5Cu002B")
             .replace(/-/g,"%5Cu002D")
             .replace(/=/g,"%5Cu003D")
+            .replace(/\?/g,"%5Cu003F")
             .replace(/\./g,"%5Cu002E")
             .replace(/\//g,"%5Cu002F")
             .replace(/,/g,"%5Cu002C")
@@ -1292,13 +1295,16 @@ function urlReplace(str) {
   return str.replace(/%E2%80%93/g,"%5Cu2013")
             .replace(/\$/g,"%5Cu0024")
             .replace(/"/g,"%5Cu0022")
+            .replace(/#/g,"%5Cu0023")
             .replace(/&/g,"%5Cu0026")
             .replace(/'/g,"%5Cu0027")
             .replace(/\(/g,"%5Cu0028")
             .replace(/\)/g,"%5Cu0029")
+            .replace(/\*/g,"%5Cu002A")
             .replace(/\+/g,"%5Cu002B")
             .replace(/-/g,"%5Cu002D")
             .replace(/=/g,"%5Cu003D")
+            .replace(/\?/g,"%5Cu003F")
             .replace(/\./g,"%5Cu002E")
             .replace(/\//g,"%5Cu002F")
             .replace(/,/g,"%5Cu002C")
@@ -1611,7 +1617,96 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
       // Else, we want to look for semantic mapping opportunities 
       else {
         // create a copy of values
+
+        // Note!!!! Sometimes the tableHTML only has one row, so values[0] would have a length of zero, in which case our algo breaks down
+        // Let's prevent it from happening
         let remainClassAnnotation = values[0].slice();
+        if (remainClassAnnotation.length > 0) {
+          let remainColsCopy = remainCols.slice();
+          let remainClassAnnotationCopy = remainClassAnnotation.slice();
+          for (let i=0;i<searchCols.length;++i) {
+            let curSearchIndex = searchCols[i];
+            // console.log(curSearchIndex);
+            // console.log(selectedClassAnnotation[curSearchIndex]);
+
+            // If the class annotation for this column is empty, we skip it because there's no hope for semantic match.
+            // Otherwise we can work with it
+            if (selectedClassAnnotation[curSearchIndex].length > 0) {
+              // console.log("Current column being searched has index: "+curSearchIndex);
+              // console.log(selectedClassAnnotation[curSearchIndex]);
+
+              // we loop through the remain cols and check their class annotations
+              for (let j=0;j<remainCols.length;++j) {
+                // Let make sure this column does have a class annotation. Otherwise we skip it
+                // console.log(remainClassAnnotation[j]);  
+                // Note: sometimes remainClassAnnotation[j] is undefined, which causes an error
+                if (remainClassAnnotation[j] === undefined) {
+                  console.log("This case is causing an error");
+                  console.log("Remain cols are "+remainCols);
+                  console.log("Remain class annotations are "+remainClassAnnotation);
+                  console.log("Original remain cols are "+remainColsCopy);
+                  console.log("original remain class annotations are "+remainClassAnnotationCopy);
+                  console.log("Table HTML is ");
+                  console.log(tableHTML);
+                  console.log(values[0]);
+                }
+                if (remainClassAnnotation[j].length > 0) {
+                  // console.log("Remain column index is "+remainCols[j]);
+                  // console.log("Its class annotation is "+remainClassAnnotation[j]);
+                  // Let make special cases when the any of search column class and current column class is [Number]
+                  // If they are both [Number], we will give it a match
+                  // Else it's not a match
+                  if (selectedClassAnnotation[curSearchIndex][0] === "Number" || remainClassAnnotation[j][0] === "Number") {
+                    // This case we have a match
+                    if (selectedClassAnnotation[curSearchIndex][0] === remainClassAnnotation[j][0]) {
+                      // We need to update the colMapping and unionScore
+                      colMapping[curSearchIndex] = remainCols[j];
+                      unionScore+=1/originCols.length;
+                      // we also need to remove this column from remainClassAnnotation and remainCols because we cannot use it anymore
+                      remainCols.splice(j,1);
+                      remainClassAnnotation.splice(j,1); 
+                      // Also, since we are removing element from remainCols array and remainClassAnnotation array, we need to decrement
+                      // j to go back to the correct posiition
+                      --j;
+                      // Also we need to call break to prevent further looping: we are done with this search column
+                      break;
+                    }
+                    // Else there is no match. We simply ignore it.
+                  } 
+                  // If neither of them is [Number], we need to use the test statistic
+                  else {
+                    // Let's first find the array intersection of selectedClassAnnotation[curSearchIndex] and remainClassAnnotation[j]
+                    let intersection = selectedClassAnnotation[curSearchIndex].filter
+                                        (function(x) { return remainClassAnnotation[j].indexOf(x) >= 0 });
+                    // console.log("Intersection is "+intersection);
+                    // We only want to consider two column unionable if they at least have some intersections.
+                    if (intersection.length > 0) {
+                      let totalSuccess = selectedClassAnnotation[curSearchIndex].length;
+                      let numTrial = remainClassAnnotation[j].length;
+                      let numSuccess = intersection.length;
+                      let testStat = hyperCDF(numSuccess,ontologySize,totalSuccess,numTrial);
+                      // If testStat is larger than matchCutOff, we consider it a match
+                      if (testStat > matchCutOff) {
+                        // We need to update the colMapping and unionScore
+                        colMapping[curSearchIndex] = remainCols[j];
+                        unionScore+=1/originCols.length;
+                        // we also need to remove this column from remainClassAnnotation and remainCols because we cannot use it anymore
+                        remainCols.splice(j,1);
+                        remainClassAnnotation.splice(j,1); 
+                        // Also, since we are removing element from remainCols array and remainClassAnnotation array, we need to decrement
+                        // j to go back to the correct posiition
+                        --j;
+                        // Also we need to call break to prevent further looping: we are done with this search column
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        // console.log("Remain columns are "+)
         // console.log("Here is table HTML");
         // console.log(tableHTML);
         // console.log("Here are the class annotations for columns that still need mapping");
@@ -1626,75 +1721,6 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
         // Start from here tomorrow
 
         // We need to loop through the searchCols
-        for (let i=0;i<searchCols.length;++i) {
-          let curSearchIndex = searchCols[i];
-          // console.log(curSearchIndex);
-          // console.log(selectedClassAnnotation[curSearchIndex]);
-
-          // If the class annotation for this column is empty, we skip it because there's no hope for semantic match.
-          // Otherwise we can work with it
-          if (selectedClassAnnotation[curSearchIndex].length > 0) {
-            // console.log("Current column being searched has index: "+curSearchIndex);
-            // console.log(selectedClassAnnotation[curSearchIndex]);
-
-            // we loop through the remain cols and check their class annotations
-            for (let j=0;j<remainCols.length;++j) {
-              // Let make sure this column does have a class annotation. Otherwise we skip it
-              if (remainClassAnnotation[j].length > 0) {
-                // console.log("Remain column index is "+remainCols[j]);
-                // console.log("Its class annotation is "+remainClassAnnotation[j]);
-                // Let make special cases when the any of search column class and current column class is [Number]
-                // If they are both [Number], we will give it a match
-                // Else it's not a match
-                if (selectedClassAnnotation[curSearchIndex][0] === "Number" || remainClassAnnotation[j][0] === "Number") {
-                  // This case we have a match
-                  if (selectedClassAnnotation[curSearchIndex][0] === remainClassAnnotation[j][0]) {
-                    // We need to update the colMapping and unionScore
-                    colMapping[curSearchIndex] = remainCols[j];
-                    unionScore+=1/originCols.length;
-                    // we also need to remove this column from remainClassAnnotation and remainCols because we cannot use it anymore
-                    remainCols.splice(j,1);
-                    remainClassAnnotation.splice(j,1); 
-                    // Also, since we are removing element from remainCols array and remainClassAnnotation array, we need to decrement
-                    // j to go back to the correct posiition
-                    --j;
-                    // Also we need to call break to prevent further looping: we are done with this search column
-                    break;
-                  }
-                  // Else there is no match. We simply ignore it.
-                } 
-                // If neither of them is [Number], we need to use the test statistic
-                else {
-                  // Let's first find the array intersection of selectedClassAnnotation[curSearchIndex] and remainClassAnnotation[j]
-                  let intersection = selectedClassAnnotation[curSearchIndex].filter
-                                      (function(x) { return remainClassAnnotation[j].indexOf(x) >= 0 });
-                  // console.log("Intersection is "+intersection);
-                  // We only want to consider two column unionable if they at least have some intersections.
-                  if (intersection.length > 0) {
-                    let totalSuccess = selectedClassAnnotation[curSearchIndex].length;
-                    let numTrial = remainClassAnnotation[j].length;
-                    let numSuccess = intersection.length;
-                    let testStat = hyperCDF(numSuccess,ontologySize,totalSuccess,numTrial);
-                    // If testStat is larger than matchCutOff, we consider it a match
-                    if (testStat > matchCutOff) {
-                      // We need to update the colMapping and unionScore
-                      colMapping[curSearchIndex] = remainCols[j];
-                      unionScore+=1/originCols.length;
-                      // we also need to remove this column from remainClassAnnotation and remainCols because we cannot use it anymore
-                      remainCols.splice(j,1);
-                      remainClassAnnotation.splice(j,1); 
-                      // Also, since we are removing element from remainCols array and remainClassAnnotation array, we need to decrement
-                      // j to go back to the correct posiition
-                      --j;
-                      // Also we need to call break to prevent further looping: we are done with this search column
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
 
         // We push on tables with unionScore > 0.5
         if (unionScore > unionCutOff) {
@@ -1729,11 +1755,32 @@ function findClassAnnotation(tableHTML, remainCols) {
   for (let i=0;i<selectedTable.rows.length;++i) {
     let tempRow = [];
     for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
-        let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
-        let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
-        let curColSpan = selectedTable.rows[i].cells[j].colSpan;
-        // console.log(curColSpan);
-        tempRow.push({"data":curCellText,"rowSpan":curRowSpan,"colSpan":curColSpan});
+
+      let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
+
+      // Note: We want to use the href as data for the first column (if such href exists) instead of its innerText.
+      if (i === 1) {
+        // We get all the links from this current cell (there may be more than one)
+        let anchorArray = selectedTable.rows[i].cells[j].getElementsByTagName("a");
+        // we want to use the first valid link as the search element for this cell
+        // Definition of being valid: its associated innerText is not empty (thus not the link of a picture)
+        //                            and it is not a citation (so [0] is not "[")
+        for (let k=0;k<anchorArray.length;++k) {
+          if (anchorArray[k].innerText !== "" && anchorArray[k].innerText[0] !== "[") {
+            let hrefArray = anchorArray[k].href.split("/");
+            // console.log("InnerText is "+anchorArray[k].innerText);
+            // console.log("It exists in DBPedia as "+hrefArray[hrefArray.length-1]);
+            curCellText = hrefArray[hrefArray.length-1];
+            if (curCellText.includes("UEFA")) {
+              console.log(curCellText);
+            }
+          }
+        }
+      }
+      let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
+      let curColSpan = selectedTable.rows[i].cells[j].colSpan;
+      // console.log(curColSpan);
+      tempRow.push({"data":curCellText,"rowSpan":curRowSpan,"colSpan":curColSpan});
     }
     tempTable.push(tempRow);
   }
@@ -1827,6 +1874,7 @@ function findClassAnnotation(tableHTML, remainCols) {
         if (curEntry === undefined || curEntry === "") {
           curEntry = "NONEXISTING";
         }
+        // console.log(curEntry);
         let queryBody = 
           "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
           // +"not added?"
@@ -1888,7 +1936,8 @@ function findClassAnnotation(tableHTML, remainCols) {
       }
     }
     // return classAnnotation;
-    // console.log("Current class annotation is "+classAnnotation);
+    // console.log("Current class annotation is ");
+    // console.log(classAnnotation);
     return Promise.resolve(classAnnotation);
   });
 }
@@ -1908,6 +1957,27 @@ function setTableFromHTML(selecteTableHTML,urlOrigin) {
   for (let i=0;i<selectedTable.rows.length;++i) {
       let tempRow = [];
       for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
+          // console.log("Attributes are ");
+          // console.log(selectedTable.rows[i].cells[j].attributes);
+          // console.log(selectedTable.rows[i].cells[j].getHtmlElementsByTagName("a"));
+          // console.log(selecteTableHTML.rows[i].cells[j]);
+
+          // We get all the links from this current cell (there may be more)
+          // let anchorArray = selecteTableHTML.rows[i].cells[j].getElementsByTagName("a");
+
+          // // We want to use the first valid link as the search element for this cell
+          // // Definition of being valid: its text is not empty (thus not the link for a picture), and it's not a citation (so [0] is not "[")
+          // for (let i=0;i<anchorArray.length;++i) {
+          //   // console.log(anchorArray[i]);
+          //   // console.log(anchorArray[i].href);
+          //   // console.log(anchorArray[i].innerText);
+          //   if (anchorArray[i].innerText !== "" && anchorArray[i].innerText[0] !== "[") {
+          //     // console.log(anchorArray[i].innerText);
+          //     let hrefArray = anchorArray[i].href.split("/");
+          //     console.log("Inner text is "+anchorArray[i].href);
+          //     console.log("Its exists in DBPedia as "+regexReplace(hrefArray[hrefArray.length-1]));
+          //   }
+          // }
           let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
           let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
           let curColSpan = selectedTable.rows[i].cells[j].colSpan;
