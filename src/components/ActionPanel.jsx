@@ -76,7 +76,11 @@ class ActionPanel extends Component {
             <Collapse isOpen={siblingArray[secondIndex].isOpen}>
               <Card>
                   <CardBody>
-                      {this.createTableArray(firstIndex,secondIndex)}
+                    <button 
+                      onClick={(e) => this.props.unionPage(firstIndex,secondIndex)}>
+                      Union all tables from page
+                    </button>
+                    {this.createTableArray(firstIndex,secondIndex)}
                   </CardBody>
               </Card>
             </Collapse>

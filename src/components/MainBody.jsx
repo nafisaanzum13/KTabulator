@@ -15,7 +15,7 @@ class MainBody extends Component {
     let tableData = [];
     let tableHeader = [];
     let optionsMap = [];
-    const initialRowNum = 30;
+    const initialRowNum = 40;
     const initialColNum = 4;
     for (let i=0;i<initialRowNum;++i) {
       let tempRow = [];
@@ -62,7 +62,10 @@ class MainBody extends Component {
       //    4.1) isOpen:      boolean storing whether the current sibling is toggled on or not
       //    4.2) tableArray:  array of objects storing the status/content for each "same" table on the sibling URL
       //         4.2.1) isOepn:        boolean storing whether the current table is toggled on or not
-      //         4.2.1) data:          HTML of a table    
+      //         4.2.2) unionScore:    number storing teh union score of the current table (how "similar" it is to the original table)
+      //         4.2.3) colMapping:    array of numbers storing the column mapping between the current table and the selected table
+      //         4.2.4) data:          HTML of a table
+      //         4.2.5) title:         array of strigns storing the column headers of the current table    
       propertyNeighbours:[],     
     };
 
@@ -92,6 +95,7 @@ class MainBody extends Component {
     this.toggleSibling = this.toggleSibling.bind(this);
     this.toggleOtherTable = this.toggleOtherTable.bind(this);
     this.unionTable = this.unionTable.bind(this);
+    this.unionPage = this.unionPage.bind(this);
 
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
@@ -304,6 +308,7 @@ class MainBody extends Component {
         }
       }
       // We only want to update the options if the column is non-empty
+      // Make sure to modify this relation here to include only dbo and dbp
       if (colEmpty === false) {
         let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
         let suffixURL = "%0D%0A%7D%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
@@ -372,7 +377,7 @@ class MainBody extends Component {
     // We want to deal with duplicate neighbour names if we are selecting column headers for non-key columns
     if (colIndex !== this.state.keyColIndex) {
       let arr = elabel.split("-");
-      if (arr.length > 1) {
+      if (arr.length > 1 && !isNaN(Number(arr[1])-1)) {
         // arr[1] stores the index of the neighbour with duplicate names
         tempObj["neighbourIndex"] = Number(arr[1])-1;
       } else {
@@ -380,6 +385,7 @@ class MainBody extends Component {
         tempObj["neighbourIndex"] = -1;
       }
     }
+    // console.log(tempObj);
     // console.log(tempObj);
     this.setState({
       tableHeader:tableHeader,
@@ -510,10 +516,10 @@ class MainBody extends Component {
       if (type === "subject") {
         queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
                     +cellValue
-                    +"+%28dbo%3A"+neighbour+"%7Cdbp%3A"+neighbour+"%29+%3Fsomevar.%0D%0A%7D%0D%0A%0D%0A&";
+                    +"+%28dbo%3A"+regexReplace(neighbour)+"%7Cdbp%3A"+regexReplace(neighbour)+"%29+%3Fsomevar.%0D%0A%7D%0D%0A%0D%0A&";
       } else {
         queryBody = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A++++++++%3Fsomevar+%28dbo%3A"
-                    +neighbour+"%7Cdbp%3A"+neighbour+"%29+dbr%3A"
+                    +regexReplace(neighbour)+"%7Cdbp%3A"+regexReplace(neighbour)+"%29+dbr%3A"
                     +cellValue+"%0D%0A%7D%0D%0A&";
       }
       let queryURL = prefixURL+queryBody+suffixURL;
@@ -539,6 +545,8 @@ class MainBody extends Component {
           // let's determine if we need to truncate
           // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
           // Think about what to do when there are duplicates
+          // console.log("Current value is ");
+          // console.log(values[])
           let dbResult = values[i].results.bindings[requiredLength-1].somevar.value;
           let prefixToRemove = "http://dbpedia.org/resource/";
           // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
@@ -1132,42 +1140,44 @@ class MainBody extends Component {
   // by changing tableDataExplore
 
   unionTable(firstIndex,secondIndex,otherTableHTML,colMapping) {
+
+    // First we get the clean data and set the origin for the other table by calling setTableFromHTML
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML,otherTableOrigin);
-    otherTableData = otherTableData.slice(1); // we remove the column header row
-    // console.log(otherTableData);
-    // Now need to push this otherTableData with this.state.tableDataExplore
+
+    // We remove the column header row
+    otherTableData = otherTableData.slice(1); 
+
+    // We create a copy of the table data that is in the table panel
     let tableDataExplore = this.state.tableDataExplore.slice();
-    // tableDataExplore = tableDataExplore.concat(otherTableData);
 
-    // We want to correctly modify tableDataExplore, based on colMapping.
-    // If colMapping is null for some column, we want to set the data as "N/A"
-    // console.log(tableDataExplore);
+    // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
+    let tempMapping = colMapping.slice();
+    tableDataExplore = tableConcat(tableDataExplore, otherTableData, tempMapping);
+    this.setState({
+      tableDataExplore:tableDataExplore,
+    })
+  }
 
-    // We first make some small modifications to colMapping, as we have inserted a new column into otherTableData and tableDataExplore
-    for (let j=0;j<colMapping.length;++j) {
-      if (colMapping[j] !== "null") {
-        colMapping[j]++;
-      }
+  // The following function unions all similar tables found under a sibling page with the selected table
+  unionPage(firstIndex,secondIndex) {
+    
+    // We get the tableArray and name of the current sibling page
+    let tableArray = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].tableArray;
+    let otherTableOrigin = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
+
+    // We create a copy of the table data that is in the table panel
+    let tableDataExplore = this.state.tableDataExplore.slice();
+
+    for (let i=0;i<tableArray.length;++i) {
+      // We get the clean data for the current "other table"
+      let otherTableData = setTableFromHTML(tableArray[i].data,otherTableOrigin);
+      // We remove the column header row
+      otherTableData = otherTableData.slice(1); 
+      // We create a copy of the colMapping of the current "oother table"
+      let tempMapping = tableArray[i].colMapping.slice();
+      tableDataExplore = tableConcat(tableDataExplore, otherTableData, tempMapping);
     }
-    colMapping.splice(0,0,0); // insert element 0 at the first position of colMapping, deleting 0 elements
-    // console.log(colMapping);
-
-    // Now we insert the data into dataToAdd. dataToAdd will be concatenated with tableDataExplore
-    let dataToAdd = [];
-    for (let i=0;i<otherTableData.length;++i) {
-      let tempRow = [];
-      for (let j=0;j<colMapping.length;++j) {
-        let colInNew = colMapping[j];
-        if (colInNew !== "null") {
-          tempRow.push(otherTableData[i][colInNew]);
-        } else {
-          tempRow.push({"data":"N/A"});
-        }
-      }
-      dataToAdd.push(tempRow);
-    }
-    tableDataExplore = tableDataExplore.concat(dataToAdd);
     this.setState({
       tableDataExplore:tableDataExplore,
     })
@@ -1228,6 +1238,7 @@ class MainBody extends Component {
                   toggleSibling={this.toggleSibling}
                   toggleOtherTable={this.toggleOtherTable}
                   unionTable={this.unionTable}
+                  unionPage={this.unionPage}
                   // Following states are passed for general purposes
                   copyTable={this.copyTable}/>
               </div>
@@ -1273,6 +1284,7 @@ function allPromiseReady(promiseArray){
 function regexReplace(str) {
   return str.replace(/\$/g,"%5Cu0024")
             .replace(/%/g,"%5Cu0025")
+            .replace(/!/g,"%5Cu0021")
             .replace(/"/g,"%5Cu0022")
             .replace(/#/g,"%5Cu0023")
             .replace(/&/g,"%5Cu0026")
@@ -1294,6 +1306,7 @@ function regexReplace(str) {
 function urlReplace(str) {
   return str.replace(/%E2%80%93/g,"%5Cu2013")
             .replace(/\$/g,"%5Cu0024")
+            .replace(/!/g,"%5Cu0021")
             .replace(/"/g,"%5Cu0022")
             .replace(/#/g,"%5Cu0023")
             .replace(/&/g,"%5Cu0026")
@@ -1379,6 +1392,40 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
     }
   }
   return keyColNeighbours;
+}
+
+// This function takes in the clean data for the first table, clean data for the second table, and colMapping between these two tables
+// And returns the unioned clean data for the first table 
+
+function tableConcat(tableDataExplore, otherTableData, tempMapping) {
+
+  // We want to correctly modify tableDataExplore, based on colMapping.
+  // If colMapping is null for some column, we want to set the data as "N/A"
+  // console.log(tableDataExplore);
+
+  // We first make some small modifications to colMapping, as we have inserted a new column into otherTableData and tableDataExplore
+  for (let j=0;j<tempMapping.length;++j) {
+    if (tempMapping[j] !== "null") {
+      tempMapping[j]++;
+    }
+  }
+  tempMapping.splice(0,0,0); // insert element 0 at the first position of colMapping, deleting 0 elements
+
+  // Now we insert the data into dataToAdd. dataToAdd will be concatenated with tableDataExplore
+  let dataToAdd = [];
+  for (let i=0;i<otherTableData.length;++i) {
+    let tempRow = [];
+    for (let j=0;j<tempMapping.length;++j) {
+      let colInNew = tempMapping[j];
+      if (colInNew !== "null") {
+        tempRow.push(otherTableData[i][colInNew]);
+      } else {
+        tempRow.push({"data":"N/A"});
+      }
+    }
+    dataToAdd.push(tempRow);
+  }
+  return tableDataExplore.concat(dataToAdd);
 }
 
 function HTMLCleanCell(str) {
@@ -1622,8 +1669,8 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
         // Let's prevent it from happening
         let remainClassAnnotation = values[0].slice();
         if (remainClassAnnotation.length > 0) {
-          let remainColsCopy = remainCols.slice();
-          let remainClassAnnotationCopy = remainClassAnnotation.slice();
+          // let remainColsCopy = remainCols.slice();
+          // let remainClassAnnotationCopy = remainClassAnnotation.slice();
           for (let i=0;i<searchCols.length;++i) {
             let curSearchIndex = searchCols[i];
             // console.log(curSearchIndex);
@@ -1640,16 +1687,16 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
                 // Let make sure this column does have a class annotation. Otherwise we skip it
                 // console.log(remainClassAnnotation[j]);  
                 // Note: sometimes remainClassAnnotation[j] is undefined, which causes an error
-                if (remainClassAnnotation[j] === undefined) {
-                  console.log("This case is causing an error");
-                  console.log("Remain cols are "+remainCols);
-                  console.log("Remain class annotations are "+remainClassAnnotation);
-                  console.log("Original remain cols are "+remainColsCopy);
-                  console.log("original remain class annotations are "+remainClassAnnotationCopy);
-                  console.log("Table HTML is ");
-                  console.log(tableHTML);
-                  console.log(values[0]);
-                }
+                // if (remainClassAnnotation[j] === undefined) {
+                //   console.log("This case is causing an error");
+                //   console.log("Remain cols are "+remainCols);
+                //   console.log("Remain class annotations are "+remainClassAnnotation);
+                //   console.log("Original remain cols are "+remainColsCopy);
+                //   console.log("original remain class annotations are "+remainClassAnnotationCopy);
+                //   console.log("Table HTML is ");
+                //   console.log(tableHTML);
+                //   console.log(values[0]);
+                // }
                 if (remainClassAnnotation[j].length > 0) {
                   // console.log("Remain column index is "+remainCols[j]);
                   // console.log("Its class annotation is "+remainClassAnnotation[j]);
@@ -1729,6 +1776,7 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
           // console.log("Union Score is "+unionScore);
           // console.log("Column mapping is "+colMapping);
           // tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]}); 
+          // console.log(colMapping);
           return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML,"title":newCols})
         } else {
           return Promise.resolve(-1);
@@ -1771,9 +1819,9 @@ function findClassAnnotation(tableHTML, remainCols) {
             // console.log("InnerText is "+anchorArray[k].innerText);
             // console.log("It exists in DBPedia as "+hrefArray[hrefArray.length-1]);
             curCellText = hrefArray[hrefArray.length-1];
-            if (curCellText.includes("UEFA")) {
-              console.log(curCellText);
-            }
+            // if (curCellText.includes("UEFA")) {
+              // console.log(curCellText);
+            // }
           }
         }
       }
@@ -1854,6 +1902,7 @@ function findClassAnnotation(tableHTML, remainCols) {
       // console.log(regexReplace(tempTable[i][j].data));
       // console.log(tempTable[i][curColIndex]);
       let curEntry = (tempTable[i][curColIndex] === undefined)?"NONEXISTING":regexReplace(tempTable[i][curColIndex].data);
+      // console.log(curEntry);
       // console.log(regexReplace(tempTable[i][curColIndex].data));
       // console.log(!isNaN(Number(curEntry)));
       // console.log("Replaced data is "+curEntry);
@@ -1874,13 +1923,15 @@ function findClassAnnotation(tableHTML, remainCols) {
         if (curEntry === undefined || curEntry === "") {
           curEntry = "NONEXISTING";
         }
-        // console.log(curEntry);
         let queryBody = 
           "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
-          // +"not added?"
           +curEntry
           +"+rdf%3Atype+%3Fo.%0D%0A++++++BIND%28STR%28%3Fo%29+AS+%3FoString+%29.%0D%0A++++++FILTER%28regex%28%3FoString%2C%22dbpedia.org%2Fontology%2F%22%2C%22i%22%29%29%0D%0A%7D%0D%0A&";
         let queryURL = prefixURL+queryBody+suffixURL;
+        // if (curEntry === "Bangor_City_F%5Cu002EC%5Cu002E") {
+        //   console.log("There is something wrong with this entry")
+        //   console.log(queryURL);
+        // }
         // console.log("Query is constructed!");
         // if (queryURL === "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A") {
         //   console.log("Here is where the problem occurs");
@@ -1957,27 +2008,6 @@ function setTableFromHTML(selecteTableHTML,urlOrigin) {
   for (let i=0;i<selectedTable.rows.length;++i) {
       let tempRow = [];
       for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
-          // console.log("Attributes are ");
-          // console.log(selectedTable.rows[i].cells[j].attributes);
-          // console.log(selectedTable.rows[i].cells[j].getHtmlElementsByTagName("a"));
-          // console.log(selecteTableHTML.rows[i].cells[j]);
-
-          // We get all the links from this current cell (there may be more)
-          // let anchorArray = selecteTableHTML.rows[i].cells[j].getElementsByTagName("a");
-
-          // // We want to use the first valid link as the search element for this cell
-          // // Definition of being valid: its text is not empty (thus not the link for a picture), and it's not a citation (so [0] is not "[")
-          // for (let i=0;i<anchorArray.length;++i) {
-          //   // console.log(anchorArray[i]);
-          //   // console.log(anchorArray[i].href);
-          //   // console.log(anchorArray[i].innerText);
-          //   if (anchorArray[i].innerText !== "" && anchorArray[i].innerText[0] !== "[") {
-          //     // console.log(anchorArray[i].innerText);
-          //     let hrefArray = anchorArray[i].href.split("/");
-          //     console.log("Inner text is "+anchorArray[i].href);
-          //     console.log("Its exists in DBPedia as "+regexReplace(hrefArray[hrefArray.length-1]));
-          //   }
-          // }
           let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
           let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
           let curColSpan = selectedTable.rows[i].cells[j].colSpan;
@@ -2037,7 +2067,5 @@ function hyperCDF(x, N, K, n) {
   }
   return count;
 }
-
-
 
 
