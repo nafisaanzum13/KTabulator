@@ -110,7 +110,11 @@ class ActionPanel extends Component {
               <Collapse isOpen={this.props.propertyNeighbours[i].isOpen}>
                 <Card>
                     <CardBody>
-                        {this.createSiblingArray(i)}
+                      <button 
+                        onClick={(e) => this.props.unionProperty(i)}>
+                        Union tables from all pages
+                      </button>
+                      {this.createSiblingArray(i)}
                     </CardBody>
                 </Card>
               </Collapse>

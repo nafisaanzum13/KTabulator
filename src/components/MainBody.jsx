@@ -96,6 +96,7 @@ class MainBody extends Component {
     this.toggleOtherTable = this.toggleOtherTable.bind(this);
     this.unionTable = this.unionTable.bind(this);
     this.unionPage = this.unionPage.bind(this);
+    this.unionProperty = this.unionProperty.bind(this);
 
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
@@ -1183,6 +1184,45 @@ class MainBody extends Component {
     })
   }
 
+  // The following function unions all similar tables found under a property(parent) neighbour with the selected table
+  // This is the highest level of union.
+
+  unionProperty(firstIndex) {
+
+    // First we create a copy of the current tableDataExplore
+    let tableDataExplore = this.state.tableDataExplore.slice();
+
+    // we get the siblingArray of the current property neighbour
+    let siblingArray = this.state.propertyNeighbours[firstIndex].siblingArray;
+
+    for (let i=0;i<siblingArray.length;++i) {
+      // We get the tableArray and name of the current sibling page
+      let tableArray = siblingArray[i].tableArray;
+      let otherTableOrigin = siblingArray[i].name; 
+      // console.log(otherTableOrigin);
+      // If the current sibling has no tables that are unionable, we break out of the loop.
+      // Because siblingArray is sorted by the length of their tableArray
+      if (tableArray.length === 0) {
+        break;
+      }
+      // Else, we want to union all unionable tables from the current sibling page 
+      else {
+        for (let j=0;j<tableArray.length;++j) {
+          // We get the clean data for the current "other table"
+          let otherTableData = setTableFromHTML(tableArray[j].data,otherTableOrigin);
+          // We remove the column header row
+          otherTableData = otherTableData.slice(1); 
+          // We create a copy of the colMapping of the current "oother table"
+          let tempMapping = tableArray[j].colMapping.slice();
+          tableDataExplore = tableConcat(tableDataExplore, otherTableData, tempMapping);
+        }
+      }
+    }
+    this.setState({
+      tableDataExplore:tableDataExplore,
+    })
+  }
+
   render() {
     let bodyEle;
     // If user has not pasted the URL, we want to display the landing page
@@ -1239,6 +1279,7 @@ class MainBody extends Component {
                   toggleOtherTable={this.toggleOtherTable}
                   unionTable={this.unionTable}
                   unionPage={this.unionPage}
+                  unionProperty={this.unionProperty}
                   // Following states are passed for general purposes
                   copyTable={this.copyTable}/>
               </div>
