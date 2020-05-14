@@ -67,6 +67,7 @@ class MainBody extends Component {
       //         4.2.4) data:          HTML of a table
       //         4.2.5) title:         array of strigns storing the column headers of the current table    
       propertyNeighbours:[],     
+      semanticEnabled:"enabled",        // boolean value indicating whether semantic mapping is enabled or not. Default to true
     };
 
     // functions below are useful during start up
@@ -97,6 +98,7 @@ class MainBody extends Component {
     this.unionTable = this.unionTable.bind(this);
     this.unionPage = this.unionPage.bind(this);
     this.unionProperty = this.unionProperty.bind(this);
+    this.toggleSemantic = this.toggleSemantic.bind(this);
 
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
@@ -1042,7 +1044,8 @@ class MainBody extends Component {
           let tableHTML = this.state.originTableArray[this.state.selectedTableIndex];
           let pageHTML = values[i];
           // This is a helper function that fetches useful tables from pageHTML
-          tableArrayPromise.push(findTableFromHTML(tableHTML,pageHTML,this.state.selectedClassAnnotation,siblingNameArray[i]));
+          tableArrayPromise.push(
+            findTableFromHTML(tableHTML,pageHTML,this.state.selectedClassAnnotation,this.state.semanticEnabled,siblingNameArray[i]));
           // we potentially want to do something different here if urlOrigin === siblingNameArray[i]
           // We only want to keep siblings that do have useful tables
           // if (tableArray.length !== 0) {
@@ -1223,6 +1226,22 @@ class MainBody extends Component {
     })
   }
 
+  // This function handles the change of "semanticEnabled" setting
+
+  toggleSemantic(e) {
+    // we want to toggle off all the property neighbours in the action panel
+    // because changing semanticEnabled changes our search method
+    let propertyNeighbours = this.state.propertyNeighbours.slice();
+    for (let i=0;i<propertyNeighbours.length;++i) {
+      propertyNeighbours[i].isOpen = false;
+    }
+
+    this.setState({
+      semanticEnabled:e.target.value,
+      propertyNeighbours:propertyNeighbours,
+    })
+  }
+
   render() {
     let bodyEle;
     // If user has not pasted the URL, we want to display the landing page
@@ -1280,6 +1299,8 @@ class MainBody extends Component {
                   unionTable={this.unionTable}
                   unionPage={this.unionPage}
                   unionProperty={this.unionProperty}
+                  semanticEnabled={this.state.semanticEnabled}
+                  toggleSemantic={this.toggleSemantic}
                   // Following states are passed for general purposes
                   copyTable={this.copyTable}/>
               </div>
@@ -1488,7 +1509,7 @@ function HTMLCleanCell(str) {
 
 // Once semantic mapping feature is added, the colMapping will be updated
 
-function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, pageName) {
+function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, semanticEnabled, pageName) {
 
   // We first get the column names of the selected table
   let selectedHeaderCells = tableHTML.rows[0].cells;
@@ -1573,7 +1594,7 @@ function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, pageNam
   // We now loop through all the tables found on this sibling page, and see if they are unionable with the selected table
   let tablePromise = [];
   for (let i=0;i<tablesFound.length;++i) {
-    tablePromise.push(findTableFromTable(tablesFound[i],originCols,selectedClassAnnotation));
+    tablePromise.push(findTableFromTable(tablesFound[i],originCols,selectedClassAnnotation,semanticEnabled));
   }
 
   return allPromiseReady(tablePromise).then((values) => {
@@ -1581,6 +1602,7 @@ function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, pageNam
       tableArray.push(values[i]);
     }
     // we filter the tableArray here by removing those tables that do not have a high enough unionScore
+    // Note: In the unfiltered table array, we are using -1 to represent tables with a low unionScore
     tableArray = tableArray.filter(function(x) { return x !== -1; });
     // console.log(tableArray);
     // We sort the tableArray here by unionScore
@@ -1589,9 +1611,15 @@ function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, pageNam
   })
 }
 
-// This function takes in a tableHTML and originCols (denoting the columns names of the selected table) 
+// This function takes in four parameters:
+
+// 1) a tableHTML
+// 2) originCols (denoting the columns names of the selected table)
+// 3) class annotation of the selected table
+// 4) whether semantic mapping is enabled or not
+
 // and return a table Object with properties: isOpen, unionScore, colMapping, and data
-function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
+function findTableFromTable(tableHTML, originCols, selectedClassAnnotation, semanticEnabled) {
 
   // Define some constants
   const ontologySize = 780;
@@ -1664,117 +1692,95 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
         unionScore+=0.01;
       }
     }
+    
 
+    // We proceed differently based on whether semantic mapping is enabled or not
+
+    // Case 1: semantic mapping is enabled
+
+    if (semanticEnabled === "enabled") {
     // If we are not finding a perfect match, we want to do use semantic mapping here to see if it's possible to map the unmapped columns
-    // Note: this part is expected to take quite some time. Now it's implemented just for testing purposes
-    if (unionScore < 0.999) {
-      // We want to remove from remainCols the columns that are already mapped
-      // The remaining will be the columns that we can still use from the current table
-      remainCols = remainCols.filter(function(x) { return colMapping.indexOf(x) < 0 })
-      for (let i=0;i<colMapping.length;++i) {
-        if (colMapping[i] === "null") {
-          searchCols.push(i);
+      // Note: this part is expected to take quite some time. Now it's implemented just for testing purposes
+      if (unionScore < 0.999) {
+        // We want to remove from remainCols the columns that are already mapped
+        // The remaining will be the columns that we can still use from the current table
+        remainCols = remainCols.filter(function(x) { return colMapping.indexOf(x) < 0 })
+        for (let i=0;i<colMapping.length;++i) {
+          if (colMapping[i] === "null") {
+            searchCols.push(i);
+          }
         }
-      }
-      // if (newCols[1] === "Scorer") {
-        // console.log("We still need to find these columns from the original table: "+searchCols);
-        // console.log("These columns are still available for use: "+remainCols);
-        // console.log("The current column mappings are "+colMapping);
-        // console.log("Here are the class annotations of the search columns: ")
-        // for (let i=0;i<searchCols.length;++i) {
-        //   console.log(selectedClassAnnotation[searchCols[i]]);
+        // if (newCols[1] === "Scorer") {
+          // console.log("We still need to find these columns from the original table: "+searchCols);
+          // console.log("These columns are still available for use: "+remainCols);
+          // console.log("The current column mappings are "+colMapping);
+          // console.log("Here are the class annotations of the search columns: ")
+          // for (let i=0;i<searchCols.length;++i) {
+          //   console.log(selectedClassAnnotation[searchCols[i]]);
+          // }
         // }
-      // }
 
-      // Now, searchCols stores the columns from the selected table that have not been mapped yet
-      // and remainCols stores the columns from the current table that can still be used for mapping
-      // Let's ask a query to find the class annotations for the remainCols
-      // if (remainCols.length > 0) {
-        promiseArray.push(findClassAnnotation(tableHTML,remainCols));
-      // }
-    }
-
-
-    // Because the return statement is here, it may be possible that we are pushing nothing onto the promiseArray!!!
-    // There is no need to worry about it.
-    return allPromiseReady(promiseArray).then((values) => {
-      // First, if we are in the perfect match case, we want to retrun straight away
-      if (unionScore >= 0.999) {
-        return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML,"title":newCols})
+        // Now, searchCols stores the columns from the selected table that have not been mapped yet
+        // and remainCols stores the columns from the current table that can still be used for mapping
+        // Let's ask a query to find the class annotations for the remainCols
+        // if (remainCols.length > 0) {
+          promiseArray.push(findClassAnnotation(tableHTML,remainCols));
+        // }
       }
-      // Else, we want to look for semantic mapping opportunities 
-      else {
-        // create a copy of values
 
-        // Note!!!! Sometimes the tableHTML only has one row, so values[0] would have a length of zero, in which case our algo breaks down
-        // Let's prevent it from happening
-        let remainClassAnnotation = values[0].slice();
-        if (remainClassAnnotation.length > 0) {
-          // let remainColsCopy = remainCols.slice();
-          // let remainClassAnnotationCopy = remainClassAnnotation.slice();
-          for (let i=0;i<searchCols.length;++i) {
-            let curSearchIndex = searchCols[i];
-            // console.log(curSearchIndex);
-            // console.log(selectedClassAnnotation[curSearchIndex]);
 
-            // If the class annotation for this column is empty, we skip it because there's no hope for semantic match.
-            // Otherwise we can work with it
-            if (selectedClassAnnotation[curSearchIndex].length > 0) {
-              // console.log("Current column being searched has index: "+curSearchIndex);
+      // Because the return statement is here, it may be possible that we are pushing nothing onto the promiseArray!!!
+      // There is no need to worry about it.
+      return allPromiseReady(promiseArray).then((values) => {
+        // First, if we are in the perfect match case, we want to retrun straight away
+        if (unionScore >= 0.999) {
+          return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML,"title":newCols})
+        }
+        // Else, we want to look for semantic mapping opportunities 
+        else {
+          // create a copy of values
+
+          // Note!!!! Sometimes the tableHTML only has one row, so values[0] would have a length of zero, in which case our algo breaks down
+          // Let's prevent it from happening
+          let remainClassAnnotation = values[0].slice();
+          if (remainClassAnnotation.length > 0) {
+            // let remainColsCopy = remainCols.slice();
+            // let remainClassAnnotationCopy = remainClassAnnotation.slice();
+            for (let i=0;i<searchCols.length;++i) {
+              let curSearchIndex = searchCols[i];
+              // console.log(curSearchIndex);
               // console.log(selectedClassAnnotation[curSearchIndex]);
 
-              // we loop through the remain cols and check their class annotations
-              for (let j=0;j<remainCols.length;++j) {
-                // Let make sure this column does have a class annotation. Otherwise we skip it
-                // console.log(remainClassAnnotation[j]);  
-                // Note: sometimes remainClassAnnotation[j] is undefined, which causes an error
-                // if (remainClassAnnotation[j] === undefined) {
-                //   console.log("This case is causing an error");
-                //   console.log("Remain cols are "+remainCols);
-                //   console.log("Remain class annotations are "+remainClassAnnotation);
-                //   console.log("Original remain cols are "+remainColsCopy);
-                //   console.log("original remain class annotations are "+remainClassAnnotationCopy);
-                //   console.log("Table HTML is ");
-                //   console.log(tableHTML);
-                //   console.log(values[0]);
-                // }
-                if (remainClassAnnotation[j].length > 0) {
-                  // console.log("Remain column index is "+remainCols[j]);
-                  // console.log("Its class annotation is "+remainClassAnnotation[j]);
-                  // Let make special cases when the any of search column class and current column class is [Number]
-                  // If they are both [Number], we will give it a match
-                  // Else it's not a match
-                  if (selectedClassAnnotation[curSearchIndex][0] === "Number" || remainClassAnnotation[j][0] === "Number") {
-                    // This case we have a match
-                    if (selectedClassAnnotation[curSearchIndex][0] === remainClassAnnotation[j][0]) {
-                      // We need to update the colMapping and unionScore
-                      colMapping[curSearchIndex] = remainCols[j];
-                      unionScore+=1/originCols.length;
-                      // we also need to remove this column from remainClassAnnotation and remainCols because we cannot use it anymore
-                      remainCols.splice(j,1);
-                      remainClassAnnotation.splice(j,1); 
-                      // Also, since we are removing element from remainCols array and remainClassAnnotation array, we need to decrement
-                      // j to go back to the correct posiition
-                      --j;
-                      // Also we need to call break to prevent further looping: we are done with this search column
-                      break;
-                    }
-                    // Else there is no match. We simply ignore it.
-                  } 
-                  // If neither of them is [Number], we need to use the test statistic
-                  else {
-                    // Let's first find the array intersection of selectedClassAnnotation[curSearchIndex] and remainClassAnnotation[j]
-                    let intersection = selectedClassAnnotation[curSearchIndex].filter
-                                        (function(x) { return remainClassAnnotation[j].indexOf(x) >= 0 });
-                    // console.log("Intersection is "+intersection);
-                    // We only want to consider two column unionable if they at least have some intersections.
-                    if (intersection.length > 0) {
-                      let totalSuccess = selectedClassAnnotation[curSearchIndex].length;
-                      let numTrial = remainClassAnnotation[j].length;
-                      let numSuccess = intersection.length;
-                      let testStat = hyperCDF(numSuccess,ontologySize,totalSuccess,numTrial);
-                      // If testStat is larger than matchCutOff, we consider it a match
-                      if (testStat > matchCutOff) {
+              // If the class annotation for this column is empty, we skip it because there's no hope for semantic match.
+              // Otherwise we can work with it
+              if (selectedClassAnnotation[curSearchIndex].length > 0) {
+                // console.log("Current column being searched has index: "+curSearchIndex);
+                // console.log(selectedClassAnnotation[curSearchIndex]);
+
+                // we loop through the remain cols and check their class annotations
+                for (let j=0;j<remainCols.length;++j) {
+                  // Let make sure this column does have a class annotation. Otherwise we skip it
+                  // console.log(remainClassAnnotation[j]);  
+                  // Note: sometimes remainClassAnnotation[j] is undefined, which causes an error
+                  // if (remainClassAnnotation[j] === undefined) {
+                  //   console.log("This case is causing an error");
+                  //   console.log("Remain cols are "+remainCols);
+                  //   console.log("Remain class annotations are "+remainClassAnnotation);
+                  //   console.log("Original remain cols are "+remainColsCopy);
+                  //   console.log("original remain class annotations are "+remainClassAnnotationCopy);
+                  //   console.log("Table HTML is ");
+                  //   console.log(tableHTML);
+                  //   console.log(values[0]);
+                  // }
+                  if (remainClassAnnotation[j].length > 0) {
+                    // console.log("Remain column index is "+remainCols[j]);
+                    // console.log("Its class annotation is "+remainClassAnnotation[j]);
+                    // Let make special cases when the any of search column class and current column class is [Number]
+                    // If they are both [Number], we will give it a match
+                    // Else it's not a match
+                    if (selectedClassAnnotation[curSearchIndex][0] === "Number" || remainClassAnnotation[j][0] === "Number") {
+                      // This case we have a match
+                      if (selectedClassAnnotation[curSearchIndex][0] === remainClassAnnotation[j][0]) {
                         // We need to update the colMapping and unionScore
                         colMapping[curSearchIndex] = remainCols[j];
                         unionScore+=1/originCols.length;
@@ -1787,45 +1793,95 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
                         // Also we need to call break to prevent further looping: we are done with this search column
                         break;
                       }
+                      // Else there is no match. We simply ignore it.
+                    } 
+                    // If neither of them is [Number], we need to use the test statistic
+                    else {
+                      // Let's first find the array intersection of selectedClassAnnotation[curSearchIndex] and remainClassAnnotation[j]
+                      let intersection = selectedClassAnnotation[curSearchIndex].filter
+                                          (function(x) { return remainClassAnnotation[j].indexOf(x) >= 0 });
+                      // console.log("Intersection is "+intersection);
+                      // We only want to consider two column unionable if they at least have some intersections.
+                      if (intersection.length > 0) {
+                        let totalSuccess = selectedClassAnnotation[curSearchIndex].length;
+                        let numTrial = remainClassAnnotation[j].length;
+                        let numSuccess = intersection.length;
+                        let testStat = hyperCDF(numSuccess,ontologySize,totalSuccess,numTrial);
+                        // If testStat is larger than matchCutOff, we consider it a match
+                        if (testStat > matchCutOff) {
+                          // We need to update the colMapping and unionScore
+                          colMapping[curSearchIndex] = remainCols[j];
+                          unionScore+=1/originCols.length;
+                          // we also need to remove this column from remainClassAnnotation and remainCols because we cannot use it anymore
+                          remainCols.splice(j,1);
+                          remainClassAnnotation.splice(j,1); 
+                          // Also, since we are removing element from remainCols array and remainClassAnnotation array, we need to decrement
+                          // j to go back to the correct posiition
+                          --j;
+                          // Also we need to call break to prevent further looping: we are done with this search column
+                          break;
+                        }
+                      }
                     }
                   }
                 }
               }
             }
           }
-        }
-        // console.log("Remain columns are "+)
-        // console.log("Here is table HTML");
-        // console.log(tableHTML);
-        // console.log("Here are the class annotations for columns that still need mapping");
-        // for (let i=0;i<searchCols.length;++i) {
-        //   console.log(selectedClassAnnotation[searchCols[i]]);
-        // }
-        // console.log("The remain columns are "+remainCols);
-        // console.log("Here are the class annotations for the remaining columns");
-        // console.log(values);
-        // console.log("This is column mapping "+colMapping);
-        // console.log("Union score is "+unionScore);
-        // Start from here tomorrow
+          // console.log("Remain columns are "+)
+          // console.log("Here is table HTML");
+          // console.log(tableHTML);
+          // console.log("Here are the class annotations for columns that still need mapping");
+          // for (let i=0;i<searchCols.length;++i) {
+          //   console.log(selectedClassAnnotation[searchCols[i]]);
+          // }
+          // console.log("The remain columns are "+remainCols);
+          // console.log("Here are the class annotations for the remaining columns");
+          // console.log(values);
+          // console.log("This is column mapping "+colMapping);
+          // console.log("Union score is "+unionScore);
+          // Start from here tomorrow
 
-        // We need to loop through the searchCols
+          // We need to loop through the searchCols
 
-        // We push on tables with unionScore > 0.5
-        if (unionScore > unionCutOff) {
-          // console.log("This table is unionable!");
-          // console.log("Table is "+tableHTML);
-          // console.log("Union Score is "+unionScore);
-          // console.log("Column mapping is "+colMapping);
-          // tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]}); 
-          // console.log(colMapping);
-          return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML,"title":newCols})
-        } else {
-          return Promise.resolve(-1);
+          // We push on tables with unionScore > unionCutOff
+          if (unionScore > unionCutOff) {
+            // console.log("This table is unionable!");
+            // console.log("Table is "+tableHTML);
+            // console.log("Union Score is "+unionScore);
+            // console.log("Column mapping is "+colMapping);
+            // tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]}); 
+            // console.log(colMapping);
+            return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML,"title":newCols})
+          } else {
+            return Promise.resolve(-1);
+          }
         }
+      })
+    }
+
+    // Case 2: semantic mapping is disabled. 
+    // In this case we check if the unionScore is high enough directly, without going through the semantic mapping process
+    else {
+      // We push on tables with unionScore > unionCutOff
+      if (unionScore > unionCutOff) {
+        // console.log("This table is unionable!");
+        // console.log("Table is "+tableHTML);
+        // console.log("Union Score is "+unionScore);
+        // console.log("Column mapping is "+colMapping);
+        // tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]}); 
+        // console.log(colMapping);
+        return Promise.resolve({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tableHTML,"title":newCols})
+      } else {
+        return Promise.resolve(-1);
       }
-    })
+    }
   }
-  return Promise.resolve(-1);
+  // This else clause means that this table does not even have enough number of columns.
+  // So we know right away it cannot be a match. So we return -1 (failure)
+  else {
+    return Promise.resolve(-1);
+  }
 }
 
 // This function takes in the HTML of a table, and returns a Promise that resolves to the class annotation for all the columns of the table

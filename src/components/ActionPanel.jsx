@@ -2,6 +2,8 @@ import React, { Component } from "react";
 import TaskMenu from "../components/TaskMenu";
 import { Collapse, Button, CardBody, Card } from 'reactstrap';
 import { FaList, FaTable } from "react-icons/fa";
+import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
+import 'react-tabs/style/react-tabs.css';
 
 class ActionPanel extends Component {
   constructor(props) {
@@ -139,7 +141,7 @@ class ActionPanel extends Component {
       titleEle = 
         <div className="row">
           <h3 className="col-md-4">Action List:</h3>
-          <Button className="col-md-3 offset-md-4" onClick={() => this.props.copyTable()}>Copy Table</Button>
+          <button className="col-md-3 offset-md-4" onClick={() => this.props.copyTable()}>Copy Table</button>
         </div>;
     }
 
@@ -211,8 +213,23 @@ class ActionPanel extends Component {
       } else if (actionInfo.task === "showPropertyNeighbours") {
         actionEle =
           <div>
-            <p>Explore relations below to look for other pages with similar tables:</p>
-            {this.createPropertyArray()}
+            <Tabs>
+              <TabList>
+                  <Tab>View Results</Tab>
+                  <Tab>Change Setting</Tab>
+              </TabList>
+              <TabPanel>
+                <p>Explore relations below to look for other pages with similar tables:</p>
+                {this.createPropertyArray()}
+              </TabPanel>
+              <TabPanel>
+                  <div onChange={(e) => this.props.toggleSemantic(e)}>
+                    Semantic Mapping:
+                    <input type="radio" value="enabled" checked={this.props.semanticEnabled === "enabled"}/> Enabled
+                    <input type="radio" value="disabled" checked={this.props.semanticEnabled === "disabled"}/> Disabled
+                  </div>
+              </TabPanel>
+            </Tabs>
           </div>
       }
     }
