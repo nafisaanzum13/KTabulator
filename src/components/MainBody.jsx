@@ -68,6 +68,7 @@ class MainBody extends Component {
       //         4.2.5) title:         array of strigns storing the column headers of the current table    
       propertyNeighbours:[],     
       semanticEnabled:"enabled",        // boolean value indicating whether semantic mapping is enabled or not. Default to true
+      unionCutOff:0.5,                   // number representing the union percentage a table must have to be considered unionable (>=)
     };
 
     // functions below are useful during start up
@@ -99,6 +100,7 @@ class MainBody extends Component {
     this.unionPage = this.unionPage.bind(this);
     this.unionProperty = this.unionProperty.bind(this);
     this.toggleSemantic = this.toggleSemantic.bind(this);
+    this.unionCutOffChange = this.unionCutOffChange.bind(this);
 
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
@@ -1045,7 +1047,13 @@ class MainBody extends Component {
           let pageHTML = values[i];
           // This is a helper function that fetches useful tables from pageHTML
           tableArrayPromise.push(
-            findTableFromHTML(tableHTML,pageHTML,this.state.selectedClassAnnotation,this.state.semanticEnabled,siblingNameArray[i]));
+            findTableFromHTML(
+              tableHTML,
+              pageHTML,
+              this.state.selectedClassAnnotation,
+              this.state.semanticEnabled,
+              this.state.unionCutOff,
+              siblingNameArray[i]));
           // we potentially want to do something different here if urlOrigin === siblingNameArray[i]
           // We only want to keep siblings that do have useful tables
           // if (tableArray.length !== 0) {
@@ -1230,7 +1238,7 @@ class MainBody extends Component {
 
   toggleSemantic(e) {
     // we want to toggle off all the property neighbours in the action panel
-    // because changing semanticEnabled changes our search method
+    // because changing semanticEnabled changes our search criteria
     let propertyNeighbours = this.state.propertyNeighbours.slice();
     for (let i=0;i<propertyNeighbours.length;++i) {
       propertyNeighbours[i].isOpen = false;
@@ -1239,6 +1247,20 @@ class MainBody extends Component {
     this.setState({
       semanticEnabled:e.target.value,
       propertyNeighbours:propertyNeighbours,
+    })
+  }
+
+  // This function handles the change of the unionCutoff percentage
+
+  unionCutOffChange(e) {
+    // we want to toggle off all the property neighbours in the action panel
+    // because changing union cutoff changes our search criteria
+    let propertyNeighbours = this.state.propertyNeighbours.slice();
+    for (let i=0;i<propertyNeighbours.length;++i) {
+      propertyNeighbours[i].isOpen = false;
+    }
+    this.setState({
+      unionCutOff:e.target.value,
     })
   }
 
@@ -1301,6 +1323,8 @@ class MainBody extends Component {
                   unionProperty={this.unionProperty}
                   semanticEnabled={this.state.semanticEnabled}
                   toggleSemantic={this.toggleSemantic}
+                  unionCutOff={this.state.unionCutOff}
+                  unionCutOffChange={this.unionCutOffChange}
                   // Following states are passed for general purposes
                   copyTable={this.copyTable}/>
               </div>
@@ -1509,7 +1533,7 @@ function HTMLCleanCell(str) {
 
 // Once semantic mapping feature is added, the colMapping will be updated
 
-function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, semanticEnabled, pageName) {
+function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, semanticEnabled, unionCutOff, pageName) {
 
   // We first get the column names of the selected table
   let selectedHeaderCells = tableHTML.rows[0].cells;
@@ -1594,7 +1618,7 @@ function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, semanti
   // We now loop through all the tables found on this sibling page, and see if they are unionable with the selected table
   let tablePromise = [];
   for (let i=0;i<tablesFound.length;++i) {
-    tablePromise.push(findTableFromTable(tablesFound[i],originCols,selectedClassAnnotation,semanticEnabled));
+    tablePromise.push(findTableFromTable(tablesFound[i],originCols,selectedClassAnnotation,semanticEnabled,unionCutOff));
   }
 
   return allPromiseReady(tablePromise).then((values) => {
@@ -1619,11 +1643,10 @@ function findTableFromHTML(tableHTML, pageHTML, selectedClassAnnotation, semanti
 // 4) whether semantic mapping is enabled or not
 
 // and return a table Object with properties: isOpen, unionScore, colMapping, and data
-function findTableFromTable(tableHTML, originCols, selectedClassAnnotation, semanticEnabled) {
+function findTableFromTable(tableHTML, originCols, selectedClassAnnotation, semanticEnabled,unionCutOff) {
 
   // Define some constants
   const ontologySize = 780;
-  const unionCutOff = 0.5;
   const matchCutOff = 0.999;
 
   // We first fetch the cleaned column names of the current table
@@ -1646,7 +1669,7 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation, sema
   // because we require a >50% unionScore
   // If it does not, we ignore this table automatically
 
-  if (newCols.length > originCols.length/2) {
+  if (newCols.length >= originCols.length*unionCutOff) {
     // We use the proposed algo here.
     // First we set the union score and column Mapping
     let unionScore = 0;
@@ -1845,7 +1868,7 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation, sema
           // We need to loop through the searchCols
 
           // We push on tables with unionScore > unionCutOff
-          if (unionScore > unionCutOff) {
+          if (unionScore >= unionCutOff) {
             // console.log("This table is unionable!");
             // console.log("Table is "+tableHTML);
             // console.log("Union Score is "+unionScore);
@@ -1864,7 +1887,7 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation, sema
     // In this case we check if the unionScore is high enough directly, without going through the semantic mapping process
     else {
       // We push on tables with unionScore > unionCutOff
-      if (unionScore > unionCutOff) {
+      if (unionScore >= unionCutOff) {
         // console.log("This table is unionable!");
         // console.log("Table is "+tableHTML);
         // console.log("Union Score is "+unionScore);

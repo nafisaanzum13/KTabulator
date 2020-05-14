@@ -2,8 +2,12 @@ import React, { Component } from "react";
 import TaskMenu from "../components/TaskMenu";
 import { Collapse, Button, CardBody, Card } from 'reactstrap';
 import { FaList, FaTable } from "react-icons/fa";
+// The two following lines are for tabs
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
+// The two following lines are for range sliders
+import RangeSlider from 'react-bootstrap-range-slider';
+import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css'
 
 class ActionPanel extends Component {
   constructor(props) {
@@ -223,10 +227,31 @@ class ActionPanel extends Component {
                 {this.createPropertyArray()}
               </TabPanel>
               <TabPanel>
-                  <div onChange={(e) => this.props.toggleSemantic(e)}>
-                    Semantic Mapping:
-                    <input type="radio" value="enabled" checked={this.props.semanticEnabled === "enabled"}/> Enabled
-                    <input type="radio" value="disabled" checked={this.props.semanticEnabled === "disabled"}/> Disabled
+                  <div className="row">
+                    <div className="col-md-4">
+                      Semantic Mapping:
+                    </div>
+                    <div className="col-md-6">
+                      <div onChange={(e) => this.props.toggleSemantic(e)}>
+                        <input type="radio" value="enabled" checked={this.props.semanticEnabled === "enabled"}/> Enabled
+                        <input type="radio" value="disabled" checked={this.props.semanticEnabled === "disabled"}/> Disabled
+                      </div>
+                    </div>
+                  </div>
+                  <br />
+                  <div className="row">
+                    <div className="col-md-4">
+                      Union Cutoff Percentage:
+                    </div>
+                    <div className="col-md-6">
+                      <RangeSlider
+                        value={this.props.unionCutOff}
+                        onChange={(e) => this.props.unionCutOffChange(e)}
+                        min={0}
+                        max={1}
+                        step={0.05}
+                      />
+                    </div>
                   </div>
               </TabPanel>
             </Tabs>

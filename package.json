@@ -10,6 +10,8 @@
     "bootstrap": "^4.4.1",
     "mathjs": "^6.6.4",
     "react": "^16.12.0",
+    "react-bootstrap": "^1.0.1",
+    "react-bootstrap-range-slider": "^0.3.2",
     "react-contextmenu": "^2.13.0",
     "react-dom": "^16.12.0",
     "react-icons": "^3.9.0",
