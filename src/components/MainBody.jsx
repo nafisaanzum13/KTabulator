@@ -7,6 +7,8 @@ import ActionPanel from "../components/ActionPanel";
 import PagePanel from "../components/PagePanel";
 
 const maxNeighbourCount = 100;
+const initialColNum = 4;
+const initialRowNum = 40;
 
 class MainBody extends Component {
 
@@ -15,8 +17,6 @@ class MainBody extends Component {
     let tableData = [];
     let tableHeader = [];
     let optionsMap = [];
-    const initialRowNum = 40;
-    const initialColNum = 4;
     for (let i=0;i<initialRowNum;++i) {
       let tempRow = [];
       for (let j=0;j<initialColNum;++j) {
@@ -126,6 +126,8 @@ class MainBody extends Component {
     const textArea = document.createElement('textarea'); // this line allows the use of select() function
     let copiedText = "";
     // We handle the case for exploreTable and startSubject differently
+
+    // This case handles the copy table for explore table. We fetch data directly from tableDataExplore 
     if (this.state.usecaseSelected === "exploreTable") {
       // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
       const rowNum = this.state.tableDataExplore.length;
@@ -136,11 +138,24 @@ class MainBody extends Component {
         }
         copiedText = copiedText+this.state.tableDataExplore[i][colNum-1].data+"\n";
       }
-    } else if (this.state.usecaseSelected === "startSubject") {
+    }
+    
+    // This case handles the copy table for start subject
+    else if (this.state.usecaseSelected === "startSubject") {
       // We first push on the text for column headers (using the labels)
       let tableHeader = this.state.tableHeader;
       for (let i=0;i<tableHeader.length;++i) {
         let curText = tableHeader[i].label;
+        // console.log(curText);
+        if (curText === undefined && tableHeader[i].length > 0) {
+          curText = "";
+          for (let j=0;j<tableHeader[i].length;++j) {
+            if (j>0) {
+              curText+="&";
+            } 
+            curText+=tableHeader[i][j].label;
+          }
+        }
         if (curText !== undefined && curText !== "") {
           copiedText = copiedText+curText+"\t";
         }
@@ -288,6 +303,8 @@ class MainBody extends Component {
             tempObj["value"] = neighbour;
             keyColOptions.push(tempObj);
         }
+        // We create a copy of the optionsMap.
+        // Then change the entry in the optionsMap corresponding to the key column to what we have just fetched: keyColOptions.
         let optionsMap = this.state.optionsMap.slice();
         optionsMap[this.state.keyColIndex] = keyColOptions;
         this.setState({
@@ -356,31 +373,62 @@ class MainBody extends Component {
   }
 
   // This function handles the the selection of a column header.
+  // Note: we want to deal with the selection of key column header vs non key column header differently
 
   selectColHeader(e,colIndex) {
+    //  We first create a copy of the existing table headers
     let tableHeader = this.state.tableHeader.slice();
-    
-    // This part creates differentiable column names
-    // The first few lines fix some pass by reference problems 
-    let evalue = e.value;
-    let elabel = e.label;
-    tableHeader[colIndex] = {"value":evalue,"label":elabel};
-    if (colIndex !== this.state.keyColIndex) {
-      tableHeader[colIndex].label = tableHeader[colIndex].label+"--"+tableHeader[this.state.keyColIndex].label;
-    }
-    // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
-    // ask in ActionPanel whether user wants to populate the column based on the chosen column name
-    let tempObj = {};
+
+    // This part deals with the selection of key column header
     if (colIndex === this.state.keyColIndex) {
-      tempObj["task"] = "populateKeyColumn";
-    } else {
+      // We create a copy of the selected option
+      if (e !== null) {
+        let selectedOptions = e.slice();
+        // console.log(selectedOptions);
+        tableHeader[colIndex] = selectedOptions;
+        let tempObj = {};
+        tempObj["task"] = "populateKeyColumn";
+        tempObj["colIndex"] = colIndex;
+        tempObj["neighbourArray"] = [];
+        for (let i=0;i<selectedOptions.length;++i) {
+          tempObj.neighbourArray.push(selectedOptions[i].value);
+        }
+        this.setState({
+          tableHeader:tableHeader,
+          curActionInfo:tempObj,
+        })
+      }
+    } 
+    // This part deals with the selection of non key column header
+    else {
+      // The first few lines fix some pass by reference problems 
+      let evalue = e.value;
+      let elabel = e.label;
+      tableHeader[colIndex] = {"value":evalue,"label":elabel};
+      // We want to change the label of non-key column headers with respect to the label of key column
+      // We first create the label text for the key column
+      let keyColLabel = "";
+      if (this.state.keyColIndex === 0) {
+        for (let i=0;i<tableHeader[this.state.keyColIndex].length;++i) {
+          if (i>0) {
+            keyColLabel+="&";
+          }
+          keyColLabel+=tableHeader[this.state.keyColIndex][i].label;
+        }
+      }
+      else {
+        keyColLabel = tableHeader[this.state.keyColIndex].label;
+      }
+      // We then append the current column's label to it
+      tableHeader[colIndex].label = tableHeader[colIndex].label+"--"+keyColLabel;
+      // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
+      // ask in ActionPanel whether user wants to populate the column based on the chosen column name
+      let tempObj = {};
       tempObj["task"] = "populateOtherColumn";
-    }
-    tempObj["colIndex"] = colIndex;
-    tempObj["neighbour"] = e.value;
-    tempObj["type"] = e.type;
-    // We want to deal with duplicate neighbour names if we are selecting column headers for non-key columns
-    if (colIndex !== this.state.keyColIndex) {
+      tempObj["colIndex"] = colIndex;
+      tempObj["neighbour"] = e.value;
+      tempObj["type"] = e.type;
+      // We want to deal with duplicate neighbour names since we are selecting column headers for non-key columns
       let arr = elabel.split("-");
       if (arr.length > 1 && !isNaN(Number(arr[1])-1)) {
         // arr[1] stores the index of the neighbour with duplicate names
@@ -389,13 +437,13 @@ class MainBody extends Component {
         // If neighbourIndex is equal to -1, that means this property has no duplicate names
         tempObj["neighbourIndex"] = -1;
       }
+      // console.log(tempObj);
+      // console.log(tempObj);
+      this.setState({
+        tableHeader:tableHeader,
+        curActionInfo:tempObj,
+      })
     }
-    // console.log(tempObj);
-    // console.log(tempObj);
-    this.setState({
-      tableHeader:tableHeader,
-      curActionInfo:tempObj,
-    })
   }
 
   // This function populates the key column
@@ -405,9 +453,9 @@ class MainBody extends Component {
   populateKeyColumn(e, colIndex, neighbour) {
 
     // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
-    // We also need to fetch the neighbours of this key column, and change all 
+    // We also need to fetch the neighbours of this key column, both using the key column entries as subject and object
 
-    // For now we are populating ten entries only. So let's calculate how many entries we need to fill.
+    // We are populating "initialRowNum" number of entries. Let's calculate how many entries we need to fill.
     let emptyEntryCount = this.state.tableData.length;
     for (let i=0;i<this.state.tableData.length;++i) {
       if (this.state.tableData[i][colIndex].data !== "") {
@@ -417,16 +465,23 @@ class MainBody extends Component {
       }
     }
 
-    // Since we need to make two queries, we make a promise array
+    // Since we need to make multiple (three) queries, we make a promise array
     let promiseArray = []; 
 
     // Below is the first query we will make. 
     // This query populates the first columns.
+    // Note: since neighbour is now an array instead of a single value, we need to adjust our query
+    // let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLOne = "%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    // let queryBodyOne = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A%09%3Fsomevar+dct%3Asubject+dbc%3A"
+    //                     +regexReplace(neighbour)
+    //                     +".%0D%0A%7D%0D%0ALIMIT+"+emptyEntryCount;
     let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    let suffixURLOne = "%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyOne = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A%09%3Fsomevar+dct%3Asubject+dbc%3A"
-                        +regexReplace(neighbour)
-                        +".%0D%0A%7D%0D%0ALIMIT+"+emptyEntryCount;
+    let suffixURLOne = "%0D%0A%7D+%0D%0Alimit+"+emptyEntryCount+"&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyOne = "select+%3Fsomevar%0D%0Awhere+%7B"
+    for (let i=0;i<neighbour.length;++i) {
+      queryBodyOne = queryBodyOne+"%0D%0A+++++++%3Fsomevar+dct%3Asubject+dbc%3A"+regexReplace(neighbour[i])+".";
+    }
     let queryURLOne = prefixURLOne+queryBodyOne+suffixURLOne;
     let keyColPromise = fetchJSON(queryURLOne);
     promiseArray.push(keyColPromise);
@@ -480,7 +535,15 @@ class MainBody extends Component {
 
       // second part sets the origin for each cell
       for (let i=0;i<rowNum;++i) {
-        let tempOrigin = this.state.tableHeader[colIndex].value+":"+tableData[i][colIndex].data;
+        // We need to process the tableHeader[colIndex] array to get the correct text for origin
+        let labelText = "";
+        for (let j=0;j<this.state.tableHeader[colIndex].length;++j) {
+          if (j>0) {
+            labelText+="&";
+          }
+          labelText+=this.state.tableHeader[colIndex][j].value;
+        }
+        let tempOrigin = labelText+":"+tableData[i][colIndex].data;
         tableData[i][colIndex].origin.push(tempOrigin);
       }
 
@@ -545,7 +608,11 @@ class MainBody extends Component {
         if (values[i].results.bindings.length < requiredLength) {
           // this means results is not found
           // or if there is not enough results, in duplicate neighbour name case
-          tableData[i][colIndex].data = "N/A";
+          if (tableData[i][this.state.keyColIndex].data === "") {
+            tableData[i][colIndex].data = "";
+          } else {
+            tableData[i][colIndex].data = "N/A";
+          }
         } else {
           // let's determine if we need to truncate
           // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
@@ -633,12 +700,24 @@ class MainBody extends Component {
     for (let j=0;j<colIndex+1;++j) {
       tableHeader.push(this.state.tableHeader[j]);
     }
+    // some modification needs to be made here
+    let labelText = ""
+    if (this.state.keyColIndex === 0) {
+      for (let i=0;i<tableHeader[this.state.keyColIndex].length;++i) {
+        if (i>0) {
+          labelText+="&";
+        }
+        labelText+=tableHeader[this.state.keyColIndex][i].value;
+      }
+    } else {
+      labelText = tableHeader[this.state.keyColIndex].label;
+    }
     for (let j=0;j<numCols;++j) {
       let curLabel = "";
       if (type === "subject") {
-        curLabel = curLabel+neighbour+"-"+(neighbourIndex+2+j)+"--"+tableHeader[this.state.keyColIndex].label;
+        curLabel = curLabel+neighbour+"-"+(neighbourIndex+2+j)+"--"+labelText;
       } else {
-        curLabel = curLabel+"is "+neighbour+" of-"+(neighbourIndex+2+j)+"--"+tableHeader[this.state.keyColIndex].label;
+        curLabel = curLabel+"is "+neighbour+" of-"+(neighbourIndex+2+j)+"--"+labelText;
       }
       tableHeader.push({"value":neighbour,"label":curLabel});
     }
@@ -671,7 +750,11 @@ class MainBody extends Component {
           if (values[i].results.bindings.length < requiredLength) {
             // this means results is not found
             // or if there is not enough results, in duplicate neighbour name case
-            tableData[i][curCol].data = "N/A";
+            if (tableData[i][this.state.keyColIndex].data === "") {
+              tableData[i][curCol].data = "";
+            } else {
+              tableData[i][curCol].data = "N/A";
+            }
           } else {
             // let's determine if we need to truncate
             // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.

@@ -161,11 +161,19 @@ class ActionPanel extends Component {
     else if (this.props.curActionInfo !== null) {
       const actionInfo = this.props.curActionInfo;
       if (actionInfo.task === "populateKeyColumn") {
+        let neighbourArrayText = "";
+        for (let i=0;i<actionInfo.neighbourArray.length;++i) {
+          if (i > 0) {
+            neighbourArrayText+=" & ";
+          }
+          neighbourArrayText+=actionInfo.neighbourArray[i];
+        }
         actionEle =
           <div>
             <p>Populate column {actionInfo.colIndex} with column header:</p>
-            <p>{actionInfo.neighbour} ?</p>
-            <button onClick={(e) => this.props.populateKeyColumn(e,actionInfo.colIndex,actionInfo.neighbour)}>OK</button>
+            <p>{neighbourArrayText}</p> 
+            <p>?</p>
+            <button onClick={(e) => this.props.populateKeyColumn(e,actionInfo.colIndex,actionInfo.neighbourArray)}>OK</button>
           </div>
       } else if (actionInfo.task === "populateOtherColumn") {
         let neighbourText = actionInfo.type==="subject"?actionInfo.neighbour:"is "+actionInfo.neighbour+" of";
