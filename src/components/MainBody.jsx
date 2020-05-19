@@ -91,6 +91,7 @@ class MainBody extends Component {
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
     this.sameNeighbourDiffCol = this.sameNeighbourDiffCol.bind(this);
     this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
+    this.populateSameRange = this.populateSameRange.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextSetKey = this.contextSetKey.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
@@ -685,26 +686,47 @@ class MainBody extends Component {
       // If we are not populating a column with duplicate names, but it has a range, we ask user if they want to populate
       // other columns from the same range
       else if (range !== undefined) {
-        let sibilingNeighbour = [];
+        let siblingNeighbour = [];
         // console.log("Range is "+range);
         // console.log(this.state.keyColNeighbours);
         for (let i=0;i<this.state.keyColNeighbours.length;++i) {
           if (this.state.keyColNeighbours[i].range === range && this.state.keyColNeighbours[i].value !== neighbour) {
-            sibilingNeighbour.push(this.state.keyColNeighbours[i].value);
+            siblingNeighbour.push(this.state.keyColNeighbours[i].value);
           }
         }
         // If we have found columns from the same range (other than the current neighbour), 
         // we give user the option to populate other columns from the same range.
-        if (sibilingNeighbour.length > 0) {
-          // console.log(sibilingNeighbour);
-          // Let's dedup the siblingNeighbour array, and sent it to actionPanel for display.
-          // Start from here tomorrow.
+        if (siblingNeighbour.length > 0) {
+          // First, we want to keep track of the number of occurences for each sibling attribute
+          let siblingUnique = [...new Set(siblingNeighbour)];
+          let siblingCount = [];
+          for (let i=0;i<siblingUnique.length;++i) {
+            // console.log(siblingNeighbour);
+            siblingCount.push({"name":siblingUnique[i],"count":siblingNeighbour.filter(x => x === siblingUnique[i]).length})
+          }
+          // console.log(siblingCount);
+          // Let's do some string processing to improve UI clarity
+          let rangeLiteral = "";
+          if (range.includes("http://dbpedia.org/ontology/")) {
+            rangeLiteral = range.slice(28);
+          } 
+          else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
+            rangeLiteral = range.slice(33);
+          } 
+          else {
+            rangeLiteral = range;
+          }
+          tempObj["task"] = "populateSameRange";
+          tempObj["colIndex"] = colIndex;
+          tempObj["range"] = rangeLiteral;
+          tempObj["siblingNeighbour"] = siblingCount;
         }
       } 
       // This is an empty else clause 
       else {
 
       }
+      // console.log(tempObj);
       this.setState({
         curActionInfo:tempObj,
         tableData:tableData,
@@ -712,10 +734,38 @@ class MainBody extends Component {
     })
   }
 
-  // This function populates all neighbour with the same names, if that neighbour has multiple occurences.
+  // This function is a helper function that takes in 5 parameters:
+  // 1) colIndex:        index of the column that we just filled     (ex. 1, if we just filled in column 1)
+  // 2) neighbour:       attribute name of the column we just filled (ex. almaMater)
+  // 3) neighbourIndex:  index of the attribute we just filled       (ex. 0, if we have filled in almaMater-1)
+  // 4) type:            type of the attribute. Either "subject" or "object"
+  // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
+
+  // and returns an object with three values:
+  // 1) tableHeader
+  // 2) tableData
+  // 3) optionsMap
+
+
+
+  // This function populates all neighbour with the same names in different columns, if that neighbour has multiple occurences.
+  // It takes in 5 parameters:
+  // 1) colIndex:        index of the column that we just filled     (ex. 1, if we just filled in column 1)
+  // 2) neighbour:       attribute name of the column we just filled (ex. almaMater)
+  // 3) neighbourIndex:  index of the attribute we just filled       (ex. 0, if we have filled in almaMater-1)
+  // 4) type:            type of the attribute. Either "subject" or "object"
+  // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
   // Note: currently it only populates "later" neighbour with same name.
 
   sameNeighbourDiffCol(e,colIndex,neighbour,neighbourIndex,type,numCols) {
+
+    // Let's take a look at all the parameter values
+    console.log("Column index is: "+colIndex);
+    console.log("Neighbour is: "+neighbour);
+    console.log("Neighbour index is: "+neighbourIndex);
+    console.log("Type is: "+type);
+    console.log("Number of columns to fill is: "+numCols);
+
 
     // Now we need to write the body for this function
 
@@ -723,7 +773,7 @@ class MainBody extends Component {
     const rowNum = this.state.tableData.length;
     const colNum = this.state.tableData[0].length;
 
-    // We first take care of table data's additions
+    // We first take care of table data's (empty) additions
     let tableData = [];
     for (let i=0;i<rowNum;++i) {
       let tempRow = [];
@@ -759,9 +809,12 @@ class MainBody extends Component {
     }
     for (let j=0;j<numCols;++j) {
       let curLabel = "";
+      // First case is for type "subject"
       if (type === "subject") {
         curLabel = curLabel+neighbour+"-"+(neighbourIndex+2+j)+"--"+labelText;
-      } else {
+      }
+      // Second case is for type "object" 
+      else {
         curLabel = curLabel+"is "+neighbour+" of-"+(neighbourIndex+2+j)+"--"+labelText;
       }
       tableHeader.push({"value":neighbour,"label":curLabel});
@@ -792,15 +845,16 @@ class MainBody extends Component {
         // curNeighbourIndex represents the required length
         let requiredLength = neighbourIndex+curCol-colIndex+1; 
         for (let i=0;i<values.length;++i) {
+          // Firt case: result is not found, or there is not enough results (in duplicate neighbour case)
           if (values[i].results.bindings.length < requiredLength) {
-            // this means results is not found
-            // or if there is not enough results, in duplicate neighbour name case
             if (tableData[i][this.state.keyColIndex].data === "") {
               tableData[i][curCol].data = "";
             } else {
               tableData[i][curCol].data = "N/A";
             }
-          } else {
+          }
+          // Second case: result is found. We need to process them. 
+          else {
             // let's determine if we need to truncate
             // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
             // Think about what to do when there are duplicates
@@ -872,6 +926,14 @@ class MainBody extends Component {
         tableData:tableData,
       })
     })
+  }
+
+  // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
+  populateSameRange(e, colIndex, range, siblingNeighbour) {
+    console.log("Column index is "+colIndex);
+    console.log("Range is "+range);
+    console.log("Sibling neighbours are: ");
+    console.log(siblingNeighbour);
   }
 
   // The follwing function adds a new column to the table, to the right of the context-menu clicked column.
@@ -1170,7 +1232,7 @@ class MainBody extends Component {
     if (propertyNeighbours[index].isOpen === true) {
       let bindingArray = propertyNeighbours[index].siblingArray;
       let siblingArray = [];
-      let siblingNameArray = []; // this array keeps track of the sibiling names
+      let siblingNameArray = []; // this array keeps track of the sibling names
       let promiseArray = [];
       for (let i=0;i<bindingArray.length;++i) {
         let siblingName = bindingArray[i].name;
@@ -1454,6 +1516,7 @@ class MainBody extends Component {
                   populateOtherColumn={this.populateOtherColumn}
                   sameNeighbourDiffCol={this.sameNeighbourDiffCol}
                   sameNeighbourOneCol={this.sameNeighbourOneCol}
+                  populateSameRange={this.populateSameRange}
                   // Folloiwng states are passed to "exploreTable"
                   selectedTableIndex={this.state.selectedTableIndex}
                   onSelectTable={this.onSelectTable}

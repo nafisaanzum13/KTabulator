@@ -175,7 +175,8 @@ class ActionPanel extends Component {
             <p>?</p>
             <button onClick={(e) => this.props.populateKeyColumn(e,actionInfo.colIndex,actionInfo.neighbourArray)}>OK</button>
           </div>
-      } else if (actionInfo.task === "populateOtherColumn") {
+      } 
+      else if (actionInfo.task === "populateOtherColumn") {
         let neighbourText = actionInfo.type==="subject"?actionInfo.neighbour:"is "+actionInfo.neighbour+" of";
         actionEle =
           <div>
@@ -192,7 +193,8 @@ class ActionPanel extends Component {
               OK
             </button>
           </div>
-      } else if (actionInfo.task === "populateSameNeighbour") {
+      } 
+      else if (actionInfo.task === "populateSameNeighbour") {
         let neighbourText = actionInfo.type==="subject"?actionInfo.neighbour:"is "+actionInfo.neighbour+" of";
         actionEle =
           <div>
@@ -215,19 +217,44 @@ class ActionPanel extends Component {
               </button>
             </div>
           </div>
-      } else if (actionInfo.task === "contextCellOrigin") {
+      } 
+      else if (actionInfo.task === "populateSameRange") {
+        let siblingText = "";
+        for (let i=0;i<actionInfo.siblingNeighbour.length;++i) {
+          if (i>0) {
+            siblingText+=", ";
+          }
+          siblingText+=actionInfo.siblingNeighbour[i].name;
+        }
+        actionEle =
+          <div>
+            <p>Populate attribute: {siblingText} </p>
+            <p>that are also of type: {actionInfo.range} ?</p>
+            <button 
+              onClick={(e) => 
+                        this.props.populateSameRange(e,
+                                                    actionInfo.colIndex,
+                                                    actionInfo.range,
+                                                    actionInfo.siblingNeighbour)}>
+              OK
+            </button>
+          </div>
+      }
+      else if (actionInfo.task === "contextCellOrigin") {
         actionEle =
           <div>
             <p>Origin of selected cell is:</p>
             <div>{actionInfo.origin}</div>
           </div>
-      } else if (actionInfo.task === "selectTableIndex") {
+      } 
+      else if (actionInfo.task === "selectTableIndex") {
         actionEle =
           <div>
             <p>Select table {actionInfo.tableIndex}?</p>
             <button onClick={(e) => this.props.onSelectTable(e,actionInfo.tableIndex)}>OK</button>
           </div>
-      } else if (actionInfo.task === "showPropertyNeighbours") {
+      } 
+      else if (actionInfo.task === "showPropertyNeighbours") {
         actionEle =
           <div>
             <Tabs>
