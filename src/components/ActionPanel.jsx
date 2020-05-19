@@ -183,7 +183,12 @@ class ActionPanel extends Component {
             <p>{neighbourText} ?</p>
             <button 
               onClick={(e) => 
-                        this.props.populateOtherColumn(e,actionInfo.colIndex,actionInfo.neighbour,actionInfo.neighbourIndex,actionInfo.type)}>
+                        this.props.populateOtherColumn(e,
+                                                      actionInfo.colIndex,
+                                                      actionInfo.neighbour,
+                                                      actionInfo.neighbourIndex,
+                                                      actionInfo.type,
+                                                      actionInfo.range)}>
               OK
             </button>
           </div>

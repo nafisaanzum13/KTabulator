@@ -42,7 +42,12 @@ class MainBody extends Component {
 
       // states below are useful for startSubject
       keyColIndex:0,             // initially the key column is the first column
-      tableHeader:tableHeader,   // 1D array storing the table headers. 
+      // 1D array of objects with four properties storing the table headers. This array is used to create the column headers in table panel
+      // 1) label:  string storing the label of an option (ex: spouse)
+      // 2) value:  string storing the value of an option (ex: spouse)
+      // 3) type:   string that's either "subject" or "object". Storing whether the current option is ?s or ?o with respect to key column. Can be empty.
+      // 4) range:  string storing the rdfs:range of the current option.
+      tableHeader:tableHeader,   
       tableData:tableData,       // 2D array of objects storing the table data (not including the table headers). 
       optionsMap:optionsMap,     // 2D array storing the options map
       keyColNeighbours:[],       // 1D array storing the neighbours of the key column
@@ -65,7 +70,7 @@ class MainBody extends Component {
       //         4.2.2) unionScore:    number storing teh union score of the current table (how "similar" it is to the original table)
       //         4.2.3) colMapping:    array of numbers storing the column mapping between the current table and the selected table
       //         4.2.4) data:          HTML of a table
-      //         4.2.5) title:         array of strigns storing the column headers of the current table    
+      //         4.2.5) title:         array of strings storing the column headers of the current table    
       propertyNeighbours:[],     
       semanticEnabled:"enabled",        // boolean value indicating whether semantic mapping is enabled or not. Default to true
       unionCutOff:0.5,                   // number representing the union percentage a table must have to be considered unionable (>=)
@@ -316,6 +321,7 @@ class MainBody extends Component {
 
   // This function updates the options for selections when we click on selection for non-key column
   // based on cells already filled in this column, and the cells in the key column
+  // aka: Michelle Obama is Barack Obama' wife
 
   getOtherOptions(e,colIndex) {
 
@@ -437,8 +443,13 @@ class MainBody extends Component {
         // If neighbourIndex is equal to -1, that means this property has no duplicate names
         tempObj["neighbourIndex"] = -1;
       }
+      
+      // If type is subject, let's check if this neighbour also has a "range" (rdfs:range)
+      if (e.type === "subject" && e.range !== undefined) {
+        tempObj["range"] = e.range;
+      }
       // console.log(tempObj);
-      // console.log(tempObj);
+
       this.setState({
         tableHeader:tableHeader,
         curActionInfo:tempObj,
@@ -500,12 +511,20 @@ class MainBody extends Component {
     //               )
     // }
 
+    // Let's modify the query below to support the "populate from same range feature"
+
+    // let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    // let queryBodyTwo = 
+    //   "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
+    //   +regexReplace(this.state.tableData[0][colIndex].data)
+    //   +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
     let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyTwo = 
-      "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
+      "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A"
       +regexReplace(this.state.tableData[0][colIndex].data)
-      +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
+      +"+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
     let queryURLTwo = prefixURLTwo+queryBodyTwo+suffixURLTwo;
     let otherColPromiseSubject = fetchJSON(queryURLTwo);
     promiseArray.push(otherColPromiseSubject);
@@ -552,6 +571,7 @@ class MainBody extends Component {
       let keyColNeighbours = [];
       keyColNeighbours = updateKeyColNeighbours(keyColNeighbours,values[1].results.bindings,"subject");
       keyColNeighbours = updateKeyColNeighbours(keyColNeighbours,values[2].results.bindings,"object");
+      // console.log(keyColNeighbours);
 
       let optionsMap = this.state.optionsMap.slice();
       for (let i=0;i<optionsMap.length;++i) {
@@ -597,7 +617,10 @@ class MainBody extends Component {
     return promiseArray;
   }
 
-  populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type) {
+  populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type, range) {
+
+    // When the range is not equal to undefined, we want to ask user if they want to populate all other attributes from this range
+    // console.log(range);
 
     // we need to make a number of queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
     let promiseArray = this.getOtherColPromise(neighbour,type);
@@ -659,7 +682,29 @@ class MainBody extends Component {
         tempObj["type"] = type;
         tempObj["numCols"] = remainNeighbourCount;
       } 
+      // If we are not populating a column with duplicate names, but it has a range, we ask user if they want to populate
+      // other columns from the same range
+      else if (range !== undefined) {
+        let sibilingNeighbour = [];
+        // console.log("Range is "+range);
+        // console.log(this.state.keyColNeighbours);
+        for (let i=0;i<this.state.keyColNeighbours.length;++i) {
+          if (this.state.keyColNeighbours[i].range === range && this.state.keyColNeighbours[i].value !== neighbour) {
+            sibilingNeighbour.push(this.state.keyColNeighbours[i].value);
+          }
+        }
+        // If we have found columns from the same range (other than the current neighbour), 
+        // we give user the option to populate other columns from the same range.
+        if (sibilingNeighbour.length > 0) {
+          // console.log(sibilingNeighbour);
+          // Let's dedup the siblingNeighbour array, and sent it to actionPanel for display.
+          // Start from here tomorrow.
+        }
+      } 
+      // This is an empty else clause 
+      else {
 
+      }
       this.setState({
         curActionInfo:tempObj,
         tableData:tableData,
@@ -879,16 +924,30 @@ class MainBody extends Component {
     // We only want to make changes if argument colIndex is not equal to the current key column index
     if (colIndex !== this.state.keyColIndex) {
       let promiseArray = [];
+
+      // Below is the first query we will make.
+      // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
+      // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+
+      // Note: we need to modify this query so it looks for ranges of certain attributes as well
+      // let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      // let suffixURLOne = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      // let queryBodyOne = 
+      //   "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
+      //   +regexReplace(this.state.tableData[0][colIndex].data)
+      //   +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
       let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
       let suffixURLOne = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       let queryBodyOne = 
-        "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
+        "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A"
         +regexReplace(this.state.tableData[0][colIndex].data)
-        +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
+        +"+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
       let queryURLOne = prefixURLOne+queryBodyOne+suffixURLOne;
       let otherColPromiseSubject = fetchJSON(queryURLOne);
       promiseArray.push(otherColPromiseSubject);
 
+      // Below is the second query we will make.
+      // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
       let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
       let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       let queryBodyTwo = 
@@ -903,6 +962,7 @@ class MainBody extends Component {
         let keyColNeighbours = [];
         keyColNeighbours = updateKeyColNeighbours(keyColNeighbours,values[0].results.bindings,"subject");
         keyColNeighbours = updateKeyColNeighbours(keyColNeighbours,values[1].results.bindings,"object");
+        // console.log(keyColNeighbours);
         let optionsMap = this.state.optionsMap.slice();
         for (let i=0;i<optionsMap.length;++i) {
           if (i !== colIndex) {
@@ -1507,6 +1567,11 @@ function reverseReplace(str) {
 // It returns the updates keyColNeighbours
 function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
 
+  // Let's take a look at the resultsBinding
+  // console.log("Current type is "+type);
+  // console.log(resultsBinding);
+  // console.log(resultsBinding);
+
   // we first sort the resultsBinding by p.value.slice(28)
   resultsBinding.sort((a, b) => (a.p.value.slice(28) > b.p.value.slice(28)) ? 1 : -1);
 
@@ -1515,6 +1580,11 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
   for (let i=0;i<resultsBinding.length;++i) {
     let tempObj = {};
     let curNeighbourLiteral = resultsBinding[i].p.value.slice(28);
+    // Let's see if the current result has a "range"
+    // Note: if the result does not have the "range" variable, resultsBinding[i].range would be undefined
+    // if (type === "subject") {
+    //   console.log(resultsBinding[i].range);
+    // }
     // We do not want to deal with any neighbours that's only one character long: we don't know what it means
     if (curNeighbourLiteral.length > 1) {
       // Let's deal with duplicate neighbour names here
@@ -1539,6 +1609,10 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           tempObj["label"] = curNeighbourLabel;
           tempObj["value"] = curNeighbourValue;
           tempObj["type"] = type;
+          // If the current type is "subject", we want to see if the current result has a range
+          if (type === "subject" && resultsBinding[i].range !== undefined) {
+            tempObj["range"] = resultsBinding[i].range.value;
+          }
           keyColNeighbours.push(tempObj);
         }
         neighbourCount++;
@@ -1554,12 +1628,17 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           tempObj["label"] = curNeighbourLabel;
           tempObj["value"] = curNeighbourValue;
           tempObj["type"] = type;
+          // If the current type is "subject", we want to see if the current result has a range
+          if (type === "subject" && resultsBinding[i].range !== undefined) {
+            tempObj["range"] = resultsBinding[i].range.value;
+          }
           keyColNeighbours.push(tempObj);
         }
         neighbourCount=1;
       }
     }
   }
+  // console.log(keyColNeighbours);
   return keyColNeighbours;
 }
 
