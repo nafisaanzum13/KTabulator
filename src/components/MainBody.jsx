@@ -8,7 +8,7 @@ import PagePanel from "../components/PagePanel";
 
 const maxNeighbourCount = 100;
 const initialColNum = 4;
-const initialRowNum = 40;
+const initialRowNum = 30;
 
 class MainBody extends Component {
 
@@ -89,6 +89,7 @@ class MainBody extends Component {
     this.populateKeyColumn = this.populateKeyColumn.bind(this);
     this.getOtherColPromise = this.getOtherColPromise.bind(this);
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
+    this.addAllNeighbour = this.addAllNeighbour.bind(this);
     this.sameNeighbourDiffCol = this.sameNeighbourDiffCol.bind(this);
     this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
     this.populateSameRange = this.populateSameRange.bind(this);
@@ -734,19 +735,36 @@ class MainBody extends Component {
     })
   }
 
-  // This function is a helper function that takes in 5 parameters:
+  // This function is a helper function that takes in 8 parameters:
   // 1) colIndex:        index of the column that we just filled     (ex. 1, if we just filled in column 1)
   // 2) neighbour:       attribute name of the column we just filled (ex. almaMater)
   // 3) neighbourIndex:  index of the attribute we just filled       (ex. 0, if we have filled in almaMater-1)
   // 4) type:            type of the attribute. Either "subject" or "object"
   // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
 
+  // 6) tableHeader:   original tableHeader
+  // 7) tableData:     original tableData
+  // 8) optionsMap:    original optionsMap
+
   // and returns an object with three values:
-  // 1) tableHeader
-  // 2) tableData
-  // 3) optionsMap
+  // 1) tableHeader:   tableHeader after modification
+  // 2) tableData:     tableData after modification
+  // 3) optionsMap:    optionsMap after modification
+  addAllNeighbour(colIndex,neighbour,neighbourIndex,type,numCols,tableHeader,tableData,optionsMap) {
+    // Let's first check if all the variables are as expected
 
-
+    // console.log("Column index is: "+colIndex);
+    // console.log("Neighbour is: "+neighbour);
+    // console.log("Neighbour index is: "+neighbourIndex);
+    // console.log("Type is: "+type);
+    // console.log("Number of columns to fill is: "+numCols);
+    // console.log("Table header is: ");
+    // console.log(tableHeader);
+    // console.log("Table Data is: ");
+    // console.log(tableData);
+    // console.log("Options map is: ");
+    // console.log(optionsMap);
+  }
 
   // This function populates all neighbour with the same names in different columns, if that neighbour has multiple occurences.
   // It takes in 5 parameters:
@@ -759,12 +777,15 @@ class MainBody extends Component {
 
   sameNeighbourDiffCol(e,colIndex,neighbour,neighbourIndex,type,numCols) {
 
+    // This part is for testing:
+    this.addAllNeighbour(colIndex,neighbour,neighbourIndex,type,numCols,this.state.tableHeader,this.state.tableData,this.state.optionsMap);
+
     // Let's take a look at all the parameter values
-    console.log("Column index is: "+colIndex);
-    console.log("Neighbour is: "+neighbour);
-    console.log("Neighbour index is: "+neighbourIndex);
-    console.log("Type is: "+type);
-    console.log("Number of columns to fill is: "+numCols);
+    // console.log("Column index is: "+colIndex);
+    // console.log("Neighbour is: "+neighbour);
+    // console.log("Neighbour index is: "+neighbourIndex);
+    // console.log("Type is: "+type);
+    // console.log("Number of columns to fill is: "+numCols);
 
 
     // Now we need to write the body for this function
