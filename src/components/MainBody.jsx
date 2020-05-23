@@ -199,25 +199,6 @@ class MainBody extends Component {
 
   toggleWikiPage() {
     let pageHidden = this.state.pageHidden;
-    if (pageHidden === false) {
-      // in this case we are hiding the bottom part. Need to adjust the height for the botton part
-      document.getElementsByClassName("bottom-content")[0].style.height = "4vh";
-      document.getElementsByClassName("wiki-page")[0].style.height = "0vh";
-      document.getElementsByClassName("wiki-page")[0].style.visibility =
-        "hidden";
-      document.getElementsByClassName("top-content")[0].style.height = "86vh";
-      document.getElementsByClassName("table-panel")[0].style.height = "86vh";
-      document.getElementsByClassName("action-panel")[0].style.height = "86vh";
-    } else {
-      document.getElementsByClassName("bottom-content")[0].style.height =
-        "55vh";
-      document.getElementsByClassName("wiki-page")[0].style.height = "35vh";
-      document.getElementsByClassName("wiki-page")[0].style.visibility =
-        "visible";
-      document.getElementsByClassName("top-content")[0].style.height = "55vh";
-      document.getElementsByClassName("table-panel")[0].style.height = "55vh";
-      document.getElementsByClassName("action-panel")[0].style.height = "55vh";
-    }
     this.setState({
       pageHidden: !pageHidden,
     });
@@ -1472,17 +1453,6 @@ class MainBody extends Component {
 
       // If the bottom page is shown, we want to change its URL
       // else we want to show the bottom page, and change its URL
-      if (this.state.pageHidden === true) {
-        document.getElementsByClassName("bottom-content")[0].style.height =
-          "55vh";
-        document.getElementsByClassName("wiki-page")[0].style.height = "55vh";
-        document.getElementsByClassName("wiki-page")[0].style.visibility =
-          "visible";
-        document.getElementsByClassName("top-content")[0].style.height = "35vh";
-        document.getElementsByClassName("table-panel")[0].style.height = "35vh";
-        document.getElementsByClassName("action-panel")[0].style.height =
-          "35vh";
-      }
       let iframeURL = "https://en.wikipedia.org/wiki/" + selectedSibling.name;
       this.setState({
         pageHidden: false,
@@ -1660,6 +1630,12 @@ class MainBody extends Component {
   render() {
     let bodyEle;
     // If user has not pasted the URL, we want to display the landing page
+    let bottomContentClass = "bottom-content";
+    let topContentClass = "row top-content";
+    if (this.state.pageHidden) {
+      bottomContentClass = "bottom-content-hidden";
+      topContentClass = "row top-content-large";
+    }
     if (this.state.urlPasted === "") {
       bodyEle = <LandingPage handleURLPaste={this.handleURLPaste} />;
     }
@@ -1668,7 +1644,7 @@ class MainBody extends Component {
       bodyEle = (
         <div className="">
           <div className="">
-            <div className="row top-content">
+            <div className={topContentClass}>
               <div className="col-md-7 table-panel">
                 <TablePanel
                   urlPasted={this.state.urlPasted}
@@ -1723,7 +1699,7 @@ class MainBody extends Component {
                 />
               </div>
             </div>
-            <div className="bottom-content">
+            <div className={bottomContentClass}>
               <div>
                 <PagePanel
                   pageHidden={this.state.pageHidden}

@@ -2,25 +2,64 @@
   height: 55vh;
 }
 
+.top-content-large {
+  height: 86vh;
+}
+
 .bottom-content {
   height: 35vh;
+  width: 100%;
+  border: 0px;
+}
+
+.bottom-content-hidden {
+  height: 0vh;
+}
+
+.page-panel {
+  margin-left: -1em;
+  margin-right: -1em;
+}
+
+.iframe-cls {
+  height: 100%;
+  width: 100%;
+  border: 0px;
+  overflow: hidden;
 }
 
 .wiki-page {
   height: 35vh;
+  width: 100%;
+  border: 0px;
+  padding-left: 3em;
+  padding-right: 3em;
+}
+
+.wiki-page-hidden {
+  height: 0vh;
+  visibility: hidden;
 }
 
 .toggle-button {
-  height: 4vh;
+  background-color: #ff715b;
+  color: white;
+  position: fixed;
+  right: 1em;
+  border: 0px;
+}
+
+.toggle-button:hover {
+  background-color: #1ea896;
 }
 
 .table-panel {
-  height: 55vh;
+  height: inherit;
   overflow: auto;
 }
 
 .action-panel {
-  height: 55vh;
+  height: inherit;
   overflow: auto;
 }
 
