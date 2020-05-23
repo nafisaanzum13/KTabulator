@@ -3,25 +3,53 @@ import React, { Component } from "react";
 class PagePanel extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-    }
+    this.state = {};
   }
 
   render() {
     let pageEle = null;
+    let wikiPageClass = "wiki-page-hidden";
+    let buttonClass = "btn btn-sm btn-info toggle-button";
     if (this.props.iframeURL !== "") {
-      let buttonText = this.props.pageHidden?"Show Page":"Hide Page";
-      pageEle = 
-        <div className="row">
-          <iframe id="iframe" title="URLPage" src={this.props.iframeURL} className="col-md-10 offset-md-1 wiki-page"></iframe>
-          <button className="col-md-1 toggle-button" onClick={() => this.props.toggleWikiPage()}>{buttonText}</button>
+      let buttonhideShow = (
+        <button
+          className={buttonClass}
+          onClick={() => this.props.toggleWikiPage()}
+        >
+          <i class="fa fa-chevron-up" aria-hidden="true"></i>
+          Show
+        </button>
+      );
+      if (!this.props.pageHidden) {
+        wikiPageClass = "wiki-page";
+        buttonhideShow = (
+          <div>
+            <hr className="m-1"></hr>
+            <button
+              className={buttonClass}
+              onClick={() => this.props.toggleWikiPage()}
+            >
+              <i class="fa fa-chevron-down" aria-hidden="true"></i>
+              Hide
+            </button>
+          </div>
+        );
+      }
+      pageEle = (
+        <div className="page-panel text-right">
+          {buttonhideShow}
+          <div className={wikiPageClass}>
+            <iframe
+              id="iframe"
+              title="URLPage"
+              src={this.props.iframeURL}
+              className="iframe-cls"
+            ></iframe>
+          </div>
         </div>
+      );
     }
-    return (
-      <div>
-        {pageEle}
-      </div>
-    );
+    return <div>{pageEle}</div>;
   }
 }
 

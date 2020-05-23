@@ -1,89 +1,83 @@
-@import "../assets/fonts.css";
-
-.header {
-  height: 5.5vh;
-  background-color: #20232a;
-  color: #fff;
-}
-
-.footer {
-  height: 2vh;
-  background-color: #20232a;
-  color: #fff;
-}
-
-.font-body {
-  font-family: "Palatino", cursive;
-}
-
-.header-body h1 {
-  font-size: 1.4rem;
-  padding: 0rem;
-  margin: 0rem;
-}
-
-.header-body {
-  padding-top: 1vh;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  vertical-align: middle;
-  font-weight: 200;
-}
-
-.header-body p {
-  font-size: 1.4rem;
-}
-
-.header hr {
-  margin: 0rem;
-  padding: 0rem;
-}
-
-.mainbody {
-  height:90vh;
-}
-
 .top-content {
-  height:35vh;
+  height: 55vh;
+}
+
+.top-content-large {
+  height: 86vh;
 }
 
 .bottom-content {
-  height:55vh;
+  height: 35vh;
+  width: 100%;
+  border: 0px;
+}
+
+.bottom-content-hidden {
+  height: 0vh;
+}
+
+.page-panel {
+  margin-left: -1em;
+  margin-right: -1em;
+}
+
+.iframe-cls {
+  height: 100%;
+  width: 100%;
+  border: 0px;
+  overflow: hidden;
 }
 
 .wiki-page {
-  height:55vh;
+  height: 35vh;
+  width: 100%;
+  border: 0px;
+  padding-left: 3em;
+  padding-right: 3em;
+}
+
+.wiki-page-hidden {
+  height: 0vh;
+  visibility: hidden;
 }
 
 .toggle-button {
-  height:4vh;
+  background-color: #ff715b;
+  color: white;
+  position: fixed;
+  right: 1em;
+  border: 0px;
+}
+
+.toggle-button:hover {
+  background-color: #1ea896;
 }
 
 .table-panel {
-  height:35vh;
-  overflow:auto;
+  height: inherit;
+  overflow: auto;
 }
 
 .action-panel {
-  height:35vh;
-  overflow:auto;
+  height: inherit;
+  overflow: auto;
 }
 
 /* This class deteremineds the width of selection column */
 .super-header-div {
-  width:20vw;
+  width: 20vw;
 }
 
 .selection-header {
-  float:left;
-  width:18vw;
+  float: left;
+  width: 18vw;
 }
 
 .search-icon {
-  float:left;
-  width:2vw;
+  float: left;
+  width: 2vw;
   margin-top: 1vh;
-  cursor:pointer;
+  cursor: pointer;
 }
 
 /* The two following classes make the column headers sticky */
@@ -96,19 +90,22 @@
   position: -webkit-sticky;
   top: 0;
   z-index: 999;
-
 }
 .twenty-vw {
-  width:20vw;
+  width: 20vw;
 }
 
 /* This makes sure that the context menu does not seem transparent */
 .react-contextmenu {
   background-color: #fff;
-  border: 1px solid rgba(0,0,0,.15);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   transition: opacity 250ms ease !important;
 }
 
 .react-contextmenu-item--divider {
   border-bottom: 1px solid rgba(7, 3, 3, 0.15);
+}
+
+.color-wrangler {
+  color: #ff715b;
 }

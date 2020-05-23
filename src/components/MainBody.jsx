@@ -196,22 +196,6 @@ class MainBody extends Component {
 
   toggleWikiPage() {
     let pageHidden = this.state.pageHidden;
-    if (pageHidden === false) {
-      // in this case we are hiding the bottom part. Need to adjust the height for the botton part
-      document.getElementsByClassName("bottom-content")[0].style.height = "4vh";
-      document.getElementsByClassName("wiki-page")[0].style.height = "0vh";
-      document.getElementsByClassName("wiki-page")[0].style.visibility = "hidden";
-      document.getElementsByClassName("top-content")[0].style.height = "86vh";
-      document.getElementsByClassName("table-panel")[0].style.height = "86vh";
-      document.getElementsByClassName("action-panel")[0].style.height = "86vh";
-    } else {
-      document.getElementsByClassName("bottom-content")[0].style.height = "55vh";
-      document.getElementsByClassName("wiki-page")[0].style.height = "55vh";
-      document.getElementsByClassName("wiki-page")[0].style.visibility = "visible";
-      document.getElementsByClassName("top-content")[0].style.height = "35vh";
-      document.getElementsByClassName("table-panel")[0].style.height = "35vh";
-      document.getElementsByClassName("action-panel")[0].style.height = "35vh";
-    }
     this.setState({
       pageHidden:!pageHidden,
     })
@@ -961,6 +945,7 @@ class MainBody extends Component {
   }
 
   // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
+  // This function should use addAllNeighbour as a helper function
   populateSameRange(e, colIndex, range, siblingNeighbour) {
     console.log("Column index is "+colIndex);
     console.log("Range is "+range);
@@ -1503,6 +1488,12 @@ class MainBody extends Component {
 
   render() {
     let bodyEle;
+    let bottomContentClass = "bottom-content";
+    let topContentClass = "row top-content";
+    if (this.state.pageHidden) {
+      bottomContentClass = "bottom-content-hidden";
+      topContentClass = "row top-content-large";
+    }
     // If user has not pasted the URL, we want to display the landing page
     if (this.state.urlPasted === "") {
       bodyEle = 
@@ -1514,7 +1505,7 @@ class MainBody extends Component {
       bodyEle = 
         <div className="wrapper ">
           <div className="font-body">
-            <div className="row top-content">
+            <div className={topContentClass}>
               <div className="col-md-7 table-panel">
                 <TablePanel 
                   urlPasted={this.state.urlPasted}
@@ -1567,7 +1558,7 @@ class MainBody extends Component {
                   copyTable={this.copyTable}/>
               </div>
             </div>
-            <div className="bottom-content">
+            <div className={bottomContentClass}>
               <div>
                 <PagePanel 
                   pageHidden={this.state.pageHidden}
