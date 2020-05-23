@@ -7,6 +7,8 @@ import ActionPanel from "../components/ActionPanel";
 import PagePanel from "../components/PagePanel";
 
 const maxNeighbourCount = 100;
+const initialColNum = 4;
+const initialRowNum = 30;
 
 class MainBody extends Component {
   constructor(props) {
@@ -14,8 +16,7 @@ class MainBody extends Component {
     let tableData = [];
     let tableHeader = [];
     let optionsMap = [];
-    const initialRowNum = 30;
-    const initialColNum = 4;
+
     for (let i = 0; i < initialRowNum; ++i) {
       let tempRow = [];
       for (let j = 0; j < initialColNum; ++j) {
@@ -40,8 +41,14 @@ class MainBody extends Component {
       iframeURL: "",
 
       // states below are useful for startSubject
+
       keyColIndex: 0, // initially the key column is the first column
-      tableHeader: tableHeader, // 1D array storing the table headers.
+      // 1D array of objects with four properties storing the table headers. This array is used to create the column headers in table panel
+      // 1) label:  string storing the label of an option (ex: spouse)
+      // 2) value:  string storing the value of an option (ex: spouse)
+      // 3) type:   string that's either "subject" or "object". Storing whether the current option is ?s or ?o with respect to key column. Can be empty.
+      // 4) range:  string storing the rdfs:range of the current option.
+      tableHeader: tableHeader,
       tableData: tableData, // 2D array of objects storing the table data (not including the table headers).
       optionsMap: optionsMap, // 2D array storing the options map
       keyColNeighbours: [], // 1D array storing the neighbours of the key column
@@ -61,8 +68,14 @@ class MainBody extends Component {
       //    4.1) isOpen:      boolean storing whether the current sibling is toggled on or not
       //    4.2) tableArray:  array of objects storing the status/content for each "same" table on the sibling URL
       //         4.2.1) isOepn:        boolean storing whether the current table is toggled on or not
-      //         4.2.1) data:          HTML of a table
+
+      //         4.2.2) unionScore:    number storing teh union score of the current table (how "similar" it is to the original table)
+      //         4.2.3) colMapping:    array of numbers storing the column mapping between the current table and the selected table
+      //         4.2.4) data:          HTML of a table
+      //         4.2.5) title:         array of strings storing the column headers of the current table
       propertyNeighbours: [],
+      semanticEnabled: "enabled", // boolean value indicating whether semantic mapping is enabled or not. Default to true
+      unionCutOff: 0.5, // number representing the union percentage a table must have to be considered unionable (>=)
     };
 
     // functions below are useful during start up
@@ -78,8 +91,10 @@ class MainBody extends Component {
     this.populateKeyColumn = this.populateKeyColumn.bind(this);
     this.getOtherColPromise = this.getOtherColPromise.bind(this);
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
+    this.addAllNeighbour = this.addAllNeighbour.bind(this);
     this.sameNeighbourDiffCol = this.sameNeighbourDiffCol.bind(this);
     this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
+    this.populateSameRange = this.populateSameRange.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextSetKey = this.contextSetKey.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
@@ -91,6 +106,10 @@ class MainBody extends Component {
     this.toggleSibling = this.toggleSibling.bind(this);
     this.toggleOtherTable = this.toggleOtherTable.bind(this);
     this.unionTable = this.unionTable.bind(this);
+    this.unionPage = this.unionPage.bind(this);
+    this.unionProperty = this.unionProperty.bind(this);
+    this.toggleSemantic = this.toggleSemantic.bind(this);
+    this.unionCutOffChange = this.unionCutOffChange.bind(this);
 
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
@@ -116,6 +135,8 @@ class MainBody extends Component {
     const textArea = document.createElement("textarea"); // this line allows the use of select() function
     let copiedText = "";
     // We handle the case for exploreTable and startSubject differently
+
+    // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
     if (this.state.usecaseSelected === "exploreTable") {
       // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
       const rowNum = this.state.tableDataExplore.length;
@@ -128,11 +149,24 @@ class MainBody extends Component {
         copiedText =
           copiedText + this.state.tableDataExplore[i][colNum - 1].data + "\n";
       }
-    } else if (this.state.usecaseSelected === "startSubject") {
+    }
+
+    // This case handles the copy table for start subject
+    else if (this.state.usecaseSelected === "startSubject") {
       // We first push on the text for column headers (using the labels)
       let tableHeader = this.state.tableHeader;
       for (let i = 0; i < tableHeader.length; ++i) {
         let curText = tableHeader[i].label;
+        // console.log(curText);
+        if (curText === undefined && tableHeader[i].length > 0) {
+          curText = "";
+          for (let j = 0; j < tableHeader[i].length; ++j) {
+            if (j > 0) {
+              curText += "&";
+            }
+            curText += tableHeader[i][j].label;
+          }
+        }
         if (curText !== undefined && curText !== "") {
           copiedText = copiedText + curText + "\t";
         }
@@ -280,6 +314,8 @@ class MainBody extends Component {
             tempObj["value"] = neighbour;
             keyColOptions.push(tempObj);
           }
+          // We create a copy of the optionsMap.
+          // Then change the entry in the optionsMap corresponding to the key column to what we have just fetched: keyColOptions.
           let optionsMap = this.state.optionsMap.slice();
           optionsMap[this.state.keyColIndex] = keyColOptions;
           this.setState({
@@ -291,6 +327,7 @@ class MainBody extends Component {
 
   // This function updates the options for selections when we click on selection for non-key column
   // based on cells already filled in this column, and the cells in the key column
+  // aka: Michelle Obama is Barack Obama' wife
 
   getOtherOptions(e, colIndex) {
     if (colIndex !== this.state.keyColIndex) {
@@ -304,6 +341,7 @@ class MainBody extends Component {
         }
       }
       // We only want to update the options if the column is non-empty
+      // Make sure to modify this relation here to include only dbo and dbp
       if (colEmpty === false) {
         let prefixURL =
           "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
@@ -357,48 +395,83 @@ class MainBody extends Component {
   }
 
   // This function handles the the selection of a column header.
+  // Note: we want to deal with the selection of key column header vs non key column header differently
 
   selectColHeader(e, colIndex) {
+    //  We first create a copy of the existing table headers
     let tableHeader = this.state.tableHeader.slice();
 
-    // This part creates differentiable column names
-    // The first few lines fix some pass by reference problems
-    let evalue = e.value;
-    let elabel = e.label;
-    tableHeader[colIndex] = { value: evalue, label: elabel };
-    if (colIndex !== this.state.keyColIndex) {
-      tableHeader[colIndex].label =
-        tableHeader[colIndex].label +
-        "--" +
-        tableHeader[this.state.keyColIndex].label;
-    }
-    // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
-    // ask in ActionPanel whether user wants to populate the column based on the chosen column name
-    let tempObj = {};
+    // This part deals with the selection of key column header
+
     if (colIndex === this.state.keyColIndex) {
-      tempObj["task"] = "populateKeyColumn";
-    } else {
-      tempObj["task"] = "populateOtherColumn";
+      // We create a copy of the selected option
+      if (e !== null) {
+        let selectedOptions = e.slice();
+        // console.log(selectedOptions);
+        tableHeader[colIndex] = selectedOptions;
+        let tempObj = {};
+        tempObj["task"] = "populateKeyColumn";
+        tempObj["colIndex"] = colIndex;
+        tempObj["neighbourArray"] = [];
+        for (let i = 0; i < selectedOptions.length; ++i) {
+          tempObj.neighbourArray.push(selectedOptions[i].value);
+        }
+        this.setState({
+          tableHeader: tableHeader,
+          curActionInfo: tempObj,
+        });
+      }
     }
-    tempObj["colIndex"] = colIndex;
-    tempObj["neighbour"] = e.value;
-    tempObj["type"] = e.type;
-    // We want to deal with duplicate neighbour names if we are selecting column headers for non-key columns
-    if (colIndex !== this.state.keyColIndex) {
+    // This part deals with the selection of non key column header
+    else {
+      // The first few lines fix some pass by reference problems
+      let evalue = e.value;
+      let elabel = e.label;
+      tableHeader[colIndex] = { value: evalue, label: elabel };
+      // We want to change the label of non-key column headers with respect to the label of key column
+      // We first create the label text for the key column
+      let keyColLabel = "";
+      if (this.state.keyColIndex === 0) {
+        for (let i = 0; i < tableHeader[this.state.keyColIndex].length; ++i) {
+          if (i > 0) {
+            keyColLabel += "&";
+          }
+          keyColLabel += tableHeader[this.state.keyColIndex][i].label;
+        }
+      } else {
+        keyColLabel = tableHeader[this.state.keyColIndex].label;
+      }
+      // We then append the current column's label to it
+      tableHeader[colIndex].label =
+        tableHeader[colIndex].label + "--" + keyColLabel;
+      // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
+      // ask in ActionPanel whether user wants to populate the column based on the chosen column name
+      let tempObj = {};
+      tempObj["task"] = "populateOtherColumn";
+      tempObj["colIndex"] = colIndex;
+      tempObj["neighbour"] = e.value;
+      tempObj["type"] = e.type;
+      // We want to deal with duplicate neighbour names since we are selecting column headers for non-key columns
       let arr = elabel.split("-");
-      if (arr.length > 1) {
+      if (arr.length > 1 && !isNaN(Number(arr[1]) - 1)) {
         // arr[1] stores the index of the neighbour with duplicate names
         tempObj["neighbourIndex"] = Number(arr[1]) - 1;
       } else {
         // If neighbourIndex is equal to -1, that means this property has no duplicate names
         tempObj["neighbourIndex"] = -1;
       }
+
+      // If type is subject, let's check if this neighbour also has a "range" (rdfs:range)
+      if (e.type === "subject" && e.range !== undefined) {
+        tempObj["range"] = e.range;
+      }
+      // console.log(tempObj);
+
+      this.setState({
+        tableHeader: tableHeader,
+        curActionInfo: tempObj,
+      });
     }
-    // console.log(tempObj);
-    this.setState({
-      tableHeader: tableHeader,
-      curActionInfo: tempObj,
-    });
   }
 
   // This function populates the key column
@@ -407,9 +480,9 @@ class MainBody extends Component {
 
   populateKeyColumn(e, colIndex, neighbour) {
     // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
-    // We also need to fetch the neighbours of this key column, and change all
+    // We also need to fetch the neighbours of this key column, both using the key column entries as subject and object
 
-    // For now we are populating ten entries only. So let's calculate how many entries we need to fill.
+    // We are populating "initialRowNum" number of entries. Let's calculate how many entries we need to fill.
     let emptyEntryCount = this.state.tableData.length;
     for (let i = 0; i < this.state.tableData.length; ++i) {
       if (this.state.tableData[i][colIndex].data !== "") {
@@ -419,20 +492,31 @@ class MainBody extends Component {
       }
     }
 
-    // Since we need to make two queries, we make a promise array
+    // Since we need to make multiple (three) queries, we make a promise array
     let promiseArray = [];
 
     // Below is the first query we will make.
     // This query populates the first columns.
+    // Note: since neighbour is now an array instead of a single value, we need to adjust our query
+    // let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLOne = "%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    // let queryBodyOne = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A%09%3Fsomevar+dct%3Asubject+dbc%3A"
+    //                     +regexReplace(neighbour)
+    //                     +".%0D%0A%7D%0D%0ALIMIT+"+emptyEntryCount;
     let prefixURLOne =
       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLOne =
-      "%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyOne =
-      "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A%09%3Fsomevar+dct%3Asubject+dbc%3A" +
-      regexReplace(neighbour) +
-      ".%0D%0A%7D%0D%0ALIMIT+" +
-      emptyEntryCount;
+      "%0D%0A%7D+%0D%0Alimit+" +
+      emptyEntryCount +
+      "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyOne = "select+%3Fsomevar%0D%0Awhere+%7B";
+    for (let i = 0; i < neighbour.length; ++i) {
+      queryBodyOne =
+        queryBodyOne +
+        "%0D%0A+++++++%3Fsomevar+dct%3Asubject+dbc%3A" +
+        regexReplace(neighbour[i]) +
+        ".";
+    }
     let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
     let keyColPromise = fetchJSON(queryURLOne);
     promiseArray.push(keyColPromise);
@@ -451,14 +535,22 @@ class MainBody extends Component {
     //               )
     // }
 
+    // Let's modify the query below to support the "populate from same range feature"
+
+    // let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    // let queryBodyTwo =
+    //   "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
+    //   +regexReplace(this.state.tableData[0][colIndex].data)
+    //   +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
     let prefixURLTwo =
       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLTwo =
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyTwo =
-      "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A" +
+      "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
       regexReplace(this.state.tableData[0][colIndex].data) +
-      "+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
+      "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
     let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
     let otherColPromiseSubject = fetchJSON(queryURLTwo);
     promiseArray.push(otherColPromiseSubject);
@@ -490,11 +582,17 @@ class MainBody extends Component {
       }
 
       // second part sets the origin for each cell
+
       for (let i = 0; i < rowNum; ++i) {
-        let tempOrigin =
-          this.state.tableHeader[colIndex].value +
-          ":" +
-          tableData[i][colIndex].data;
+        // We need to process the tableHeader[colIndex] array to get the correct text for origin
+        let labelText = "";
+        for (let j = 0; j < this.state.tableHeader[colIndex].length; ++j) {
+          if (j > 0) {
+            labelText += "&";
+          }
+          labelText += this.state.tableHeader[colIndex][j].value;
+        }
+        let tempOrigin = labelText + ":" + tableData[i][colIndex].data;
         tableData[i][colIndex].origin.push(tempOrigin);
       }
 
@@ -511,6 +609,7 @@ class MainBody extends Component {
         values[2].results.bindings,
         "object"
       );
+      // console.log(keyColNeighbours);
 
       let optionsMap = this.state.optionsMap.slice();
       for (let i = 0; i < optionsMap.length; ++i) {
@@ -549,16 +648,16 @@ class MainBody extends Component {
           "SELECT+%3Fsomevar%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A" +
           cellValue +
           "+%28dbo%3A" +
-          neighbour +
+          regexReplace(neighbour) +
           "%7Cdbp%3A" +
-          neighbour +
+          regexReplace(neighbour) +
           "%29+%3Fsomevar.%0D%0A%7D%0D%0A%0D%0A&";
       } else {
         queryBody =
           "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A++++++++%3Fsomevar+%28dbo%3A" +
-          neighbour +
+          regexReplace(neighbour) +
           "%7Cdbp%3A" +
-          neighbour +
+          regexReplace(neighbour) +
           "%29+dbr%3A" +
           cellValue +
           "%0D%0A%7D%0D%0A&";
@@ -570,7 +669,10 @@ class MainBody extends Component {
     return promiseArray;
   }
 
-  populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type) {
+  populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type, range) {
+    // When the range is not equal to undefined, we want to ask user if they want to populate all other attributes from this range
+    // console.log(range);
+
     // we need to make a number of queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
     let promiseArray = this.getOtherColPromise(neighbour, type);
     allPromiseReady(promiseArray).then((values) => {
@@ -580,11 +682,17 @@ class MainBody extends Component {
         if (values[i].results.bindings.length < requiredLength) {
           // this means results is not found
           // or if there is not enough results, in duplicate neighbour name case
-          tableData[i][colIndex].data = "N/A";
+          if (tableData[i][this.state.keyColIndex].data === "") {
+            tableData[i][colIndex].data = "";
+          } else {
+            tableData[i][colIndex].data = "N/A";
+          }
         } else {
           // let's determine if we need to truncate
           // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
           // Think about what to do when there are duplicates
+          // console.log("Current value is ");
+          // console.log(values[])
           let dbResult =
             values[i].results.bindings[requiredLength - 1].somevar.value;
           let prefixToRemove = "http://dbpedia.org/resource/";
@@ -629,7 +737,54 @@ class MainBody extends Component {
         tempObj["type"] = type;
         tempObj["numCols"] = remainNeighbourCount;
       }
-
+      // If we are not populating a column with duplicate names, but it has a range, we ask user if they want to populate
+      // other columns from the same range
+      else if (range !== undefined) {
+        let siblingNeighbour = [];
+        // console.log("Range is "+range);
+        // console.log(this.state.keyColNeighbours);
+        for (let i = 0; i < this.state.keyColNeighbours.length; ++i) {
+          if (
+            this.state.keyColNeighbours[i].range === range &&
+            this.state.keyColNeighbours[i].value !== neighbour
+          ) {
+            siblingNeighbour.push(this.state.keyColNeighbours[i].value);
+          }
+        }
+        // If we have found columns from the same range (other than the current neighbour),
+        // we give user the option to populate other columns from the same range.
+        if (siblingNeighbour.length > 0) {
+          // First, we want to keep track of the number of occurences for each sibling attribute
+          let siblingUnique = [...new Set(siblingNeighbour)];
+          let siblingCount = [];
+          for (let i = 0; i < siblingUnique.length; ++i) {
+            // console.log(siblingNeighbour);
+            siblingCount.push({
+              name: siblingUnique[i],
+              count: siblingNeighbour.filter((x) => x === siblingUnique[i])
+                .length,
+            });
+          }
+          // console.log(siblingCount);
+          // Let's do some string processing to improve UI clarity
+          let rangeLiteral = "";
+          if (range.includes("http://dbpedia.org/ontology/")) {
+            rangeLiteral = range.slice(28);
+          } else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
+            rangeLiteral = range.slice(33);
+          } else {
+            rangeLiteral = range;
+          }
+          tempObj["task"] = "populateSameRange";
+          tempObj["colIndex"] = colIndex;
+          tempObj["range"] = rangeLiteral;
+          tempObj["siblingNeighbour"] = siblingCount;
+        }
+      }
+      // This is an empty else clause
+      else {
+      }
+      // console.log(tempObj);
       this.setState({
         curActionInfo: tempObj,
         tableData: tableData,
@@ -637,40 +792,96 @@ class MainBody extends Component {
     });
   }
 
-  // This function populates all neighbour with the same names, if that neighbour has multiple occurences.
-  // Note: currently it only populates "later" neighbour with same name.
+  // This function is a helper function that takes in 9 parameters:
+  // Note: this function does not make any fetch requests, thus does NOT involve promises.
 
-  sameNeighbourDiffCol(e, colIndex, neighbour, neighbourIndex, type, numCols) {
+  // 1) colIndex:        index of the column that we just filled     (ex. 1, if we just filled in column 1)
+  // 2) neighbour:       attribute name of the column we just filled (ex. almaMater)
+  // 3) neighbourIndex:  index of the attribute we just filled       (ex. 0, if we have filled in almaMater-1)
+  // 4) type:            type of the attribute. Either "subject" or "object"
+  // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
+  // 6) values:          query results that are passed in
+
+  // 7) tableHeader:   original tableHeader
+  // 8) tableData:     original tableData
+  // 9) optionsMap:    original optionsMap
+
+  // and returns an object with three values:
+  // 1) tableHeader:   tableHeader after modification
+  // 2) tableData:     tableData after modification
+  // 3) optionsMap:    optionsMap after modification
+  addAllNeighbour(
+    colIndex,
+    neighbour,
+    neighbourIndex,
+    type,
+    numCols,
+    values,
+    tableHeader,
+    tableData,
+    optionsMap
+  ) {
+    // Let's first check if all the variables are as expected
+
+    // console.log("Column index is: "+colIndex);
+    // console.log("Neighbour is: "+neighbour);
+    // console.log("Neighbour index is: "+neighbourIndex);
+    // console.log("Type is: "+type);
+    // console.log("Number of columns to fill is: "+numCols);
+    // console.log("Table header is: ");
+    // console.log(tableHeader);
+    // console.log("Table Data is: ");
+    // console.log(tableData);
+    // console.log("Options map is: ");
+    // console.log(optionsMap);
+
     // Now we need to write the body for this function
 
     // First thing should be to insert "numCols" number of empty columns right after column with index "colIndex"
-    const rowNum = this.state.tableData.length;
-    const colNum = this.state.tableData[0].length;
+    const rowNum = tableData.length;
+    const colNum = tableData[0].length;
 
-    // We first take care of table data's additions
-    let tableData = [];
+    // We first take care of table data's (empty) additions
+    let tableDataUpdated = [];
     for (let i = 0; i < rowNum; ++i) {
       let tempRow = [];
       for (let j = 0; j < colIndex + 1; ++j) {
-        tempRow.push(this.state.tableData[i][j]);
+        tempRow.push(tableData[i][j]);
       }
       // we add in numCols number of empty columns
       for (let j = 0; j < numCols; ++j) {
         tempRow.push({ data: "", origin: [] });
       }
       for (let k = colIndex + 1; k < colNum; ++k) {
-        tempRow.push(this.state.tableData[i][k]);
+        tempRow.push(tableData[i][k]);
       }
-      tableData.push(tempRow);
+      tableDataUpdated.push(tempRow);
     }
 
     // we now take care of table header's addition.
-    let tableHeader = [];
+    let tableHeaderUpdated = [];
     for (let j = 0; j < colIndex + 1; ++j) {
-      tableHeader.push(this.state.tableHeader[j]);
+      tableHeaderUpdated.push(tableHeader[j]);
+    }
+    // some modification needs to be made here
+    let labelText = "";
+    if (this.state.keyColIndex === 0) {
+      for (
+        let i = 0;
+        i < tableHeaderUpdated[this.state.keyColIndex].length;
+        ++i
+      ) {
+        if (i > 0) {
+          labelText += "&";
+        }
+        labelText += tableHeaderUpdated[this.state.keyColIndex][i].value;
+      }
+    } else {
+      labelText = tableHeaderUpdated[this.state.keyColIndex].label;
     }
     for (let j = 0; j < numCols; ++j) {
       let curLabel = "";
+      // First case is for type "subject"
       if (type === "subject") {
         curLabel =
           curLabel +
@@ -678,8 +889,10 @@ class MainBody extends Component {
           "-" +
           (neighbourIndex + 2 + j) +
           "--" +
-          tableHeader[this.state.keyColIndex].label;
-      } else {
+          labelText;
+      }
+      // Second case is for type "object"
+      else {
         curLabel =
           curLabel +
           "is " +
@@ -687,80 +900,119 @@ class MainBody extends Component {
           " of-" +
           (neighbourIndex + 2 + j) +
           "--" +
-          tableHeader[this.state.keyColIndex].label;
+          labelText;
       }
-      tableHeader.push({ value: neighbour, label: curLabel });
+      tableHeaderUpdated.push({ value: neighbour, label: curLabel });
     }
     for (let k = colIndex + 1; k < colNum; ++k) {
-      tableHeader.push(this.state.tableHeader[k]);
+      tableHeaderUpdated.push(tableHeader[k]);
     }
 
     // we now take care of optionMap's addition. We just need to add some empty arrays to it
-    let optionsMap = [];
+    let optionsMapUpdated = [];
     for (let j = 0; j < colIndex + 1; ++j) {
-      optionsMap.push(this.state.optionsMap[j]);
+      optionsMapUpdated.push(optionsMap[j]);
     }
     for (let j = 0; j < numCols; ++j) {
-      optionsMap.push([]);
+      optionsMapUpdated.push([]);
     }
     for (let k = colIndex + 1; k < colNum; ++k) {
-      optionsMap.push(this.state.optionsMap[k]);
+      optionsMapUpdated.push(optionsMap[k]);
     }
 
     // Finally, we fill in the actual data for tableData. We need to take care of both data and origin
-    let promiseArray = this.getOtherColPromise(neighbour, type);
-    allPromiseReady(promiseArray).then((values) => {
-      // for (let i=0;i<values.length;++i) {
-      //   console.log(values[i].results.bindings);
-      // }
-      for (
-        let curCol = colIndex + 1;
-        curCol < colIndex + 1 + numCols;
-        ++curCol
-      ) {
-        // curNeighbourIndex represents the required length
-        let requiredLength = neighbourIndex + curCol - colIndex + 1;
-        for (let i = 0; i < values.length; ++i) {
-          if (values[i].results.bindings.length < requiredLength) {
-            // this means results is not found
-            // or if there is not enough results, in duplicate neighbour name case
-            tableData[i][curCol].data = "N/A";
+    // for (let i=0;i<values.length;++i) {
+    //   console.log(values[i].results.bindings);
+    // }
+    for (let curCol = colIndex + 1; curCol < colIndex + 1 + numCols; ++curCol) {
+      // curNeighbourIndex represents the required length
+      let requiredLength = neighbourIndex + curCol - colIndex + 1;
+      for (let i = 0; i < values.length; ++i) {
+        // Firt case: result is not found, or there is not enough results (in duplicate neighbour case)
+        if (values[i].results.bindings.length < requiredLength) {
+          if (tableDataUpdated[i][this.state.keyColIndex].data === "") {
+            tableDataUpdated[i][curCol].data = "";
           } else {
-            // let's determine if we need to truncate
-            // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
-            // Think about what to do when there are duplicates
-            let dbResult =
-              values[i].results.bindings[requiredLength - 1].somevar.value;
-            let prefixToRemove = "http://dbpedia.org/resource/";
-            // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
-            if (dbResult.includes(prefixToRemove) === true) {
-              dbResult = dbResult.slice(28);
-            }
-            // We first set the data of the cell
-            tableData[i][curCol].data = dbResult;
-            // We then set the origin of the cell
-            // This origin depends on whether type is "subject" or "object"
-            let originToAdd;
-            // console.log(type);
-            if (type === "subject") {
-              originToAdd = neighbour + ":" + dbResult;
-            } else {
-              originToAdd = "is " + neighbour + " of:" + dbResult;
-            }
-            // console.log(originToAdd);
-            let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
-            // console.log(keyOrigin);
-            keyOrigin.push(originToAdd);
-            // console.log(keyOrigin);
-            tableData[i][curCol].origin = keyOrigin;
+            tableDataUpdated[i][curCol].data = "N/A";
           }
         }
+        // Second case: result is found. We need to process them.
+        else {
+          // let's determine if we need to truncate
+          // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
+          // Think about what to do when there are duplicates
+          let dbResult =
+            values[i].results.bindings[requiredLength - 1].somevar.value;
+          let prefixToRemove = "http://dbpedia.org/resource/";
+          // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
+          if (dbResult.includes(prefixToRemove) === true) {
+            dbResult = dbResult.slice(28);
+          }
+          // We first set the data of the cell
+          tableDataUpdated[i][curCol].data = dbResult;
+          // We then set the origin of the cell
+          // This origin depends on whether type is "subject" or "object"
+          let originToAdd;
+          // console.log(type);
+          if (type === "subject") {
+            originToAdd = neighbour + ":" + dbResult;
+          } else {
+            originToAdd = "is " + neighbour + " of:" + dbResult;
+          }
+          // console.log(originToAdd);
+          let keyOrigin = tableDataUpdated[i][
+            this.state.keyColIndex
+          ].origin.slice();
+          // console.log(keyOrigin);
+          keyOrigin.push(originToAdd);
+          // console.log(keyOrigin);
+          tableDataUpdated[i][curCol].origin = keyOrigin;
+        }
       }
+    }
+    return {
+      tableHeader: tableHeaderUpdated,
+      tableData: tableDataUpdated,
+      optionsMap: optionsMapUpdated,
+    };
+  }
+
+  // This function populates all neighbour with the same names in different columns, if that neighbour has multiple occurences.
+  // It takes in 5 parameters:
+  // 1) colIndex:        index of the column that we just filled     (ex. 1, if we just filled in column 1)
+  // 2) neighbour:       attribute name of the column we just filled (ex. almaMater)
+  // 3) neighbourIndex:  index of the attribute we just filled       (ex. 0, if we have filled in almaMater-1)
+  // 4) type:            type of the attribute. Either "subject" or "object"
+  // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
+  // Note: currently it only populates "later" neighbour with same name.
+
+  sameNeighbourDiffCol(e, colIndex, neighbour, neighbourIndex, type, numCols) {
+    // The following is testing for 2D Promise arrays. Turns out it works!
+    // let promiseArrayOne = this.getOtherColPromise(neighbour,type);
+    // let promiseArrayTwo = this.getOtherColPromise(neighbour,type);
+    // let twoD = [promiseArrayOne,promiseArrayTwo];
+    // allPromiseReady(twoD).then((values) => {
+    //   console.log(values);
+    // })
+
+    let promiseArray = this.getOtherColPromise(neighbour, type);
+    allPromiseReady(promiseArray).then((values) => {
+      let newState = this.addAllNeighbour(
+        colIndex,
+        neighbour,
+        neighbourIndex,
+        type,
+        numCols,
+        values,
+        this.state.tableHeader,
+        this.state.tableData,
+        this.state.optionsMap
+      );
       this.setState({
         curActionInfo: null,
-        tableData: tableData,
-        tableHeader: tableHeader,
-        optionsMap: optionsMap,
+        tableData: newState.tableData,
+        tableHeader: newState.tableHeader,
+        optionsMap: newState.optionsMap,
       });
     });
   }
@@ -804,6 +1056,14 @@ class MainBody extends Component {
         tableData: tableData,
       });
     });
+  }
+
+  // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
+  populateSameRange(e, colIndex, range, siblingNeighbour) {
+    console.log("Column index is " + colIndex);
+    console.log("Range is " + range);
+    console.log("Sibling neighbours are: ");
+    console.log(siblingNeighbour);
   }
 
   // The follwing function adds a new column to the table, to the right of the context-menu clicked column.
@@ -854,18 +1114,32 @@ class MainBody extends Component {
     // We only want to make changes if argument colIndex is not equal to the current key column index
     if (colIndex !== this.state.keyColIndex) {
       let promiseArray = [];
+
+      // Below is the first query we will make.
+      // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
+      // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+
+      // Note: we need to modify this query so it looks for ranges of certain attributes as well
+      // let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      // let suffixURLOne = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      // let queryBodyOne =
+      //   "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
+      //   +regexReplace(this.state.tableData[0][colIndex].data)
+      //   +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
       let prefixURLOne =
         "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
       let suffixURLOne =
         "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       let queryBodyOne =
-        "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A" +
+        "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
         regexReplace(this.state.tableData[0][colIndex].data) +
-        "+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
+        "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
       let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
       let otherColPromiseSubject = fetchJSON(queryURLOne);
       promiseArray.push(otherColPromiseSubject);
 
+      // Below is the second query we will make.
+      // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
       let prefixURLTwo =
         "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
       let suffixURLTwo =
@@ -890,6 +1164,7 @@ class MainBody extends Component {
           values[1].results.bindings,
           "object"
         );
+        // console.log(keyColNeighbours);
         let optionsMap = this.state.optionsMap.slice();
         for (let i = 0; i < optionsMap.length; ++i) {
           if (i !== colIndex) {
@@ -1114,7 +1389,7 @@ class MainBody extends Component {
     if (propertyNeighbours[index].isOpen === true) {
       let bindingArray = propertyNeighbours[index].siblingArray;
       let siblingArray = [];
-      let siblingNameArray = []; // this array keeps track of the sibiling names
+      let siblingNameArray = []; // this array keeps track of the sibling names
       let promiseArray = [];
       for (let i = 0; i < bindingArray.length; ++i) {
         let siblingName = bindingArray[i].name;
@@ -1139,6 +1414,8 @@ class MainBody extends Component {
               tableHTML,
               pageHTML,
               this.state.selectedClassAnnotation,
+              this.state.semanticEnabled,
+              this.state.unionCutOff,
               siblingNameArray[i]
             )
           );
@@ -1249,45 +1526,134 @@ class MainBody extends Component {
   // by changing tableDataExplore
 
   unionTable(firstIndex, secondIndex, otherTableHTML, colMapping) {
+    // First we get the clean data and set the origin for the other table by calling setTableFromHTML
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex]
       .siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML, otherTableOrigin);
-    otherTableData = otherTableData.slice(1); // we remove the column header row
-    // console.log(otherTableData);
-    // Now need to push this otherTableData with this.state.tableDataExplore
+
+    // We remove the column header row
+    otherTableData = otherTableData.slice(1);
+
+    // We create a copy of the table data that is in the table panel
     let tableDataExplore = this.state.tableDataExplore.slice();
-    // tableDataExplore = tableDataExplore.concat(otherTableData);
 
-    // We want to correctly modify tableDataExplore, based on colMapping.
-    // If colMapping is null for some column, we want to set the data as "N/A"
-    // console.log(tableDataExplore);
-
-    // We first make some small modifications to colMapping, as we have inserted a new column into otherTableData and tableDataExplore
-    for (let j = 0; j < colMapping.length; ++j) {
-      if (colMapping[j] !== "null") {
-        colMapping[j]++;
-      }
-    }
-    colMapping.splice(0, 0, 0); // insert element 0 at the first position of colMapping, deleting 0 elements
-    // console.log(colMapping);
-
-    // Now we insert the data into dataToAdd. dataToAdd will be concatenated with tableDataExplore
-    let dataToAdd = [];
-    for (let i = 0; i < otherTableData.length; ++i) {
-      let tempRow = [];
-      for (let j = 0; j < colMapping.length; ++j) {
-        let colInNew = colMapping[j];
-        if (colInNew !== "null") {
-          tempRow.push(otherTableData[i][colInNew]);
-        } else {
-          tempRow.push({ data: "N/A" });
-        }
-      }
-      dataToAdd.push(tempRow);
-    }
-    tableDataExplore = tableDataExplore.concat(dataToAdd);
+    // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
+    let tempMapping = colMapping.slice();
+    tableDataExplore = tableConcat(
+      tableDataExplore,
+      otherTableData,
+      tempMapping
+    );
     this.setState({
       tableDataExplore: tableDataExplore,
+    });
+  }
+
+  // The following function unions all similar tables found under a sibling page with the selected table
+  unionPage(firstIndex, secondIndex) {
+    // We get the tableArray and name of the current sibling page
+    let tableArray = this.state.propertyNeighbours[firstIndex].siblingArray[
+      secondIndex
+    ].tableArray;
+    let otherTableOrigin = this.state.propertyNeighbours[firstIndex]
+      .siblingArray[secondIndex].name;
+
+    // We create a copy of the table data that is in the table panel
+    let tableDataExplore = this.state.tableDataExplore.slice();
+
+    for (let i = 0; i < tableArray.length; ++i) {
+      // We get the clean data for the current "other table"
+      let otherTableData = setTableFromHTML(
+        tableArray[i].data,
+        otherTableOrigin
+      );
+      // We remove the column header row
+      otherTableData = otherTableData.slice(1);
+      // We create a copy of the colMapping of the current "oother table"
+      let tempMapping = tableArray[i].colMapping.slice();
+      tableDataExplore = tableConcat(
+        tableDataExplore,
+        otherTableData,
+        tempMapping
+      );
+    }
+    this.setState({
+      tableDataExplore: tableDataExplore,
+    });
+  }
+
+  // The following function unions all similar tables found under a property(parent) neighbour with the selected table
+  // This is the highest level of union.
+
+  unionProperty(firstIndex) {
+    // First we create a copy of the current tableDataExplore
+    let tableDataExplore = this.state.tableDataExplore.slice();
+
+    // we get the siblingArray of the current property neighbour
+    let siblingArray = this.state.propertyNeighbours[firstIndex].siblingArray;
+
+    for (let i = 0; i < siblingArray.length; ++i) {
+      // We get the tableArray and name of the current sibling page
+      let tableArray = siblingArray[i].tableArray;
+      let otherTableOrigin = siblingArray[i].name;
+      // console.log(otherTableOrigin);
+      // If the current sibling has no tables that are unionable, we break out of the loop.
+      // Because siblingArray is sorted by the length of their tableArray
+      if (tableArray.length === 0) {
+        break;
+      }
+      // Else, we want to union all unionable tables from the current sibling page
+      else {
+        for (let j = 0; j < tableArray.length; ++j) {
+          // We get the clean data for the current "other table"
+          let otherTableData = setTableFromHTML(
+            tableArray[j].data,
+            otherTableOrigin
+          );
+          // We remove the column header row
+          otherTableData = otherTableData.slice(1);
+          // We create a copy of the colMapping of the current "oother table"
+          let tempMapping = tableArray[j].colMapping.slice();
+          tableDataExplore = tableConcat(
+            tableDataExplore,
+            otherTableData,
+            tempMapping
+          );
+        }
+      }
+    }
+    this.setState({
+      tableDataExplore: tableDataExplore,
+    });
+  }
+
+  // This function handles the change of "semanticEnabled" setting
+
+  toggleSemantic(e) {
+    // we want to toggle off all the property neighbours in the action panel
+    // because changing semanticEnabled changes our search criteria
+    let propertyNeighbours = this.state.propertyNeighbours.slice();
+    for (let i = 0; i < propertyNeighbours.length; ++i) {
+      propertyNeighbours[i].isOpen = false;
+    }
+
+    this.setState({
+      semanticEnabled: e.target.value,
+      propertyNeighbours: propertyNeighbours,
+    });
+  }
+
+  // This function handles the change of the unionCutoff percentage
+
+  unionCutOffChange(e) {
+    // we want to toggle off all the property neighbours in the action panel
+    // because changing union cutoff changes our search criteria
+    let propertyNeighbours = this.state.propertyNeighbours.slice();
+    for (let i = 0; i < propertyNeighbours.length; ++i) {
+      propertyNeighbours[i].isOpen = false;
+    }
+    this.setState({
+      unionCutOff: e.target.value,
     });
   }
 
@@ -1337,6 +1703,7 @@ class MainBody extends Component {
                   populateOtherColumn={this.populateOtherColumn}
                   sameNeighbourDiffCol={this.sameNeighbourDiffCol}
                   sameNeighbourOneCol={this.sameNeighbourOneCol}
+                  populateSameRange={this.populateSameRange}
                   // Folloiwng states are passed to "exploreTable"
                   selectedTableIndex={this.state.selectedTableIndex}
                   onSelectTable={this.onSelectTable}
@@ -1345,6 +1712,12 @@ class MainBody extends Component {
                   toggleSibling={this.toggleSibling}
                   toggleOtherTable={this.toggleOtherTable}
                   unionTable={this.unionTable}
+                  unionPage={this.unionPage}
+                  unionProperty={this.unionProperty}
+                  semanticEnabled={this.state.semanticEnabled}
+                  toggleSemantic={this.toggleSemantic}
+                  unionCutOff={this.state.unionCutOff}
+                  unionCutOffChange={this.unionCutOffChange}
                   // Following states are passed for general purposes
                   copyTable={this.copyTable}
                 />
@@ -1390,6 +1763,7 @@ function regexReplace(str) {
   return str
     .replace(/\$/g, "%5Cu0024")
     .replace(/%/g, "%5Cu0025")
+    .replace(/!/g, "%5Cu0021")
     .replace(/"/g, "%5Cu0022")
     .replace(/#/g, "%5Cu0023")
     .replace(/&/g, "%5Cu0026")
@@ -1412,6 +1786,7 @@ function urlReplace(str) {
   return str
     .replace(/%E2%80%93/g, "%5Cu2013")
     .replace(/\$/g, "%5Cu0024")
+    .replace(/!/g, "%5Cu0021")
     .replace(/"/g, "%5Cu0022")
     .replace(/#/g, "%5Cu0023")
     .replace(/&/g, "%5Cu0026")
@@ -1442,6 +1817,11 @@ function reverseReplace(str) {
 
 // It returns the updates keyColNeighbours
 function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
+  // Let's take a look at the resultsBinding
+  // console.log("Current type is "+type);
+  // console.log(resultsBinding);
+  // console.log(resultsBinding);
+
   // we first sort the resultsBinding by p.value.slice(28)
   resultsBinding.sort((a, b) =>
     a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
@@ -1452,6 +1832,11 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
   for (let i = 0; i < resultsBinding.length; ++i) {
     let tempObj = {};
     let curNeighbourLiteral = resultsBinding[i].p.value.slice(28);
+    // Let's see if the current result has a "range"
+    // Note: if the result does not have the "range" variable, resultsBinding[i].range would be undefined
+    // if (type === "subject") {
+    //   console.log(resultsBinding[i].range);
+    // }
     // We do not want to deal with any neighbours that's only one character long: we don't know what it means
     if (curNeighbourLiteral.length > 1) {
       // Let's deal with duplicate neighbour names here
@@ -1477,6 +1862,10 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           tempObj["label"] = curNeighbourLabel;
           tempObj["value"] = curNeighbourValue;
           tempObj["type"] = type;
+          // If the current type is "subject", we want to see if the current result has a range
+          if (type === "subject" && resultsBinding[i].range !== undefined) {
+            tempObj["range"] = resultsBinding[i].range.value;
+          }
           keyColNeighbours.push(tempObj);
         }
         neighbourCount++;
@@ -1493,13 +1882,51 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           tempObj["label"] = curNeighbourLabel;
           tempObj["value"] = curNeighbourValue;
           tempObj["type"] = type;
+          // If the current type is "subject", we want to see if the current result has a range
+          if (type === "subject" && resultsBinding[i].range !== undefined) {
+            tempObj["range"] = resultsBinding[i].range.value;
+          }
           keyColNeighbours.push(tempObj);
         }
         neighbourCount = 1;
       }
     }
   }
+  // console.log(keyColNeighbours);
   return keyColNeighbours;
+}
+
+// This function takes in the clean data for the first table, clean data for the second table, and colMapping between these two tables
+// And returns the unioned clean data for the first table
+
+function tableConcat(tableDataExplore, otherTableData, tempMapping) {
+  // We want to correctly modify tableDataExplore, based on colMapping.
+  // If colMapping is null for some column, we want to set the data as "N/A"
+  // console.log(tableDataExplore);
+
+  // We first make some small modifications to colMapping, as we have inserted a new column into otherTableData and tableDataExplore
+  for (let j = 0; j < tempMapping.length; ++j) {
+    if (tempMapping[j] !== "null") {
+      tempMapping[j]++;
+    }
+  }
+  tempMapping.splice(0, 0, 0); // insert element 0 at the first position of colMapping, deleting 0 elements
+
+  // Now we insert the data into dataToAdd. dataToAdd will be concatenated with tableDataExplore
+  let dataToAdd = [];
+  for (let i = 0; i < otherTableData.length; ++i) {
+    let tempRow = [];
+    for (let j = 0; j < tempMapping.length; ++j) {
+      let colInNew = tempMapping[j];
+      if (colInNew !== "null") {
+        tempRow.push(otherTableData[i][colInNew]);
+      } else {
+        tempRow.push({ data: "N/A" });
+      }
+    }
+    dataToAdd.push(tempRow);
+  }
+  return tableDataExplore.concat(dataToAdd);
 }
 
 function HTMLCleanCell(str) {
@@ -1525,6 +1952,8 @@ function findTableFromHTML(
   tableHTML,
   pageHTML,
   selectedClassAnnotation,
+  semanticEnabled,
+  unionCutOff,
   pageName
 ) {
   // We first get the column names of the selected table
@@ -1609,9 +2038,16 @@ function findTableFromHTML(
 
   // We now loop through all the tables found on this sibling page, and see if they are unionable with the selected table
   let tablePromise = [];
+
   for (let i = 0; i < tablesFound.length; ++i) {
     tablePromise.push(
-      findTableFromTable(tablesFound[i], originCols, selectedClassAnnotation)
+      findTableFromTable(
+        tablesFound[i],
+        originCols,
+        selectedClassAnnotation,
+        semanticEnabled,
+        unionCutOff
+      )
     );
   }
 
@@ -1620,9 +2056,12 @@ function findTableFromHTML(
       tableArray.push(values[i]);
     }
     // we filter the tableArray here by removing those tables that do not have a high enough unionScore
+
+    // Note: In the unfiltered table array, we are using -1 to represent tables with a low unionScore
     tableArray = tableArray.filter(function (x) {
       return x !== -1;
     });
+
     // console.log(tableArray);
     // We sort the tableArray here by unionScore
     tableArray.sort((a, b) => (a.unionScore < b.unionScore ? 1 : -1));
@@ -1630,12 +2069,23 @@ function findTableFromHTML(
   });
 }
 
-// This function takes in a tableHTML and originCols (denoting the columns names of the selected table)
+// This function takes in four parameters:
+
+// 1) a tableHTML
+// 2) originCols (denoting the columns names of the selected table)
+// 3) class annotation of the selected table
+// 4) whether semantic mapping is enabled or not
+
 // and return a table Object with properties: isOpen, unionScore, colMapping, and data
-function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
+function findTableFromTable(
+  tableHTML,
+  originCols,
+  selectedClassAnnotation,
+  semanticEnabled,
+  unionCutOff
+) {
   // Define some constants
   const ontologySize = 780;
-  const unionCutOff = 0.5;
   const matchCutOff = 0.999;
 
   // We first fetch the cleaned column names of the current table
@@ -1658,7 +2108,7 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
   // because we require a >50% unionScore
   // If it does not, we ignore this table automatically
 
-  if (newCols.length > originCols.length / 2) {
+  if (newCols.length >= originCols.length * unionCutOff) {
     // We use the proposed algo here.
     // First we set the union score and column Mapping
     let unionScore = 0;
@@ -1707,143 +2157,106 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
       }
     }
 
-    // If we are not finding a perfect match, we want to do use semantic mapping here to see if it's possible to map the unmapped columns
-    // Note: this part is expected to take quite some time. Now it's implemented just for testing purposes
-    if (unionScore < 0.999) {
-      // We want to remove from remainCols the columns that are already mapped
-      // The remaining will be the columns that we can still use from the current table
-      remainCols = remainCols.filter(function (x) {
-        return colMapping.indexOf(x) < 0;
-      });
-      for (let i = 0; i < colMapping.length; ++i) {
-        if (colMapping[i] === "null") {
-          searchCols.push(i);
-        }
-      }
-      // if (newCols[1] === "Scorer") {
-      // console.log("We still need to find these columns from the original table: "+searchCols);
-      // console.log("These columns are still available for use: "+remainCols);
-      // console.log("The current column mappings are "+colMapping);
-      // console.log("Here are the class annotations of the search columns: ")
-      // for (let i=0;i<searchCols.length;++i) {
-      //   console.log(selectedClassAnnotation[searchCols[i]]);
-      // }
-      // }
+    // We proceed differently based on whether semantic mapping is enabled or not
 
-      // Now, searchCols stores the columns from the selected table that have not been mapped yet
-      // and remainCols stores the columns from the current table that can still be used for mapping
-      // Let's ask a query to find the class annotations for the remainCols
-      // if (remainCols.length > 0) {
-      promiseArray.push(findClassAnnotation(tableHTML, remainCols));
-      // }
-    }
+    // Case 1: semantic mapping is enabled
 
-    // Because the return statement is here, it may be possible that we are pushing nothing onto the promiseArray!!!
-    // There is no need to worry about it.
-    return allPromiseReady(promiseArray).then((values) => {
-      // First, if we are in the perfect match case, we want to retrun straight away
-      if (unionScore >= 0.999) {
-        return Promise.resolve({
-          isOpen: false,
-          unionScore: unionScore,
-          colMapping: colMapping,
-          data: tableHTML,
-          title: newCols,
+    if (semanticEnabled === "enabled") {
+      // If we are not finding a perfect match, we want to do use semantic mapping here to see if it's possible to map the unmapped columns
+      // Note: this part is expected to take quite some time. Now it's implemented just for testing purposes
+      if (unionScore < 0.999) {
+        // We want to remove from remainCols the columns that are already mapped
+        // The remaining will be the columns that we can still use from the current table
+        remainCols = remainCols.filter(function (x) {
+          return colMapping.indexOf(x) < 0;
         });
+        for (let i = 0; i < colMapping.length; ++i) {
+          if (colMapping[i] === "null") {
+            searchCols.push(i);
+          }
+        }
+        // if (newCols[1] === "Scorer") {
+        // console.log("We still need to find these columns from the original table: "+searchCols);
+        // console.log("These columns are still available for use: "+remainCols);
+        // console.log("The current column mappings are "+colMapping);
+        // console.log("Here are the class annotations of the search columns: ")
+        // for (let i=0;i<searchCols.length;++i) {
+        //   console.log(selectedClassAnnotation[searchCols[i]]);
+        // }
+        // }
+
+        // Now, searchCols stores the columns from the selected table that have not been mapped yet
+        // and remainCols stores the columns from the current table that can still be used for mapping
+        // Let's ask a query to find the class annotations for the remainCols
+        // if (remainCols.length > 0) {
+        promiseArray.push(findClassAnnotation(tableHTML, remainCols));
+        // }
       }
-      // Else, we want to look for semantic mapping opportunities
-      else {
-        // create a copy of values
 
-        // Note!!!! Sometimes the tableHTML only has one row, so values[0] would have a length of zero, in which case our algo breaks down
-        // Let's prevent it from happening
-        let remainClassAnnotation = values[0].slice();
-        if (remainClassAnnotation.length > 0) {
-          let remainColsCopy = remainCols.slice();
-          let remainClassAnnotationCopy = remainClassAnnotation.slice();
-          for (let i = 0; i < searchCols.length; ++i) {
-            let curSearchIndex = searchCols[i];
-            // console.log(curSearchIndex);
-            // console.log(selectedClassAnnotation[curSearchIndex]);
+      // Because the return statement is here, it may be possible that we are pushing nothing onto the promiseArray!!!
+      // There is no need to worry about it.
+      return allPromiseReady(promiseArray).then((values) => {
+        // First, if we are in the perfect match case, we want to retrun straight away
+        if (unionScore >= 0.999) {
+          return Promise.resolve({
+            isOpen: false,
+            unionScore: unionScore,
+            colMapping: colMapping,
+            data: tableHTML,
+            title: newCols,
+          });
+        }
+        // Else, we want to look for semantic mapping opportunities
+        else {
+          // create a copy of values
 
-            // If the class annotation for this column is empty, we skip it because there's no hope for semantic match.
-            // Otherwise we can work with it
-            if (selectedClassAnnotation[curSearchIndex].length > 0) {
-              // console.log("Current column being searched has index: "+curSearchIndex);
+          // Note!!!! Sometimes the tableHTML only has one row, so values[0] would have a length of zero, in which case our algo breaks down
+          // Let's prevent it from happening
+          let remainClassAnnotation = values[0].slice();
+          if (remainClassAnnotation.length > 0) {
+            // let remainColsCopy = remainCols.slice();
+            // let remainClassAnnotationCopy = remainClassAnnotation.slice();
+            for (let i = 0; i < searchCols.length; ++i) {
+              let curSearchIndex = searchCols[i];
+              // console.log(curSearchIndex);
               // console.log(selectedClassAnnotation[curSearchIndex]);
 
-              // we loop through the remain cols and check their class annotations
-              for (let j = 0; j < remainCols.length; ++j) {
-                // Let make sure this column does have a class annotation. Otherwise we skip it
-                // console.log(remainClassAnnotation[j]);
-                // Note: sometimes remainClassAnnotation[j] is undefined, which causes an error
-                if (remainClassAnnotation[j] === undefined) {
-                  console.log("This case is causing an error");
-                  console.log("Remain cols are " + remainCols);
-                  console.log(
-                    "Remain class annotations are " + remainClassAnnotation
-                  );
-                  console.log("Original remain cols are " + remainColsCopy);
-                  console.log(
-                    "original remain class annotations are " +
-                      remainClassAnnotationCopy
-                  );
-                  console.log("Table HTML is ");
-                  console.log(tableHTML);
-                  console.log(values[0]);
-                }
-                if (remainClassAnnotation[j].length > 0) {
-                  // console.log("Remain column index is "+remainCols[j]);
-                  // console.log("Its class annotation is "+remainClassAnnotation[j]);
-                  // Let make special cases when the any of search column class and current column class is [Number]
-                  // If they are both [Number], we will give it a match
-                  // Else it's not a match
-                  if (
-                    selectedClassAnnotation[curSearchIndex][0] === "Number" ||
-                    remainClassAnnotation[j][0] === "Number"
-                  ) {
-                    // This case we have a match
+              // If the class annotation for this column is empty, we skip it because there's no hope for semantic match.
+              // Otherwise we can work with it
+              if (selectedClassAnnotation[curSearchIndex].length > 0) {
+                // console.log("Current column being searched has index: "+curSearchIndex);
+                // console.log(selectedClassAnnotation[curSearchIndex]);
+
+                // we loop through the remain cols and check their class annotations
+                for (let j = 0; j < remainCols.length; ++j) {
+                  // Let make sure this column does have a class annotation. Otherwise we skip it
+                  // console.log(remainClassAnnotation[j]);
+                  // Note: sometimes remainClassAnnotation[j] is undefined, which causes an error
+                  // if (remainClassAnnotation[j] === undefined) {
+                  //   console.log("This case is causing an error");
+                  //   console.log("Remain cols are "+remainCols);
+                  //   console.log("Remain class annotations are "+remainClassAnnotation);
+                  //   console.log("Original remain cols are "+remainColsCopy);
+                  //   console.log("original remain class annotations are "+remainClassAnnotationCopy);
+                  //   console.log("Table HTML is ");
+                  //   console.log(tableHTML);
+                  //   console.log(values[0]);
+                  // }
+                  if (remainClassAnnotation[j].length > 0) {
+                    // console.log("Remain column index is "+remainCols[j]);
+                    // console.log("Its class annotation is "+remainClassAnnotation[j]);
+                    // Let make special cases when the any of search column class and current column class is [Number]
+                    // If they are both [Number], we will give it a match
+                    // Else it's not a match
                     if (
-                      selectedClassAnnotation[curSearchIndex][0] ===
-                      remainClassAnnotation[j][0]
+                      selectedClassAnnotation[curSearchIndex][0] === "Number" ||
+                      remainClassAnnotation[j][0] === "Number"
                     ) {
-                      // We need to update the colMapping and unionScore
-                      colMapping[curSearchIndex] = remainCols[j];
-                      unionScore += 1 / originCols.length;
-                      // we also need to remove this column from remainClassAnnotation and remainCols because we cannot use it anymore
-                      remainCols.splice(j, 1);
-                      remainClassAnnotation.splice(j, 1);
-                      // Also, since we are removing element from remainCols array and remainClassAnnotation array, we need to decrement
-                      // j to go back to the correct posiition
-                      --j;
-                      // Also we need to call break to prevent further looping: we are done with this search column
-                      break;
-                    }
-                    // Else there is no match. We simply ignore it.
-                  }
-                  // If neither of them is [Number], we need to use the test statistic
-                  else {
-                    // Let's first find the array intersection of selectedClassAnnotation[curSearchIndex] and remainClassAnnotation[j]
-                    let intersection = selectedClassAnnotation[
-                      curSearchIndex
-                    ].filter(function (x) {
-                      return remainClassAnnotation[j].indexOf(x) >= 0;
-                    });
-                    // console.log("Intersection is "+intersection);
-                    // We only want to consider two column unionable if they at least have some intersections.
-                    if (intersection.length > 0) {
-                      let totalSuccess =
-                        selectedClassAnnotation[curSearchIndex].length;
-                      let numTrial = remainClassAnnotation[j].length;
-                      let numSuccess = intersection.length;
-                      let testStat = hyperCDF(
-                        numSuccess,
-                        ontologySize,
-                        totalSuccess,
-                        numTrial
-                      );
-                      // If testStat is larger than matchCutOff, we consider it a match
-                      if (testStat > matchCutOff) {
+                      // This case we have a match
+                      if (
+                        selectedClassAnnotation[curSearchIndex][0] ===
+                        remainClassAnnotation[j][0]
+                      ) {
                         // We need to update the colMapping and unionScore
                         colMapping[curSearchIndex] = remainCols[j];
                         unionScore += 1 / originCols.length;
@@ -1856,50 +2269,116 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation) {
                         // Also we need to call break to prevent further looping: we are done with this search column
                         break;
                       }
+                      // Else there is no match. We simply ignore it.
+                    }
+                    // If neither of them is [Number], we need to use the test statistic
+                    else {
+                      // Let's first find the array intersection of selectedClassAnnotation[curSearchIndex] and remainClassAnnotation[j]
+                      let intersection = selectedClassAnnotation[
+                        curSearchIndex
+                      ].filter(function (x) {
+                        return remainClassAnnotation[j].indexOf(x) >= 0;
+                      });
+                      // console.log("Intersection is "+intersection);
+                      // We only want to consider two column unionable if they at least have some intersections.
+                      if (intersection.length > 0) {
+                        let totalSuccess =
+                          selectedClassAnnotation[curSearchIndex].length;
+                        let numTrial = remainClassAnnotation[j].length;
+                        let numSuccess = intersection.length;
+                        let testStat = hyperCDF(
+                          numSuccess,
+                          ontologySize,
+                          totalSuccess,
+                          numTrial
+                        );
+                        // If testStat is larger than matchCutOff, we consider it a match
+                        if (testStat > matchCutOff) {
+                          // We need to update the colMapping and unionScore
+                          colMapping[curSearchIndex] = remainCols[j];
+                          unionScore += 1 / originCols.length;
+                          // we also need to remove this column from remainClassAnnotation and remainCols because we cannot use it anymore
+                          remainCols.splice(j, 1);
+                          remainClassAnnotation.splice(j, 1);
+                          // Also, since we are removing element from remainCols array and remainClassAnnotation array, we need to decrement
+                          // j to go back to the correct posiition
+                          --j;
+                          // Also we need to call break to prevent further looping: we are done with this search column
+                          break;
+                        }
+                      }
                     }
                   }
                 }
               }
             }
           }
-        }
-        // console.log("Remain columns are "+)
-        // console.log("Here is table HTML");
-        // console.log(tableHTML);
-        // console.log("Here are the class annotations for columns that still need mapping");
-        // for (let i=0;i<searchCols.length;++i) {
-        //   console.log(selectedClassAnnotation[searchCols[i]]);
-        // }
-        // console.log("The remain columns are "+remainCols);
-        // console.log("Here are the class annotations for the remaining columns");
-        // console.log(values);
-        // console.log("This is column mapping "+colMapping);
-        // console.log("Union score is "+unionScore);
-        // Start from here tomorrow
+          // console.log("Remain columns are "+)
+          // console.log("Here is table HTML");
+          // console.log(tableHTML);
+          // console.log("Here are the class annotations for columns that still need mapping");
+          // for (let i=0;i<searchCols.length;++i) {
+          //   console.log(selectedClassAnnotation[searchCols[i]]);
+          // }
+          // console.log("The remain columns are "+remainCols);
+          // console.log("Here are the class annotations for the remaining columns");
+          // console.log(values);
+          // console.log("This is column mapping "+colMapping);
+          // console.log("Union score is "+unionScore);
+          // Start from here tomorrow
 
-        // We need to loop through the searchCols
+          // We need to loop through the searchCols
 
-        // We push on tables with unionScore > 0.5
-        if (unionScore > unionCutOff) {
-          // console.log("This table is unionable!");
-          // console.log("Table is "+tableHTML);
-          // console.log("Union Score is "+unionScore);
-          // console.log("Column mapping is "+colMapping);
-          // tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]});
-          return Promise.resolve({
-            isOpen: false,
-            unionScore: unionScore,
-            colMapping: colMapping,
-            data: tableHTML,
-            title: newCols,
-          });
-        } else {
-          return Promise.resolve(-1);
+          // We push on tables with unionScore > unionCutOff
+          if (unionScore >= unionCutOff) {
+            // console.log("This table is unionable!");
+            // console.log("Table is "+tableHTML);
+            // console.log("Union Score is "+unionScore);
+            // console.log("Column mapping is "+colMapping);
+            // tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]});
+            // console.log(colMapping);
+            return Promise.resolve({
+              isOpen: false,
+              unionScore: unionScore,
+              colMapping: colMapping,
+              data: tableHTML,
+              title: newCols,
+            });
+          } else {
+            return Promise.resolve(-1);
+          }
         }
+      });
+    }
+
+    // Case 2: semantic mapping is disabled.
+    // In this case we check if the unionScore is high enough directly, without going through the semantic mapping process
+    else {
+      // We push on tables with unionScore > unionCutOff
+      if (unionScore >= unionCutOff) {
+        // console.log("This table is unionable!");
+        // console.log("Table is "+tableHTML);
+        // console.log("Union Score is "+unionScore);
+        // console.log("Column mapping is "+colMapping);
+        // tableArray.push({"isOpen":false,"unionScore":unionScore,"colMapping":colMapping,"data":tablesFound[i]});
+        // console.log(colMapping);
+        return Promise.resolve({
+          isOpen: false,
+          unionScore: unionScore,
+          colMapping: colMapping,
+          data: tableHTML,
+          title: newCols,
+        });
+      } else {
+        return Promise.resolve(-1);
       }
-    });
+    }
   }
-  return Promise.resolve(-1);
+  // This else clause means that this table does not even have enough number of columns.
+  // So we know right away it cannot be a match. So we return -1 (failure)
+  else {
+    return Promise.resolve(-1);
+  }
 }
 
 // This function takes in the HTML of a table, and returns a Promise that resolves to the class annotation for all the columns of the table
@@ -1936,10 +2415,11 @@ function findClassAnnotation(tableHTML, remainCols) {
             let hrefArray = anchorArray[k].href.split("/");
             // console.log("InnerText is "+anchorArray[k].innerText);
             // console.log("It exists in DBPedia as "+hrefArray[hrefArray.length-1]);
+
             curCellText = hrefArray[hrefArray.length - 1];
-            if (curCellText.includes("UEFA")) {
-              console.log(curCellText);
-            }
+            // if (curCellText.includes("UEFA")) {
+            // console.log(curCellText);
+            // }
           }
         }
       }
@@ -2033,10 +2513,12 @@ function findClassAnnotation(tableHTML, remainCols) {
       // console.log(tempTable[i][j].data);
       // console.log(regexReplace(tempTable[i][j].data));
       // console.log(tempTable[i][curColIndex]);
+
       let curEntry =
         tempTable[i][curColIndex] === undefined
           ? "NONEXISTING"
           : regexReplace(tempTable[i][curColIndex].data);
+      // console.log(curEntry);
       // console.log(regexReplace(tempTable[i][curColIndex].data));
       // console.log(!isNaN(Number(curEntry)));
       // console.log("Replaced data is "+curEntry);
@@ -2057,13 +2539,16 @@ function findClassAnnotation(tableHTML, remainCols) {
         if (curEntry === undefined || curEntry === "") {
           curEntry = "NONEXISTING";
         }
-        // console.log(curEntry);
+
         let queryBody =
           "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A" +
-          // +"not added?"
           curEntry +
           "+rdf%3Atype+%3Fo.%0D%0A++++++BIND%28STR%28%3Fo%29+AS+%3FoString+%29.%0D%0A++++++FILTER%28regex%28%3FoString%2C%22dbpedia.org%2Fontology%2F%22%2C%22i%22%29%29%0D%0A%7D%0D%0A&";
         let queryURL = prefixURL + queryBody + suffixURL;
+        // if (curEntry === "Bangor_City_F%5Cu002EC%5Cu002E") {
+        //   console.log("There is something wrong with this entry")
+        //   console.log(queryURL);
+        // }
         // console.log("Query is constructed!");
         // if (queryURL === "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A") {
         //   console.log("Here is where the problem occurs");
@@ -2140,27 +2625,6 @@ function setTableFromHTML(selecteTableHTML, urlOrigin) {
   for (let i = 0; i < selectedTable.rows.length; ++i) {
     let tempRow = [];
     for (let j = 0; j < selectedTable.rows[i].cells.length; ++j) {
-      // console.log("Attributes are ");
-      // console.log(selectedTable.rows[i].cells[j].attributes);
-      // console.log(selectedTable.rows[i].cells[j].getHtmlElementsByTagName("a"));
-      // console.log(selecteTableHTML.rows[i].cells[j]);
-
-      // We get all the links from this current cell (there may be more)
-      // let anchorArray = selecteTableHTML.rows[i].cells[j].getElementsByTagName("a");
-
-      // // We want to use the first valid link as the search element for this cell
-      // // Definition of being valid: its text is not empty (thus not the link for a picture), and it's not a citation (so [0] is not "[")
-      // for (let i=0;i<anchorArray.length;++i) {
-      //   // console.log(anchorArray[i]);
-      //   // console.log(anchorArray[i].href);
-      //   // console.log(anchorArray[i].innerText);
-      //   if (anchorArray[i].innerText !== "" && anchorArray[i].innerText[0] !== "[") {
-      //     // console.log(anchorArray[i].innerText);
-      //     let hrefArray = anchorArray[i].href.split("/");
-      //     console.log("Inner text is "+anchorArray[i].href);
-      //     console.log("Its exists in DBPedia as "+regexReplace(hrefArray[hrefArray.length-1]));
-      //   }
-      // }
       let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
       let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
       let curColSpan = selectedTable.rows[i].cells[j].colSpan;

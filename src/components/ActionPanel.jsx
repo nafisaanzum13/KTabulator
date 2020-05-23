@@ -2,6 +2,12 @@ import React, { Component } from "react";
 import TaskMenu from "../components/TaskMenu";
 import { Collapse, Button, CardBody, Card } from 'reactstrap';
 import { FaList, FaTable } from "react-icons/fa";
+// The two following lines are for tabs
+import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
+import 'react-tabs/style/react-tabs.css';
+// The two following lines are for range sliders
+import RangeSlider from 'react-bootstrap-range-slider';
+import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css'
 
 class ActionPanel extends Component {
   constructor(props) {
@@ -76,7 +82,11 @@ class ActionPanel extends Component {
             <Collapse isOpen={siblingArray[secondIndex].isOpen}>
               <Card>
                   <CardBody>
-                      {this.createTableArray(firstIndex,secondIndex)}
+                    <button 
+                      onClick={(e) => this.props.unionPage(firstIndex,secondIndex)}>
+                      Union all tables from page
+                    </button>
+                    {this.createTableArray(firstIndex,secondIndex)}
                   </CardBody>
               </Card>
             </Collapse>
@@ -106,7 +116,11 @@ class ActionPanel extends Component {
               <Collapse isOpen={this.props.propertyNeighbours[i].isOpen}>
                 <Card>
                     <CardBody>
-                        {this.createSiblingArray(i)}
+                      <button 
+                        onClick={(e) => this.props.unionProperty(i)}>
+                        Union tables from all pages
+                      </button>
+                      {this.createSiblingArray(i)}
                     </CardBody>
                 </Card>
               </Collapse>
@@ -131,7 +145,7 @@ class ActionPanel extends Component {
       titleEle = 
         <div className="row">
           <h3 className="col-md-4">Action List:</h3>
-          <Button className="col-md-3 offset-md-4" onClick={() => this.props.copyTable()}>Copy Table</Button>
+          <button className="col-md-3 offset-md-4" onClick={() => this.props.copyTable()}>Copy Table</button>
         </div>;
     }
 
@@ -147,13 +161,22 @@ class ActionPanel extends Component {
     else if (this.props.curActionInfo !== null) {
       const actionInfo = this.props.curActionInfo;
       if (actionInfo.task === "populateKeyColumn") {
+        let neighbourArrayText = "";
+        for (let i=0;i<actionInfo.neighbourArray.length;++i) {
+          if (i > 0) {
+            neighbourArrayText+=" & ";
+          }
+          neighbourArrayText+=actionInfo.neighbourArray[i];
+        }
         actionEle =
           <div>
             <p>Populate column {actionInfo.colIndex} with column header:</p>
-            <p>{actionInfo.neighbour} ?</p>
-            <button onClick={(e) => this.props.populateKeyColumn(e,actionInfo.colIndex,actionInfo.neighbour)}>OK</button>
+            <p>{neighbourArrayText}</p> 
+            <p>?</p>
+            <button onClick={(e) => this.props.populateKeyColumn(e,actionInfo.colIndex,actionInfo.neighbourArray)}>OK</button>
           </div>
-      } else if (actionInfo.task === "populateOtherColumn") {
+      } 
+      else if (actionInfo.task === "populateOtherColumn") {
         let neighbourText = actionInfo.type==="subject"?actionInfo.neighbour:"is "+actionInfo.neighbour+" of";
         actionEle =
           <div>
@@ -161,11 +184,17 @@ class ActionPanel extends Component {
             <p>{neighbourText} ?</p>
             <button 
               onClick={(e) => 
-                        this.props.populateOtherColumn(e,actionInfo.colIndex,actionInfo.neighbour,actionInfo.neighbourIndex,actionInfo.type)}>
+                        this.props.populateOtherColumn(e,
+                                                      actionInfo.colIndex,
+                                                      actionInfo.neighbour,
+                                                      actionInfo.neighbourIndex,
+                                                      actionInfo.type,
+                                                      actionInfo.range)}>
               OK
             </button>
           </div>
-      } else if (actionInfo.task === "populateSameNeighbour") {
+      } 
+      else if (actionInfo.task === "populateSameNeighbour") {
         let neighbourText = actionInfo.type==="subject"?actionInfo.neighbour:"is "+actionInfo.neighbour+" of";
         actionEle =
           <div>
@@ -188,23 +217,84 @@ class ActionPanel extends Component {
               </button>
             </div>
           </div>
-      } else if (actionInfo.task === "contextCellOrigin") {
+      } 
+      else if (actionInfo.task === "populateSameRange") {
+        let siblingText = "";
+        for (let i=0;i<actionInfo.siblingNeighbour.length;++i) {
+          if (i>0) {
+            siblingText+=", ";
+          }
+          siblingText+=actionInfo.siblingNeighbour[i].name;
+        }
+        actionEle =
+          <div>
+            <p>Populate attribute: {siblingText} </p>
+            <p>that are also of type: {actionInfo.range} ?</p>
+            <button 
+              onClick={(e) => 
+                        this.props.populateSameRange(e,
+                                                    actionInfo.colIndex,
+                                                    actionInfo.range,
+                                                    actionInfo.siblingNeighbour)}>
+              OK
+            </button>
+          </div>
+      }
+      else if (actionInfo.task === "contextCellOrigin") {
         actionEle =
           <div>
             <p>Origin of selected cell is:</p>
             <div>{actionInfo.origin}</div>
           </div>
-      } else if (actionInfo.task === "selectTableIndex") {
+      } 
+      else if (actionInfo.task === "selectTableIndex") {
         actionEle =
           <div>
             <p>Select table {actionInfo.tableIndex}?</p>
             <button onClick={(e) => this.props.onSelectTable(e,actionInfo.tableIndex)}>OK</button>
           </div>
-      } else if (actionInfo.task === "showPropertyNeighbours") {
+      } 
+      else if (actionInfo.task === "showPropertyNeighbours") {
         actionEle =
           <div>
-            <p>Explore relations below to look for other pages with similar tables:</p>
-            {this.createPropertyArray()}
+            <Tabs>
+              <TabList>
+                  <Tab>View Results</Tab>
+                  <Tab>Change Setting</Tab>
+              </TabList>
+              <TabPanel>
+                <p>Explore relations below to look for other pages with similar tables:</p>
+                {this.createPropertyArray()}
+              </TabPanel>
+              <TabPanel>
+                  <div className="row">
+                    <div className="col-md-4">
+                      Semantic Mapping:
+                    </div>
+                    <div className="col-md-6">
+                      <div onChange={(e) => this.props.toggleSemantic(e)}>
+                        <input type="radio" value="enabled" checked={this.props.semanticEnabled === "enabled"}/> Enabled
+                        <input type="radio" value="disabled" checked={this.props.semanticEnabled === "disabled"}/> Disabled
+                      </div>
+                    </div>
+                  </div>
+                  <br />
+                  <div className="row">
+                    <div className="col-md-4">
+                      Union Cutoff Percentage:
+                    </div>
+                    <div className="col-md-6">
+                      <RangeSlider
+                        value={this.props.unionCutOff}
+                        onChange={(e) => this.props.unionCutOffChange(e)}
+                        min={0}
+                        max={1}
+                        step={0.05}
+                      />
+                    </div>
+                  </div>
+              </TabPanel>
+            </Tabs>
           </div>
       }
     }

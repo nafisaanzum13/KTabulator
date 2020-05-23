@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import TableSelection from "../components/TableSelection";
+// import Tooltip from '@atlaskit/tooltip';
 import Select from 'react-select';
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
 import { FaSearch } from "react-icons/fa";
@@ -24,7 +25,9 @@ class TablePanel extends Component {
     let tempRow = [];
     for (let colIndex=0; colIndex<colNum; ++colIndex) {
       let tempHeader;
+      // This part deals with the key column headers
       if (colIndex === this.props.keyColIndex) {
+        let multiAllowed = colIndex===0?true:false;
         tempHeader =
         <th>
           <div onClick={(e) => this.props.getKeyOptions(e,colIndex)} className="super-header-div">
@@ -34,7 +37,7 @@ class TablePanel extends Component {
               onChange={(e) => this.props.selectColHeader(e,colIndex)}
               placeholder={"Choose header"}
               options={this.props.optionsMap[this.props.keyColIndex]}
-              isMulti={false}
+              isMulti={multiAllowed}
             />
             <FaSearch 
               className="search-icon"
@@ -42,7 +45,9 @@ class TablePanel extends Component {
               onClick={(e) => this.props.contextSetKey(e,colIndex)}/>
           </div>
         </th>
-      } else {
+      }
+      // This part deals with the non-key column headers 
+      else {
         tempHeader =
         <th>
           <div onClick={(e) => this.props.getOtherOptions(e,colIndex)} className="super-header-div">
