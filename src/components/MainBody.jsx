@@ -72,7 +72,7 @@ class MainBody extends Component {
       //         4.2.4) data:          HTML of a table
       //         4.2.5) title:         array of strings storing the column headers of the current table    
       propertyNeighbours:[],     
-      semanticEnabled:"enabled",        // boolean value indicating whether semantic mapping is enabled or not. Default to true
+      semanticEnabled:"disabled",        // boolean value indicating whether semantic mapping is enabled or not. Default to true
       unionCutOff:0.5,                   // number representing the union percentage a table must have to be considered unionable (>=)
     };
 
@@ -737,7 +737,7 @@ class MainBody extends Component {
 
   // This function is a helper function that takes in 9 parameters:
   // Note: this function does not make any fetch requests, thus does NOT involve promises.
-  
+
   // 1) colIndex:        index of the column that we just filled     (ex. 1, if we just filled in column 1)
   // 2) neighbour:       attribute name of the column we just filled (ex. almaMater)
   // 3) neighbourIndex:  index of the attribute we just filled       (ex. 0, if we have filled in almaMater-1)
@@ -1162,7 +1162,7 @@ class MainBody extends Component {
       // console.log(queryResults[1].results.bindings);
       // console.log(queryResults[2]);
       let selectedClassAnnotation = queryResults[2];
-      // console.log(selectedClassAnnotation);
+      console.log(selectedClassAnnotation);
 
       // First we fetch the property neighbours
       // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings (150)
@@ -2300,6 +2300,12 @@ function findClassAnnotation(tableHTML, remainCols) {
         if (curEntry === undefined || curEntry === "") {
           curEntry = "NONEXISTING";
         }
+        // if (curEntry === "Sergio_Agüero") {
+        //   console.log("We have another problem here");
+        // }
+        // console.log(curEntry);
+        // console.log(tempTable[i][curColIndex].data);
+        // console.log(regexReplace(tempTable[i][curColIndex].data));
         let queryBody = 
           "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A"
           +curEntry
