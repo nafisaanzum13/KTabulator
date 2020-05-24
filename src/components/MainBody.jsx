@@ -949,8 +949,13 @@ class MainBody extends Component {
   populateSameRange(e, colIndex, range, siblingNeighbour) {
     console.log("Column index is "+colIndex);
     console.log("Range is "+range);
-    console.log("Sibling neighbours are: ");
-    console.log(siblingNeighbour);
+    // console.log("Sibling neighbours are: ");
+    // console.log(siblingNeighbour);
+    for (let i=0;i<siblingNeighbour.length;++i) {
+      console.log("Neighbour name is: "+siblingNeighbour[i].name);
+      console.log("Count is: "+siblingNeighbour[i].count);
+    }
+    // Start working from this function
   }
 
   // The follwing function adds a new column to the table, to the right of the context-menu clicked column.
@@ -2111,7 +2116,6 @@ function findTableFromTable(tableHTML, originCols, selectedClassAnnotation, sema
           // console.log(values);
           // console.log("This is column mapping "+colMapping);
           // console.log("Union score is "+unionScore);
-          // Start from here tomorrow
 
           // We need to loop through the searchCols
 
