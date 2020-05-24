@@ -1642,10 +1642,10 @@ class MainBody extends Component {
 
   render() {
     let bodyEle;
-    let bottomContentClass = "bottom-content";
+    let bottomContentClass = " bottom-content";
     let topContentClass = "row top-content";
     if (this.state.pageHidden) {
-      bottomContentClass = "bottom-content-hidden";
+      bottomContentClass = " bottom-content-hidden";
       topContentClass = "row top-content-large";
     }
     // If user has not pasted the URL, we want to display the landing page
@@ -1658,7 +1658,7 @@ class MainBody extends Component {
         <div className=" ">
           <div className="">
             <div className={topContentClass}>
-              <div className="col-md-7 table-panel">
+              <div className="col-md-7 small-padding  table-panel">
                 <TablePanel
                   urlPasted={this.state.urlPasted}
                   usecaseSelected={this.state.usecaseSelected}
@@ -1682,7 +1682,7 @@ class MainBody extends Component {
                   selectedTableIndex={this.state.selectedTableIndex}
                 />
               </div>
-              <div className="col-md-5 action-panel">
+              <div className="col-md-5 small-padding action-panel">
                 <ActionPanel
                   urlPasted={this.state.urlPasted}
                   usecaseSelected={this.state.usecaseSelected}
