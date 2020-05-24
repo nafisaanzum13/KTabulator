@@ -3,21 +3,34 @@ import React, { Component } from "react";
 class TaskMenu extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-    }
+    this.state = {};
   }
 
   render() {
     return (
       <div>
-        <p>Choose one of the following tasks to get started:</p>
-        <button onClick={(e) => this.props.handleSelectTask(e,"startSubject")}>Create Table from Subject</button>
-        <br />
-        <br />
-        <button onClick={(e) => this.props.handleSelectTask(e,"exploreTable")}>Explore Table on URL</button>
-        <br />
-        <br />
-        <button onClick={(e) => this.props.handleSelectTask(e,"startTable")}>Start from Pasted Table</button>
+        <ul class="list-group list-group-flush">
+          <hr className="m-0"></hr>
+          <li
+            className="list-group-item"
+            onClick={(e) => this.props.handleSelectTask(e, "startSubject")}
+          >
+            Create Table from Subject
+          </li>
+          <li
+            className="list-group-item"
+            onClick={(e) => this.props.handleSelectTask(e, "exploreTable")}
+          >
+            Explore Table on URL
+          </li>
+          <li
+            className="list-group-item"
+            onClick={(e) => this.props.handleSelectTask(e, "startTable")}
+          >
+            Start from Pasted Table
+          </li>
+          <hr className="m-0"></hr>
+        </ul>
       </div>
     );
   }

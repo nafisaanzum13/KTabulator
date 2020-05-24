@@ -1,9 +1,11 @@
 .top-content {
   height: 55vh;
+  margin-left: 15px;
 }
 
 .top-content-large {
-  height: 86vh;
+  height: 90vh;
+  margin-left: 15px;
 }
 
 .bottom-content {
@@ -61,6 +63,7 @@
 .action-panel {
   height: inherit;
   overflow: auto;
+  border-left: 1px solid lightgrey;
 }
 
 /* This class deteremineds the width of selection column */

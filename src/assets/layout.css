@@ -23,9 +23,21 @@
   color: #ff715b;
 }
 
+.logo-left-color {
+  color: #1ea896;
+}
+
+.xsmall {
+  font-size: 60%;
+}
+
+.logo-right-color {
+  color: #ff715b;
+}
+
 .font-body {
   /* font-family: Ruda, sans-serif; */
-  font-family: "Palatino", "Times New Roman", Times, serif;
+  font-family: "Georgia", "Times New Roman", Times, serif;
 }
 
 .header-body {
@@ -38,8 +50,11 @@
 
 .mainbody {
   height: 92vh;
-  padding: 1em;
   /* margin-top: 7vh; */
+}
+
+.small-padding {
+  padding: 0.5em;
 }
 
 a.logo span {
