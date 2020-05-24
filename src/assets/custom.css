@@ -1,71 +1,3 @@
-.top-content {
-  height: 55vh;
-  margin-left: 15px;
-}
-
-.top-content-large {
-  height: 90vh;
-  margin-left: 15px;
-}
-
-.bottom-content {
-  height: 35vh;
-  width: 100%;
-  border: 0px;
-}
-
-.bottom-content-hidden {
-  height: 0vh;
-}
-
-.page-panel {
-  margin-left: -1em;
-  margin-right: -1em;
-}
-
-.iframe-cls {
-  height: 100%;
-  width: 100%;
-  border: 0px;
-  overflow: hidden;
-  padding-left: 3em;
-  padding-right: 3em;
-}
-
-.wiki-page {
-  height: 35vh;
-  width: 100%;
-  border: 0px;
-}
-
-.wiki-page-hidden {
-  height: 0vh;
-  visibility: hidden;
-}
-
-.toggle-button {
-  background-color: #ff715b;
-  color: white;
-  position: fixed;
-  right: 1em;
-  border: 0px;
-}
-
-.toggle-button:hover {
-  background-color: #1ea896;
-}
-
-.table-panel {
-  height: inherit;
-  overflow: auto;
-}
-
-.action-panel {
-  height: inherit;
-  overflow: auto;
-  border-left: 1px solid lightgrey;
-}
-
 /* This class deteremineds the width of selection column */
 .super-header-div {
   width: 20vw;
@@ -111,4 +43,12 @@
 
 .color-wrangler {
   color: #ff715b;
+}
+
+.list-css {
+  cursor: pointer;
+}
+
+.list-css li:hover {
+  background-color: #fbb0a4;
 }
