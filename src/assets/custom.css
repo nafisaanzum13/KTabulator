@@ -52,3 +52,21 @@
 .list-css li:hover {
   background-color: #fbb0a4;
 }
+
+.table-col {
+  word-wrap: break-word;
+  max-width: 15em;
+  padding: 0.3rem !important;
+}
+
+.table {
+  width: max-content !important;
+  table-layout: fixed;
+  display: block;
+}
+
+.table-head {
+  position: sticky;
+  top: 0;
+  background-color: #a6d8d0;
+}

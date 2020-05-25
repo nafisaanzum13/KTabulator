@@ -27,7 +27,7 @@ class TablePanel extends Component {
       if (colIndex === this.props.keyColIndex) {
         let multiAllowed = colIndex === 0 ? true : false;
         tempHeader = (
-          <th>
+          <th className="table-col table table-sm table-bordered">
             <div
               onClick={(e) => this.props.getKeyOptions(e, colIndex)}
               className="super-header-div"
@@ -52,7 +52,7 @@ class TablePanel extends Component {
       // This part deals with the non-key column headers
       else {
         tempHeader = (
-          <th>
+          <th className="">
             <div
               onClick={(e) => this.props.getOtherOptions(e, colIndex)}
               className="super-header-div"
@@ -99,7 +99,7 @@ class TablePanel extends Component {
           cellColor = { backgroundColor: "White" };
         }
         tempRow.push(
-          <td>
+          <td className="table-col">
             <ContextMenuTrigger id={tempID}>
               <input
                 className="twenty-vw"
@@ -132,23 +132,33 @@ class TablePanel extends Component {
     // This part creates the table header row
     let tempRow = [];
     for (let j = 0; j < colNum; ++j) {
-      let tempHeader = <th>{this.props.tableDataExplore[0][j].data}</th>;
+      let tempHeader = (
+        <th className="table-head table-col">
+          {this.props.tableDataExplore[0][j].data}
+        </th>
+      );
       tempRow.push(tempHeader);
     }
-    table.push(<tr>{tempRow}</tr>);
+    let tableHeaderRow = <tr>{tempRow}</tr>;
+    table.push(<thead>{tableHeaderRow}</thead>);
 
     // i corresponds to the row number, j corresponds to the column number
-
+    let tableRows = [];
     for (let i = 1; i < rowNum; i++) {
       let tempRow = [];
       //Inner loop to create each cell of the row
       for (let j = 0; j < colNum; j++) {
         // Create the each cell
-        tempRow.push(<td>{this.props.tableDataExplore[i][j].data}</td>);
+        tempRow.push(
+          <td className="table-col">
+            {this.props.tableDataExplore[i][j].data}
+          </td>
+        );
       }
       //Create the parent and add the children
-      table.push(<tr>{tempRow}</tr>);
+      tableRows.push(<tr>{tempRow}</tr>);
     }
+    table.push(<tbody>{tableRows}</tbody>);
     return table;
   }
 
@@ -185,7 +195,7 @@ class TablePanel extends Component {
       tableEle = (
         // class table-fixed helps with sticky column headers
         <div>
-          <table border="1" className="table-fixed">
+          <table class border="1" className="table-fixed">
             {this.createSuperTable()}
           </table>
           {menuArray}
@@ -212,13 +222,11 @@ class TablePanel extends Component {
         // console.log(this.props.tableDataExplore);
         // Instead of logging tableDataExplore in the console, we want to use it to render a table
         tableEle = (
-          <div className="row">
-            <div className="col-md-12">
-              {/* <div>Origin URL of table: {originURL}</div> */}
-              <table border="1">
-                <tbody>{this.createSelectedTableView()}</tbody>
-              </table>
-            </div>
+          <div className="">
+            {/* <div>Origin URL of table: {originURL}</div> */}
+            <table className="table table-stripped table-hover">
+              {this.createSelectedTableView()}
+            </table>
           </div>
         );
       }
