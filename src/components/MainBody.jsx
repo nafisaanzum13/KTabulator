@@ -667,6 +667,10 @@ class MainBody extends Component {
         tempObj["neighbourIndex"] = neighbourIndex;
         tempObj["type"] = type;
         tempObj["numCols"] = remainNeighbourCount;
+        // Note that if we populateSameNeighbour in different columns, we may also need this range attribute
+        if (range !== undefined) {
+          tempObj["range"] = range;
+        }
       } 
       // If we are not populating a column with duplicate names, but it has a range, we ask user if they want to populate
       // other columns from the same range
@@ -751,6 +755,7 @@ class MainBody extends Component {
     // console.log(tableData);
     // console.log("Options map is: ");
     // console.log(optionsMap);
+    // console.log(values);
 
     // Now we need to write the body for this function
 
@@ -879,7 +884,7 @@ class MainBody extends Component {
   // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
   // Note: currently it only populates "later" neighbour with same name.
 
-  sameNeighbourDiffCol(e,colIndex,neighbour,neighbourIndex,type,numCols) {
+  sameNeighbourDiffCol(e,colIndex,neighbour,neighbourIndex,type,numCols,range) {
 
     // The following is testing for 2D Promise arrays. Turns out it works!
     // let promiseArrayOne = this.getOtherColPromise(neighbour,type);
@@ -888,6 +893,9 @@ class MainBody extends Component {
     // allPromiseReady(twoD).then((values) => {
     //   console.log(values);
     // })
+
+    // console.log(neighbourIndex);
+    // console.log(range);
 
     let promiseArray = this.getOtherColPromise(neighbour,type);
     allPromiseReady(promiseArray).then((values) => {
@@ -900,8 +908,46 @@ class MainBody extends Component {
                                         this.state.tableHeader,
                                         this.state.tableData,
                                         this.state.optionsMap);
+      // Let's also create the object we need for populateSameRange
+      // Note: the following code is identical to what we have in populateOtherColumn
+      let tempObj = {};
+      let siblingNeighbour = [];
+      // console.log("Range is "+range);
+      // console.log(this.state.keyColNeighbours);
+      for (let i=0;i<this.state.keyColNeighbours.length;++i) {
+        if (this.state.keyColNeighbours[i].range === range && this.state.keyColNeighbours[i].value !== neighbour) {
+          siblingNeighbour.push(this.state.keyColNeighbours[i].value);
+        }
+      }
+      // If we have found columns from the same range (other than the current neighbour), 
+      // we give user the option to populate other columns from the same range.
+      if (siblingNeighbour.length > 0) {
+        // First, we want to keep track of the number of occurences for each sibling attribute
+        let siblingUnique = [...new Set(siblingNeighbour)];
+        let siblingCount = [];
+        for (let i=0;i<siblingUnique.length;++i) {
+          // console.log(siblingNeighbour);
+          siblingCount.push({"name":siblingUnique[i],"count":siblingNeighbour.filter(x => x === siblingUnique[i]).length})
+        }
+        // console.log(siblingCount);
+        // Let's do some string processing to improve UI clarity
+        let rangeLiteral = "";
+        if (range.includes("http://dbpedia.org/ontology/")) {
+          rangeLiteral = range.slice(28);
+        } 
+        else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
+          rangeLiteral = range.slice(33);
+        } 
+        else {
+          rangeLiteral = range;
+        }
+        tempObj["task"] = "populateSameRange";
+        tempObj["colIndex"] = colIndex+numCols;  // Small change here: we need to adjust the position of the column index
+        tempObj["range"] = rangeLiteral;
+        tempObj["siblingNeighbour"] = siblingCount;
+      }
       this.setState({
-        curActionInfo:null,
+        curActionInfo:tempObj,
         tableData:newState.tableData,
         tableHeader:newState.tableHeader,
         optionsMap:newState.optionsMap,
@@ -947,15 +993,59 @@ class MainBody extends Component {
   // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
   // This function should use addAllNeighbour as a helper function
   populateSameRange(e, colIndex, range, siblingNeighbour) {
-    console.log("Column index is "+colIndex);
-    console.log("Range is "+range);
+    // console.log("Column index is "+colIndex);
+    // console.log("Range is "+range);
     // console.log("Sibling neighbours are: ");
     // console.log(siblingNeighbour);
+    // for (let i=0;i<siblingNeighbour.length;++i) {
+    //   console.log("Neighbour name is: "+siblingNeighbour[i].name);
+    //   console.log("Count is: "+siblingNeighbour[i].count);
+    // }
+    let promiseArrayTwoD = [];
     for (let i=0;i<siblingNeighbour.length;++i) {
-      console.log("Neighbour name is: "+siblingNeighbour[i].name);
-      console.log("Count is: "+siblingNeighbour[i].count);
-    }
-    // Start working from this function
+      let curPromiseArray = this.getOtherColPromise(siblingNeighbour[i].name,"subject");
+      for (let j=0;j<curPromiseArray.length;++j) {
+        promiseArrayTwoD.push(curPromiseArray[j]);
+      }
+      // promiseArrayTwoD.push(this.getOtherColPromise(siblingNeighbour[i].name,"subject"));
+    } 
+    allPromiseReady(promiseArrayTwoD).then((values) => {
+
+      // for (let i=0;i<values.length;++i) {
+      //   console.log(values[i]);
+      // }
+
+      // first we fetch the initial state of tableHeader, tableData, and optionsMap
+      let tempHeader = this.state.tableHeader;
+      let tempData = this.state.tableData;
+      let tempOptions = this.state.optionsMap;
+      let curColIndex = colIndex;
+      for (let i=0;i<siblingNeighbour.length;++i) {
+        let curValueArray = [];
+        for (let j=0;j<initialRowNum;++j) {
+          curValueArray.push(values[initialRowNum*i+j]) // since working with 2D promise array is not figured out yet, we need to manipulate index
+        }
+        let newState = this.addAllNeighbour(curColIndex,
+                                            siblingNeighbour[i].name,    // this is name of the neighbour
+                                            -1,                          // this is neighbour index. -1 indicates that we have not populated any neighbour of this name
+                                            "subject",                   // for now, type can only be subject
+                                            siblingNeighbour[i].count,   // we need to populate this number of columns for this neighbour
+                                            curValueArray,               // This is the fetched data
+                                            tempHeader,
+                                            tempData,
+                                            tempOptions);
+        curColIndex+=siblingNeighbour[i].count;
+        tempHeader = newState.tableHeader;
+        tempData = newState.tableData;
+        tempOptions = newState.optionsMap;
+      }
+      this.setState({
+        curActionInfo:null,
+        tableData:tempData,
+        tableHeader:tempHeader,
+        optionsMap:tempOptions,
+      })
+    })
   }
 
   // The follwing function adds a new column to the table, to the right of the context-menu clicked column.

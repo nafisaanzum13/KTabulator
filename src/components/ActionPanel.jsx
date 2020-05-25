@@ -212,7 +212,8 @@ class ActionPanel extends Component {
                 className="offset-md-1 col-md-4"
                 onClick={(e) => 
                           this.props.sameNeighbourDiffCol(e,actionInfo.colIndex,actionInfo.neighbour,
-                                                        actionInfo.neighbourIndex,actionInfo.type,actionInfo.numCols)}>
+                                                        actionInfo.neighbourIndex,actionInfo.type,actionInfo.numCols,
+                                                        actionInfo.range)}>
                 In Separate Columns
               </button>
             </div>
