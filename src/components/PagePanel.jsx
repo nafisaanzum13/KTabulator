@@ -8,7 +8,7 @@ class PagePanel extends Component {
 
   render() {
     let pageEle = null;
-    let wikiPageClass = "wiki-page-hidden";
+    let wikiPageClass = "small-padding wiki-page-hidden";
     let buttonClass = "btn btn-sm btn-info toggle-button";
     if (this.props.iframeURL !== "") {
       let buttonhideShow = (
@@ -21,7 +21,7 @@ class PagePanel extends Component {
         </button>
       );
       if (!this.props.pageHidden) {
-        wikiPageClass = "wiki-page";
+        wikiPageClass = "small-padding wiki-page";
         buttonhideShow = (
           <div>
             <hr className="m-1"></hr>
