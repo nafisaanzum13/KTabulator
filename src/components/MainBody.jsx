@@ -38,6 +38,7 @@ class MainBody extends Component {
       usecaseSelected: "",
       pageHidden: false,
       iframeURL: "",
+      curActionInfo: null, // object storing the current action that should be displayed in ActionPanel. Initially null.
 
       // states below are useful for startSubject
       keyColIndex: 0, // initially the key column is the first column
@@ -50,14 +51,15 @@ class MainBody extends Component {
       tableData: tableData, // 2D array of objects storing the table data (not including the table headers).
       optionsMap: optionsMap, // 2D array storing the options map
       keyColNeighbours: [], // 1D array storing the neighbours of the key column
-      curActionInfo: null, // object storing the current action that should be displayed in ActionPanel. Initially null.
 
       // startes below are useful for exploreTable
       originTableArray: [], // 1D array storing all tables found on pasted URL
       tableOpenList: [], // 1D array storing whether each table in originTableArray has been toggled open or not
       selectedTableIndex: -1, // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
       selectedClassAnnotation: [], // semantic class annotation for each column of selected table
-      tableDataExplore: [], // 2D arary of objects storing the table data from explore table task. Similar to tableData above. Three properties: data, origin, rowSpan.
+      // 2D arary of objects with three properties, which store the table data from explore table task. Similar to tableData above. 
+      // Three properties: data, origin, rowSpan, colSpan.
+      tableDataExplore: [], 
       // array of objects with four properties storing the status/content for each property neighbour
       // 1) predicate: string storing the predicate (ex. dbp:league)
       // 2) object: string storing the object (ex. dbo:NBA)
@@ -107,6 +109,7 @@ class MainBody extends Component {
     this.unionProperty = this.unionProperty.bind(this);
     this.toggleSemantic = this.toggleSemantic.bind(this);
     this.unionCutOffChange = this.unionCutOffChange.bind(this);
+    this.goTableCreation = this.goTableCreation.bind(this);
 
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
@@ -998,13 +1001,20 @@ class MainBody extends Component {
       // console.log("Range is "+range);
       // console.log(this.state.keyColNeighbours);
       for (let i=0;i<this.state.keyColNeighbours.length;++i) {
-        if (this.state.keyColNeighbours[i].range === range && this.state.keyColNeighbours[i].value !== neighbour) {
+        if (range !== undefined
+            &&this.state.keyColNeighbours[i].range === range 
+            && this.state.keyColNeighbours[i].value !== neighbour) {
           siblingNeighbour.push(this.state.keyColNeighbours[i].value);
         }
       }
       // If we have found columns from the same range (other than the current neighbour), 
       // we give user the option to populate other columns from the same range.
       if (siblingNeighbour.length > 0) {
+        // This needs some additional checking to prevent bugs
+        // console.log("We may have a bug here");
+        // console.log("Range is: "+range);
+        // console.log("SiblingNeighbour is "+siblingNeighbour);
+        // console.log("Is undefined equal to undefined? "+(undefined === undefined));
         // First, we want to keep track of the number of occurences for each sibling attribute
         let siblingUnique = [...new Set(siblingNeighbour)];
         let siblingCount = [];
@@ -1728,6 +1738,36 @@ class MainBody extends Component {
     });
   }
 
+  // This function handles the transition from the table union scenario to the table creation scenario
+   
+  goTableCreation() {
+    // We need to take care of keyColIndex, tableHeader, tableData, optionsMap, and keyColNeighbours
+    // This function should share some similarity between contextSetKey
+
+    console.log(this.state.tableDataExplore);
+
+    // this.state.tableDataExplore contains all the information we need to set the five states listed above
+    // We just need to make use of the "data" and "origin" attributes. rowSpan and colSpan makes no impact here.
+    // Also, since we are not modifying tableDataExplore, we do not need to make a copy of it.
+
+    // First, let's deal with keyColIndex. 
+    // We will use the first column such that it's class annotation is not [] or ["Number"]
+    // If no such column exists, we default it to the first column
+
+    let keyColIndex = -1;
+    for (let i=0;i<this.state.selectedClassAnnotation.length;++i) {
+      if (this.state.selectedClassAnnotation[i].length > 0 
+          && !(this.state.selectedClassAnnotation[i].length === 1 && this.state.selectedClassAnnotation[i][0] === "Number")) {
+        keyColIndex = i;
+        break;
+      }
+    }
+    if (keyColIndex === -1) {
+      keyColIndex = 0;
+    }
+    console.log("Key Column Index is: "+keyColIndex);
+  }
+
   render() {
     let bodyEle;
     let bottomContentClass = " bottom-content";
@@ -1795,6 +1835,7 @@ class MainBody extends Component {
                   toggleSemantic={this.toggleSemantic}
                   unionCutOff={this.state.unionCutOff}
                   unionCutOffChange={this.unionCutOffChange}
+                  goTableCreation={this.goTableCreation}
                   // Following states are passed for general purposes
                   copyTable={this.copyTable}
                 />

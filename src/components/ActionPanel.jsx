@@ -139,6 +139,7 @@ class ActionPanel extends Component {
       const object = propertyNeighbours[i].object;
       let propertyText = predicate + ": " + object + " ";
       let tooltipText = "Show other pages with " + predicate + ": " + object;
+      // console.log("nothing is being rendered?");
       propertyElement.push(
         <div>
           <Button
@@ -195,10 +196,16 @@ class ActionPanel extends Component {
             </span>
           </h4>
           <button
-            className="col-md-3 offset-md-4"
+            className="col-md-4"
             onClick={() => this.props.copyTable()}
           >
             Copy Table
+          </button>
+          <button
+            className="col-md-4"
+            onClick={() => this.props.goTableCreation()}
+          >
+            Go to Table Creation
           </button>
         </div>
       );
