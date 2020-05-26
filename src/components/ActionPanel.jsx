@@ -140,14 +140,13 @@ class ActionPanel extends Component {
       let propertyText = predicate + ": " + object + " ";
       let tooltipText = "Show other pages with " + predicate + ": " + object;
       propertyElement.push(
-        <div>
-          <Button
-            title={tooltipText}
-            onClick={(e) => this.props.togglePropertyNeighbours(e, i)}
-          >
-            {propertyText}
-            <FaList />
-          </Button>
+        <li
+          class="list-group-item"
+          title={tooltipText}
+          onClick={(e) => this.props.togglePropertyNeighbours(e, i)}
+        >
+          {propertyText}
+          <FaList />
           <Collapse isOpen={this.props.propertyNeighbours[i].isOpen}>
             <Card>
               <CardBody>
@@ -158,10 +157,14 @@ class ActionPanel extends Component {
               </CardBody>
             </Card>
           </Collapse>
-        </div>
+        </li>
       );
     }
-    return propertyElement;
+    return (
+      <ul className="list-group list-css list-group-flush">
+        {propertyElement}
+      </ul>
+    );
   }
 
   render() {
@@ -194,12 +197,14 @@ class ActionPanel extends Component {
               Select your next action
             </span>
           </h4>
-          <button
-            className="col-md-3 offset-md-4"
-            onClick={() => this.props.copyTable()}
-          >
-            Copy Table
-          </button>
+          <ul className="list-group list-css">
+            <li
+              className="col-md-4 list-group-item list-button"
+              onClick={() => this.props.copyTable()}
+            >
+              Copy Table in CSV format
+            </li>
+          </ul>
         </div>
       );
     }
@@ -342,13 +347,14 @@ class ActionPanel extends Component {
       } else if (actionInfo.task === "selectTableIndex") {
         actionEle = (
           <div>
-            <p>Select table {actionInfo.tableIndex}?</p>
+            {/* <p></p> */}
             <button
+              className="btn btn-default btn-info"
               onClick={(e) =>
                 this.props.onSelectTable(e, actionInfo.tableIndex)
               }
             >
-              OK
+              <span>Select table #{actionInfo.tableIndex}?</span>
             </button>
           </div>
         );
@@ -361,10 +367,11 @@ class ActionPanel extends Component {
                 <Tab>Change Setting</Tab>
               </TabList>
               <TabPanel>
-                <p>
+                <small>
                   Explore relations below to look for other pages with similar
                   tables:
-                </p>
+                </small>{" "}
+                <br></br>
                 {this.createPropertyArray()}
               </TabPanel>
               <TabPanel>

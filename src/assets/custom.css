@@ -70,3 +70,17 @@
   top: 0;
   background-color: #a6d8d0;
 }
+
+.list-button {
+  border: 1px solid #1ea896 !important;
+  border-radius: 0.3rem !important;
+  padding: 0.3rem;
+  margin-top: 0.3rem;
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+
+/* .list-group-item {
+  border-top: 1px solid #1ea896 !important
+  ;
+} */
