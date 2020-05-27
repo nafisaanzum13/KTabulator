@@ -80,7 +80,13 @@
   text-align: center;
 }
 
-/* .list-group-item {
-  border-top: 1px solid #1ea896 !important
-  ;
-} */
+.list-button-backgound-pink {
+  margin-top: 0rem;
+}
+
+.list-with-background {
+  background-color: #a6d8d0;
+}
+.list-with-background:hover {
+  background-color: #a6d8d0 !important;
+}

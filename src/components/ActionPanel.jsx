@@ -88,6 +88,10 @@ class ActionPanel extends Component {
       let tooltipText =
         "Examine tables on page " + siblingArray[secondIndex].name;
       let divider = null;
+      let listClassSib = "list-group-item";
+      if (siblingArray[secondIndex].isOpen) {
+        listClassSib = "list-group-item list-with-background";
+      }
       if (
         zeroDividerSet === false &&
         siblingArray[secondIndex].tableArray.length === 0
@@ -96,38 +100,44 @@ class ActionPanel extends Component {
         divider = (
           <div>
             <hr />
-            <p>Below are sibling pages on which no similar tables are found:</p>
+            <small>
+              Below are sibling pages on which no similar tables are found:
+            </small>
+            <br />
           </div>
         );
       }
       siblingElement.push(
-        <div>
-          {divider}
-          <Button
-            title={tooltipText}
-            onClick={(e) =>
-              this.props.toggleSibling(e, firstIndex, secondIndex)
-            }
-          >
-            {siblingArray[secondIndex].name}
-            <FaList />
-          </Button>
+        <li
+          className={listClassSib}
+          title={tooltipText}
+          onClick={(e) => this.props.toggleSibling(e, firstIndex, secondIndex)}
+        >
+          {divider} {}
+          {siblingArray[secondIndex].name}
+          <FaList />
           <Collapse isOpen={siblingArray[secondIndex].isOpen}>
-            <Card>
-              <CardBody>
-                <button
+            <div>
+              <ul className="list-group list-css">
+                <li
+                  className="col-md-4 list-group-item list-button"
                   onClick={(e) => this.props.unionPage(firstIndex, secondIndex)}
                 >
                   Union all tables from page
-                </button>
-                {this.createTableArray(firstIndex, secondIndex)}
-              </CardBody>
-            </Card>
+                </li>
+              </ul>
+              {this.createTableArray(firstIndex, secondIndex)}
+            </div>
           </Collapse>
-        </div>
+        </li>
       );
     }
-    return siblingElement;
+    return (
+      <ul className="list-group list-css list-group-flush">
+        {" "}
+        {siblingElement}{" "}
+      </ul>
+    );
   }
 
   createPropertyArray() {
@@ -139,23 +149,31 @@ class ActionPanel extends Component {
       const object = propertyNeighbours[i].object;
       let propertyText = predicate + ": " + object + " ";
       let tooltipText = "Show other pages with " + predicate + ": " + object;
+      let listClass = "list-group-item";
+      if (this.props.propertyNeighbours[i].isOpen) {
+        listClass = "list-group-item list-with-background";
+      }
       propertyElement.push(
         <li
-          class="list-group-item"
+          class={listClass}
           title={tooltipText}
           onClick={(e) => this.props.togglePropertyNeighbours(e, i)}
         >
           {propertyText}
           <FaList />
           <Collapse isOpen={this.props.propertyNeighbours[i].isOpen}>
-            <Card>
-              <CardBody>
-                <button onClick={(e) => this.props.unionProperty(i)}>
+            <div>
+              <hr />
+              <ul className="list-group list-css">
+                <li
+                  className="col-md-6 list-group-item list-button list-button-backgound-pink"
+                  onClick={(e) => this.props.unionProperty(i)}
+                >
                   Union tables from all pages
-                </button>
-                {this.createSiblingArray(i)}
-              </CardBody>
-            </Card>
+                </li>
+              </ul>
+              {this.createSiblingArray(i)}
+            </div>
           </Collapse>
         </li>
       );
@@ -363,8 +381,8 @@ class ActionPanel extends Component {
           <div>
             <Tabs>
               <TabList>
-                <Tab>View Results</Tab>
-                <Tab>Change Setting</Tab>
+                <Tab>Results</Tab>
+                <Tab>Setting</Tab>
               </TabList>
               <TabPanel>
                 <small>
