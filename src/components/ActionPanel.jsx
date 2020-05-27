@@ -118,12 +118,15 @@ class ActionPanel extends Component {
 
       siblingElement.push(
         <li className={listClassSib} title={tooltipText}>
-          {siblingArray[secondIndex].name + " "}
-          <FaList
+          <span
             onClick={(e) =>
               this.props.toggleSibling(e, firstIndex, secondIndex)
             }
-          />
+          >
+            {siblingArray[secondIndex].name + " "}
+            <FaList />
+          </span>
+
           <Collapse isOpen={siblingArray[secondIndex].isOpen}>
             <div>
               <ul className="list-group list-css">
@@ -165,8 +168,11 @@ class ActionPanel extends Component {
       }
       propertyElement.push(
         <li class={listClass} title={tooltipText}>
-          {propertyText}
-          <FaList onClick={(e) => this.props.togglePropertyNeighbours(e, i)} />
+          <span onClick={(e) => this.props.togglePropertyNeighbours(e, i)}>
+            {propertyText}
+            <FaList />
+          </span>
+
           <Collapse isOpen={this.props.propertyNeighbours[i].isOpen}>
             <div>
               <hr />
