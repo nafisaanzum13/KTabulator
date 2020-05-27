@@ -1037,14 +1037,13 @@ class MainBody extends Component {
   // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
   // This function should use addAllNeighbour as a helper function
   populateSameRange(e, colIndex, range, siblingNeighbour) {
-
-    console.log("Column index is "+colIndex);
-    console.log("Range is "+range);
+    console.log("Column index is " + colIndex);
+    console.log("Range is " + range);
     // console.log("Sibling neighbours are: ");
     // console.log(siblingNeighbour);
-    for (let i=0;i<siblingNeighbour.length;++i) {
-      console.log("Neighbour name is: "+siblingNeighbour[i].name);
-      console.log("Count is: "+siblingNeighbour[i].count);
+    for (let i = 0; i < siblingNeighbour.length; ++i) {
+      console.log("Neighbour name is: " + siblingNeighbour[i].name);
+      console.log("Count is: " + siblingNeighbour[i].count);
     }
     // Start working from this function
   }
@@ -1447,6 +1446,10 @@ class MainBody extends Component {
     // Handle the toggling task
     console.log("Here we start the sibling toggle");
     console.log("The current property neighbour is ");
+    console.log(
+      "The current property neighbour is ",
+      this.state.propertyNeighbours.slice()
+    );
     let propertyNeighbours = this.state.propertyNeighbours.slice();
     console.log(propertyNeighbours);
     let selectedSibling =
@@ -1454,7 +1457,7 @@ class MainBody extends Component {
 
     // Note that if this sibling's tableArray is empty, we probably do not want to toggle it.
     if (selectedSibling.tableArray.length === 0) {
-      // console.log("Selected sibling has no tables: "+selectedSibling.name);
+      console.log("Selected sibling has no tables: " + selectedSibling.name);
 
       // If the bottom page is shown, we want to change its URL
       // else we want to show the bottom page, and change its URL
@@ -1480,17 +1483,19 @@ class MainBody extends Component {
       console.log("Let's take a look at the current property neighbour");
       console.log(propertyNeighbours[firstIndex]);
       // if (propertyNeighbours[firstIndex].isOpen === false) {
-        // propertyNeighbours[firstIndex].isOpen = true;
-        // console.log("In here we should have fixed the problem.");
-        // console.log(propertyNeighbours);
+      // propertyNeighbours[firstIndex].isOpen = true;
+      // console.log("In here we should have fixed the problem.");
+      // console.log(propertyNeighbours);
       // }
       // We also want to change the iframe displayed at the bottom if we are toggling a sibling open
       if (selectedSibling.isOpen === true) {
         console.log("If we get here, then sibling page should be opened");
         let iframeURL = "https://en.wikipedia.org/wiki/" + selectedSibling.name;
+        console.log(propertyNeighbours[firstIndex].isOpen);
         propertyNeighbours[firstIndex].isOpen = true;
         console.log(propertyNeighbours[firstIndex]);
-        console.log("First index is: "+firstIndex);
+        console.log(propertyNeighbours[firstIndex].isOpen);
+        console.log("First index is: " + firstIndex);
         console.log("In here we should have fixed the problem.");
         console.log("This is the property neighbour we will pass in");
         console.log(propertyNeighbours);
