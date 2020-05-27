@@ -149,7 +149,9 @@ class ActionPanel extends Component {
   }
 
   createPropertyArray() {
+    console.log("Getting here meaning we are recreating the property array");
     const propertyNeighbours = this.props.propertyNeighbours;
+    console.log(propertyNeighbours);
     let propertyElement = [];
     for (let i = 0; i < propertyNeighbours.length; ++i) {
       // We create the text for property buttons: table index plus column names

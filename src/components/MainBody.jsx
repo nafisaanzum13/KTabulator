@@ -1445,7 +1445,10 @@ class MainBody extends Component {
 
   toggleSibling(e, firstIndex, secondIndex) {
     // Handle the toggling task
+    console.log("Here we start the sibling toggle");
+    console.log("The current property neighbour is ");
     let propertyNeighbours = this.state.propertyNeighbours.slice();
+    console.log(propertyNeighbours);
     let selectedSibling =
       propertyNeighbours[firstIndex].siblingArray[secondIndex];
 
@@ -1474,9 +1477,23 @@ class MainBody extends Component {
     } else {
       // if the sibling's tableArray is not empty, we want to toggle it
       selectedSibling.isOpen = !selectedSibling.isOpen;
+      console.log("Let's take a look at the current property neighbour");
+      console.log(propertyNeighbours[firstIndex]);
+      // if (propertyNeighbours[firstIndex].isOpen === false) {
+        // propertyNeighbours[firstIndex].isOpen = true;
+        // console.log("In here we should have fixed the problem.");
+        // console.log(propertyNeighbours);
+      // }
       // We also want to change the iframe displayed at the bottom if we are toggling a sibling open
       if (selectedSibling.isOpen === true) {
+        console.log("If we get here, then sibling page should be opened");
         let iframeURL = "https://en.wikipedia.org/wiki/" + selectedSibling.name;
+        propertyNeighbours[firstIndex].isOpen = true;
+        console.log(propertyNeighbours[firstIndex]);
+        console.log("First index is: "+firstIndex);
+        console.log("In here we should have fixed the problem.");
+        console.log("This is the property neighbour we will pass in");
+        console.log(propertyNeighbours);
         this.setState({
           propertyNeighbours: propertyNeighbours,
           iframeURL: iframeURL,
