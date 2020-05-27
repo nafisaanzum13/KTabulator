@@ -97,24 +97,32 @@ class ActionPanel extends Component {
         siblingArray[secondIndex].tableArray.length === 0
       ) {
         zeroDividerSet = true;
-        divider = (
-          <div>
+        // divider = (
+        //   <li>
+        //     <h5>
+        //       Below are sibling pages on which no similar tables are found:
+        //     </h5>
+        //     <hr />
+        //   </li>
+        // );
+        siblingElement.push(
+          <li className="list-group-item">
             <hr />
-            <small>
+            <h5>
               Below are sibling pages on which no similar tables are found:
-            </small>
-            <br />
-          </div>
+            </h5>
+            <hr />
+          </li>
         );
       }
+
       siblingElement.push(
         <li
           className={listClassSib}
           title={tooltipText}
           onClick={(e) => this.props.toggleSibling(e, firstIndex, secondIndex)}
         >
-          {divider} {}
-          {siblingArray[secondIndex].name}
+          {siblingArray[secondIndex].name + " "}
           <FaList />
           <Collapse isOpen={siblingArray[secondIndex].isOpen}>
             <div>
