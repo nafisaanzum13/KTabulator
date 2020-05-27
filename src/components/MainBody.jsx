@@ -1739,33 +1739,144 @@ class MainBody extends Component {
   }
 
   // This function handles the transition from the table union scenario to the table creation scenario
+  // Fow now, this function should only work when the usecaseSelected is exploreTable
    
   goTableCreation() {
-    // We need to take care of keyColIndex, tableHeader, tableData, optionsMap, and keyColNeighbours
+    // We need to take care of keyColIndex, tableHeader, tableData, optionsMap, and keyColNeighbours, and usecaseSelected
     // This function should share some similarity between contextSetKey
 
-    console.log(this.state.tableDataExplore);
-
-    // this.state.tableDataExplore contains all the information we need to set the five states listed above
-    // We just need to make use of the "data" and "origin" attributes. rowSpan and colSpan makes no impact here.
-    // Also, since we are not modifying tableDataExplore, we do not need to make a copy of it.
-
-    // First, let's deal with keyColIndex. 
-    // We will use the first column such that it's class annotation is not [] or ["Number"]
-    // If no such column exists, we default it to the first column
-
-    let keyColIndex = -1;
-    for (let i=0;i<this.state.selectedClassAnnotation.length;++i) {
-      if (this.state.selectedClassAnnotation[i].length > 0 
-          && !(this.state.selectedClassAnnotation[i].length === 1 && this.state.selectedClassAnnotation[i][0] === "Number")) {
-        keyColIndex = i;
-        break;
+    if (this.state.usecaseSelected === "exploreTable") {
+      let tableDataExplore = this.state.tableDataExplore;
+      // console.log(tableDataExplore);
+  
+      // this.state.tableDataExplore contains all the information we need to set the five states listed above
+      // We just need to make use of the "data" and "origin" attributes. rowSpan and colSpan makes no impact here.
+      // Also, since we are not modifying tableDataExplore, we do not need to make a copy of it.
+  
+      // First, let's deal with keyColIndex. 
+      // We will use the first column such that it's class annotation is not [] or ["Number"]
+      // If no such column exists, we default it to the first column
+  
+      let keyColIndex = -1;
+      for (let i=0;i<this.state.selectedClassAnnotation.length;++i) {
+        if (this.state.selectedClassAnnotation[i].length > 0 
+            && !(this.state.selectedClassAnnotation[i].length === 1 && this.state.selectedClassAnnotation[i][0] === "Number")) {
+          keyColIndex = i;
+          break;
+        }
       }
+      if (keyColIndex === -1) {
+        keyColIndex = 0;
+      }
+      // console.log("Key Column Index is: ");
+      // console.log(keyColIndex);
+  
+      // Now, let's deal with tableHeader. Note: these tableHeaders only have value and label, no range or type
+      let tableHeader = [];
+      for (let j=1;j<tableDataExplore[0].length;++j) {
+        tableHeader.push(
+          {"value":tableDataExplore[0][j].data
+          ,"label":tableDataExplore[0][j].data}
+        )
+      }
+      // console.log("Table header is: ");
+      // console.log(tableHeader);
+  
+      // Now, let's deal with tableData. Wee need to handle both data and origin.
+      let tableData = [];
+      // This starts the loop for rows
+      for (let i=1;i<tableDataExplore.length;++i) {
+        let tempRow = [];
+        // This starts the loop for columns
+        for (let j=1;j<tableDataExplore[i].length;++j) {
+          // First set the data
+          let data = tableDataExplore[i][j].data;
+          // Then set the origin
+          let origin = [];
+          let originText = tableDataExplore[i][j].origin+": "+tableHeader[j-1].value+": "+tableDataExplore[i][j].data;
+          origin.push(originText);
+          tempRow.push({"data":data,"origin":origin});
+        }
+        tableData.push(tempRow);
+      }
+      // console.log("Table data is: ");
+      // console.log(tableData);
+  
+      // Now, let's deal with keyColNeighbours and optionsMap
+      // Note: the following part is really similar to what we have in contextSetKey
+      let promiseArray = [];
+  
+      // Below is the first query we will make.
+      // This query fetches the neighbours for tableData[0][keyColIndex], so the first cell in column with index keyColIndex
+      // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+  
+      let prefixURLOne =
+        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURLOne =
+        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBodyOne =
+        "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
+        regexReplace(tableData[0][keyColIndex].data) +
+        "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+      let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
+      let otherColPromiseSubject = fetchJSON(queryURLOne);
+      promiseArray.push(otherColPromiseSubject);
+  
+      // Below is the second query we will make.
+      // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
+      let prefixURLTwo =
+        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURLTwo =
+        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBodyTwo =
+        "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
+        regexReplace(tableData[0][keyColIndex].data) +
+        ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+      let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
+      let otherColPromiseObject = fetchJSON(queryURLTwo);
+      promiseArray.push(otherColPromiseObject);
+  
+      allPromiseReady(promiseArray).then((values) => {
+        // Now we finalize the keyColNeighbours
+        let keyColNeighbours = [];
+        keyColNeighbours = updateKeyColNeighbours(
+          keyColNeighbours,
+          values[0].results.bindings,
+          "subject"
+        );
+        keyColNeighbours = updateKeyColNeighbours(
+          keyColNeighbours,
+          values[1].results.bindings,
+          "object"
+        );
+        // console.log("Key Column Neighbours are: ");
+        // console.log(keyColNeighbours);
+  
+        // Now, we handle the optionsMaps
+        // We can just put on empty options.
+        let optionsMap = [];
+        for (let j=0;j<tableHeader.length;++j) {
+          optionsMap.push([]);
+        }
+        // console.log("Options Map are: ");
+        // console.log(optionsMap);
+  
+        // Lastly, let's modify usecaseSelected so that TablePanel can display the correct content
+        let usecaseSelected = "startSubject";
+        // console.log("Use case selected is now: ");
+        // console.log(usecaseSelected);
+        
+        this.setState({
+          keyColIndex: keyColIndex,
+          tableHeader: tableHeader,
+          tableData: tableData,
+          keyColNeighbours: keyColNeighbours,
+          optionsMap: optionsMap,
+          usecaseSelected: usecaseSelected,
+          curActionInfo: null,
+        });
+      })
     }
-    if (keyColIndex === -1) {
-      keyColIndex = 0;
-    }
-    console.log("Key Column Index is: "+keyColIndex);
   }
 
   render() {
