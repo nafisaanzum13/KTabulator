@@ -27,7 +27,7 @@ class TablePanel extends Component {
       if (colIndex === this.props.keyColIndex) {
         let multiAllowed = colIndex === 0 ? true : false;
         tempHeader = (
-          <th className="table-col table table-sm table-bordered">
+          <th className="table-head">
             <div
               onClick={(e) => this.props.getKeyOptions(e, colIndex)}
               className="super-header-div"
@@ -52,7 +52,7 @@ class TablePanel extends Component {
       // This part deals with the non-key column headers
       else {
         tempHeader = (
-          <th className="">
+          <th className="table-head">
             <div
               onClick={(e) => this.props.getOtherOptions(e, colIndex)}
               className="super-header-div"
@@ -77,7 +77,7 @@ class TablePanel extends Component {
       tempRow.push(tempHeader);
     }
     table.push(
-      <thead>
+      <thead className="table-head">
         <tr>{tempRow}</tr>
       </thead>
     );
@@ -85,7 +85,7 @@ class TablePanel extends Component {
     // i corresponds to the row number, j corresponds to the column number
 
     // We are adding an ID for each cell for contextmenu
-
+    let rows = [];
     for (let i = 0; i < rowNum; i++) {
       let tempRow = [];
       //Inner loop to create each cell of the row
@@ -94,17 +94,16 @@ class TablePanel extends Component {
         let tempID = "cellRow" + i + "Col" + j;
         let cellColor;
         if (j === this.props.keyColIndex) {
-          cellColor = { backgroundColor: "LightBlue" };
+          cellColor = { backgroundColor: "#a6d8d0" };
         } else {
           cellColor = { backgroundColor: "White" };
         }
         tempRow.push(
-          <td className="table-col">
+          <td style={cellColor}>
             <ContextMenuTrigger id={tempID}>
               <input
                 className="twenty-vw"
                 type="text"
-                style={cellColor}
                 value={this.props.tableData[i][j].data}
                 // onClick={() => {alert("hmm");}}
                 onChange={(e) => this.props.onCellChange(e, i, j)}
@@ -114,8 +113,9 @@ class TablePanel extends Component {
         );
       }
       //Create the parent and add the children
-      table.push(<tr>{tempRow}</tr>);
+      rows.push(<tr>{tempRow}</tr>);
     }
+    table.push(<tbody>{rows}</tbody>);
     return table;
   }
 
@@ -139,7 +139,7 @@ class TablePanel extends Component {
       );
       tempRow.push(tempHeader);
     }
-    let tableHeaderRow = <tr>{tempRow}</tr>;
+    let tableHeaderRow = <tr className="table-head table-col">{tempRow}</tr>;
     table.push(<thead>{tableHeaderRow}</thead>);
 
     // i corresponds to the row number, j corresponds to the column number
@@ -195,7 +195,7 @@ class TablePanel extends Component {
       tableEle = (
         // class table-fixed helps with sticky column headers
         <div>
-          <table class border="1" className="table-fixed">
+          <table class border="1" className="table table-sm table-bordered">
             {this.createSuperTable()}
           </table>
           {menuArray}
