@@ -207,6 +207,11 @@ class ActionPanel extends Component {
           >
             Go to Table Creation
           </button>
+          <button
+            className="col-md-4"
+          >
+            Undo Last Step
+          </button>
         </div>
       );
     }

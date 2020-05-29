@@ -2274,7 +2274,8 @@ function findTableFromHTML(
         originCols,
         selectedClassAnnotation,
         semanticEnabled,
-        unionCutOff
+        unionCutOff,
+        pageName
       )
     );
   }
@@ -2308,7 +2309,8 @@ function findTableFromTable(
   originCols,
   selectedClassAnnotation,
   semanticEnabled,
-  unionCutOff
+  unionCutOff,
+  pageName
 ) {
   // Define some constants
   const ontologySize = 780;
@@ -2415,7 +2417,7 @@ function findTableFromTable(
         // and remainCols stores the columns from the current table that can still be used for mapping
         // Let's ask a query to find the class annotations for the remainCols
         // if (remainCols.length > 0) {
-        promiseArray.push(findClassAnnotation(tableHTML, remainCols));
+        promiseArray.push(findClassAnnotation(tableHTML, remainCols, pageName));
         // }
       }
 
@@ -2607,8 +2609,8 @@ function findTableFromTable(
 }
 
 // This function takes in the HTML of a table, and returns a Promise that resolves to the class annotation for all the columns of the table
-function findClassAnnotation(tableHTML, remainCols) {
-  // console.log("Page Name is: "+name);
+function findClassAnnotation(tableHTML, remainCols, pageName) {
+  // console.log("Page Name is: "+pageName);
   // console.log("Table HTML is: ");
   // console.log(tableHTML);
   // console.log(remainCols);
@@ -2694,8 +2696,8 @@ function findClassAnnotation(tableHTML, remainCols) {
     }
   }
 
-  // console.log("Table data is: ");
-  // console.log(tempTable);
+  console.log("Table data is: ");
+  console.log(tempTable);
 
   // Now tempTable contains the clean data we can use
   let promiseArray = [];
@@ -2741,7 +2743,7 @@ function findClassAnnotation(tableHTML, remainCols) {
         tempTable[i][curColIndex] === undefined
           ? "NONEXISTING"
           : regexReplace(tempTable[i][curColIndex].data);
-      // console.log(curEntry);
+      console.log(curEntry);
       // console.log(regexReplace(tempTable[i][curColIndex].data));
       // console.log(!isNaN(Number(curEntry)));
       // console.log("Replaced data is "+curEntry);
@@ -2833,6 +2835,9 @@ function findClassAnnotation(tableHTML, remainCols) {
     }
     // return classAnnotation;
     // console.log("Current class annotation is ");
+    // if (classAnnotation.length === 5 && pageName === "2008–09_Premier_League") {
+      // console.log(classAnnotation);
+    // }
     // console.log(classAnnotation);
     return Promise.resolve(classAnnotation);
   });
