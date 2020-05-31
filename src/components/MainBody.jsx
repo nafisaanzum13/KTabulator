@@ -41,7 +41,7 @@ class MainBody extends Component {
       iframeURL: "",
       curActionInfo: null, // object storing the current action that should be displayed in ActionPanel. Initially null.
       lastAction: "",          // string storing the last action that has modified the result table in the table panel
-      prevState: "",           // objects storing the information needed to redo the last step. Information stored depends on lastAction
+      prevState: "",           // objects storing the information needed to undo the last step. Information stored depends on lastAction
 
       // states below are useful for startSubject
       keyColIndex: 0, // initially the key column is the first column
@@ -603,7 +603,7 @@ class MainBody extends Component {
         }
       }
 
-      // Support for Redo: 
+      // Support for undo: 
       // Let's save the previous state in an object
       let lastAction = "populateKeyColumn";
       let prevState = 
@@ -794,7 +794,7 @@ class MainBody extends Component {
       }
       // console.log(tempObj);
 
-      // Support for Redo: 
+      // Support for undo: 
       // Let's save the previous state in an object
       let lastAction = "populateOtherColumn";
       let prevState = 
@@ -1077,8 +1077,16 @@ class MainBody extends Component {
         tempObj["siblingNeighbour"] = siblingCount;
       }
 
-      // Support for Redo: 
+      // Support for undo: 
+      // Let's save the previous state in an object
       let lastAction = "sameNeighbourDiffCol";
+      let prevState = 
+        {
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+          "tableHeader":this.state.tableHeader,
+          "optionsMap":this.state.optionsMap,
+        };
 
       this.setState({
         curActionInfo:tempObj,
@@ -1086,6 +1094,7 @@ class MainBody extends Component {
         tableHeader:newState.tableHeader,
         optionsMap:newState.optionsMap,
         lastAction: lastAction,
+        prevState: prevState,
       })
     })
   }
@@ -1100,7 +1109,7 @@ class MainBody extends Component {
     // console.log(numCols);
 
     // In this option, we just need to change data in column "ColIndex", by putting "numCols" numbers of new values into it
-    let tableData = this.state.tableData.slice();
+    let tableData = _.cloneDeep(this.state.tableData);
     let promiseArray = this.getOtherColPromise(neighbour, type);
     allPromiseReady(promiseArray).then((values) => {
       for (
@@ -1127,13 +1136,19 @@ class MainBody extends Component {
         }
       }
 
-      // Support for Redo: 
+      // Support for undo: 
       let lastAction = "sameNeighbourOneCol";
+      let prevState = 
+        {
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+        };
 
       this.setState({
         curActionInfo: null,
         tableData: tableData,
         lastAction: lastAction,
+        prevState: prevState,
       });
     });
   }
@@ -1188,8 +1203,15 @@ class MainBody extends Component {
         tempOptions = newState.optionsMap;
       }
 
-      // Support for Redo: 
+      // Support for undo: 
       let lastAction = "populateSameRange";
+      let prevState = 
+        {
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+          "tableHeader":this.state.tableHeader,
+          "optionsMap":this.state.optionsMap,
+        };
 
       this.setState({
         curActionInfo:null,
@@ -1197,6 +1219,7 @@ class MainBody extends Component {
         tableHeader:tempHeader,
         optionsMap:tempOptions,
         lastAction:lastAction,
+        prevState:prevState,
       })
     })
   }
@@ -1682,7 +1705,7 @@ class MainBody extends Component {
       tempMapping
     );
 
-    // Support for Redo: 
+    // Support for undo: 
     let lastAction = "unionTable";
 
     this.setState({
@@ -1720,7 +1743,7 @@ class MainBody extends Component {
       );
     }
 
-    // Support for Redo: 
+    // Support for undo: 
     let lastAction = "unionPage";
 
     this.setState({
@@ -1770,7 +1793,7 @@ class MainBody extends Component {
       }
     }
 
-    // Support for Redo: 
+    // Support for undo: 
     let lastAction = "unionProperty";
 
     this.setState({
@@ -1953,13 +1976,14 @@ class MainBody extends Component {
   // This function undos the previous change that user has made to the result table in table panel
 
   undoPreviousStep() {
-    // We first get which action we need to redo
+    // We first get which action we need to undo
     let lastAction = this.state.lastAction;
-    // Note, since we are allowing one step redo only, we set lastAction to "" everytime we run this function
+    // Then we fetch the previous state
+    let prevState = this.state.prevState;
+    // Note, since we are allowing one step undo only, we set lastAction to "" everytime we run this function
 
     if (lastAction === "populateKeyColumn") {
       // In this case we need to restore keyColIndex, keyColNeighbours, curActionInfo, tableData, optionsMap
-      let prevState = this.state.prevState;
       this.setState({
         keyColIndex: prevState.keyColIndex,
         keyColNeighbours: prevState.keyColNeighbours,
@@ -1971,7 +1995,6 @@ class MainBody extends Component {
     }
     else if (lastAction === "populateOtherColumn") {
       // In this case we need to restore curActionInfo, tableData
-      let prevState = this.state.prevState;
       this.setState({
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
@@ -1979,13 +2002,32 @@ class MainBody extends Component {
       })
     }
     else if (lastAction === "sameNeighbourDiffCol") {
-
+      // In this case we need to restore curActionInfo, tableData, tableHeader, optionsMap 
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        optionsMap: prevState.optionsMap,
+        lastAction: "",
+      })
     }
     else if (lastAction === "sameNeighbourOneCol") {
-
+      // In this case we need to restore the curActionInfo, tableData
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        lastAction: "",
+      })
     }
     else if (lastAction === "populateSameRange") {
-
+      // In this case we need to restore curActionInfo, tableData, tableHeader, optionsMap
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        optionsMap: prevState.optionsMap,
+        lastAction: "",
+      })
     }
     else if (lastAction === "unionTable") {
 
