@@ -209,6 +209,7 @@ class ActionPanel extends Component {
           </button>
           <button
             className="col-md-4"
+            onClick={() => this.props.undoPreviousStep()}
           >
             Undo Last Step
           </button>

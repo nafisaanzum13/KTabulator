@@ -5,8 +5,9 @@ import LandingPage from "../components/LandingPage";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
 import PagePanel from "../components/PagePanel";
+import _ from "lodash";
 
-const maxNeighbourCount = 100;
+const maxNeighbourCount = 50;
 const initialColNum = 4;
 const initialRowNum = 30;
 
@@ -33,12 +34,14 @@ class MainBody extends Component {
     }
     this.state = {
       // states below are general states used throughout the app
-      urlPasted: "",
+      urlPasted: "",  
       tablePasted: "",
       usecaseSelected: "",
       pageHidden: false,
       iframeURL: "",
       curActionInfo: null, // object storing the current action that should be displayed in ActionPanel. Initially null.
+      lastAction: "",          // string storing the last action that has modified the result table in the table panel
+      prevState: "",           // objects storing the information needed to redo the last step. Information stored depends on lastAction
 
       // states below are useful for startSubject
       keyColIndex: 0, // initially the key column is the first column
@@ -114,6 +117,7 @@ class MainBody extends Component {
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
     this.toggleWikiPage = this.toggleWikiPage.bind(this);
+    this.undoPreviousStep = this.undoPreviousStep.bind(this);
   }
 
   handleURLPaste(urlPasted) {
@@ -203,6 +207,8 @@ class MainBody extends Component {
       pageHidden: !pageHidden,
     });
   }
+
+  // This function handles the selection of the starting task.
 
   handleSelectTask(e, taskSelected) {
     if (taskSelected === "startSubject") {
@@ -553,7 +559,7 @@ class MainBody extends Component {
       // let's first work with the first promise result: fill in table data with the entities we have fetched
 
       // First part sets the data for each cell
-      let tableData = this.state.tableData.slice();
+      let tableData = _.cloneDeep(this.state.tableData);
       let rowNum = tableData.length;
       for (let i = 0; i < values[0].results.bindings.length; ++i) {
         tableData[i + rowNum - emptyEntryCount][
@@ -596,12 +602,28 @@ class MainBody extends Component {
           optionsMap[i] = keyColNeighbours;
         }
       }
+
+      // Support for Redo: 
+      // Let's save the previous state in an object
+      let lastAction = "populateKeyColumn";
+      let prevState = 
+        {
+          "keyColIndex":this.state.keyColIndex,
+          "keyColNeighbours":this.state.keyColNeighbours,
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+          "optionsMap":this.state.optionsMap
+        };
+
+
       this.setState({
         keyColIndex: colIndex,
         keyColNeighbours: keyColNeighbours,
         curActionInfo: null,
         tableData: tableData,
         optionsMap: optionsMap,
+        lastAction: lastAction,
+        prevState: prevState,
       });
     });
   }
@@ -649,13 +671,16 @@ class MainBody extends Component {
   }
 
   populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type, range) {
+
+    // Support for "populateSameRange":
+
     // When the range is not equal to undefined, we want to ask user if they want to populate all other attributes from this range
     // console.log(range);
 
     // we need to make a number of queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
     let promiseArray = this.getOtherColPromise(neighbour, type);
     allPromiseReady(promiseArray).then((values) => {
-      let tableData = this.state.tableData.slice();
+      let tableData = _.cloneDeep(this.state.tableData);
       let requiredLength = neighbourIndex === -1 ? 1 : neighbourIndex + 1;
       for (let i = 0; i < values.length; ++i) {
         if (values[i].results.bindings.length < requiredLength) {
@@ -768,9 +793,21 @@ class MainBody extends Component {
       else {
       }
       // console.log(tempObj);
+
+      // Support for Redo: 
+      // Let's save the previous state in an object
+      let lastAction = "populateOtherColumn";
+      let prevState = 
+        {
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+        };
+
       this.setState({
         curActionInfo: tempObj,
         tableData: tableData,
+        lastAction: lastAction,
+        prevState: prevState,
       });
     });
   }
@@ -1039,14 +1076,21 @@ class MainBody extends Component {
         tempObj["range"] = rangeLiteral;
         tempObj["siblingNeighbour"] = siblingCount;
       }
+
+      // Support for Redo: 
+      let lastAction = "sameNeighbourDiffCol";
+
       this.setState({
         curActionInfo:tempObj,
         tableData:newState.tableData,
         tableHeader:newState.tableHeader,
         optionsMap:newState.optionsMap,
+        lastAction: lastAction,
       })
     })
   }
+
+  // This function populates all neighbour with the same names in the same columns, if that neighbour has multiple occurences.
 
   sameNeighbourOneCol(e, colIndex, neighbour, neighbourIndex, type, numCols) {
     // console.log(colIndex);
@@ -1082,9 +1126,14 @@ class MainBody extends Component {
           }
         }
       }
+
+      // Support for Redo: 
+      let lastAction = "sameNeighbourOneCol";
+
       this.setState({
         curActionInfo: null,
         tableData: tableData,
+        lastAction: lastAction,
       });
     });
   }
@@ -1138,11 +1187,16 @@ class MainBody extends Component {
         tempData = newState.tableData;
         tempOptions = newState.optionsMap;
       }
+
+      // Support for Redo: 
+      let lastAction = "populateSameRange";
+
       this.setState({
         curActionInfo:null,
         tableData:tempData,
         tableHeader:tempHeader,
         optionsMap:tempOptions,
+        lastAction:lastAction,
       })
     })
   }
@@ -1261,6 +1315,8 @@ class MainBody extends Component {
       });
     }
   }
+
+  // The following function displays the origin of a cell in the Action Panel.
 
   contextCellOrigin(e, rowIndex, colIndex) {
     // To get the origin of a cell, we simply returns its "origin field"
@@ -1625,8 +1681,13 @@ class MainBody extends Component {
       otherTableData,
       tempMapping
     );
+
+    // Support for Redo: 
+    let lastAction = "unionTable";
+
     this.setState({
       tableDataExplore: tableDataExplore,
+      lastAction: lastAction,
     });
   }
 
@@ -1658,8 +1719,13 @@ class MainBody extends Component {
         tempMapping
       );
     }
+
+    // Support for Redo: 
+    let lastAction = "unionPage";
+
     this.setState({
       tableDataExplore: tableDataExplore,
+      lastAction: lastAction,
     });
   }
 
@@ -1703,8 +1769,13 @@ class MainBody extends Component {
         }
       }
     }
+
+    // Support for Redo: 
+    let lastAction = "unionProperty";
+
     this.setState({
       tableDataExplore: tableDataExplore,
+      lastAction: lastAction,
     });
   }
 
@@ -1879,6 +1950,58 @@ class MainBody extends Component {
     }
   }
 
+  // This function undos the previous change that user has made to the result table in table panel
+
+  undoPreviousStep() {
+    // We first get which action we need to redo
+    let lastAction = this.state.lastAction;
+    // Note, since we are allowing one step redo only, we set lastAction to "" everytime we run this function
+
+    if (lastAction === "populateKeyColumn") {
+      // In this case we need to restore keyColIndex, keyColNeighbours, curActionInfo, tableData, optionsMap
+      let prevState = this.state.prevState;
+      this.setState({
+        keyColIndex: prevState.keyColIndex,
+        keyColNeighbours: prevState.keyColNeighbours,
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        optionsMap: prevState.optionsMap,
+        lastAction: "",
+      })
+    }
+    else if (lastAction === "populateOtherColumn") {
+      // In this case we need to restore curActionInfo, tableData
+      let prevState = this.state.prevState;
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        lastAction: "",
+      })
+    }
+    else if (lastAction === "sameNeighbourDiffCol") {
+
+    }
+    else if (lastAction === "sameNeighbourOneCol") {
+
+    }
+    else if (lastAction === "populateSameRange") {
+
+    }
+    else if (lastAction === "unionTable") {
+
+    }
+    else if (lastAction === "unionPage") {
+
+    }
+    else if (lastAction === "unionProperty") {
+
+    }
+    // This is an empty else clause.
+    else {
+
+    }
+  }
+
   render() {
     let bodyEle;
     let bottomContentClass = " bottom-content";
@@ -1949,6 +2072,7 @@ class MainBody extends Component {
                   goTableCreation={this.goTableCreation}
                   // Following states are passed for general purposes
                   copyTable={this.copyTable}
+                  undoPreviousStep={this.undoPreviousStep}
                 />
               </div>
             </div>
@@ -2696,8 +2820,8 @@ function findClassAnnotation(tableHTML, remainCols, pageName) {
     }
   }
 
-  console.log("Table data is: ");
-  console.log(tempTable);
+  // console.log("Table data is: ");
+  // console.log(tempTable);
 
   // Now tempTable contains the clean data we can use
   let promiseArray = [];
@@ -2743,7 +2867,7 @@ function findClassAnnotation(tableHTML, remainCols, pageName) {
         tempTable[i][curColIndex] === undefined
           ? "NONEXISTING"
           : regexReplace(tempTable[i][curColIndex].data);
-      console.log(curEntry);
+      // console.log(curEntry);
       // console.log(regexReplace(tempTable[i][curColIndex].data));
       // console.log(!isNaN(Number(curEntry)));
       // console.log("Replaced data is "+curEntry);
