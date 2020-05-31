@@ -1686,16 +1686,16 @@ class MainBody extends Component {
   // by changing tableDataExplore
 
   unionTable(firstIndex, secondIndex, otherTableHTML, colMapping) {
-    // First we get the clean data and set the origin for the other table by calling setTableFromHTML
+    // First we create a copy of the current tableDataExplore
+    let tableDataExplore = _.cloneDeep(this.state.tableDataExplore);
+
+    // Then we get the clean data and set the origin for the other table by calling setTableFromHTML
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex]
       .siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML, otherTableOrigin);
 
     // We remove the column header row
     otherTableData = otherTableData.slice(1);
-
-    // We create a copy of the table data that is in the table panel
-    let tableDataExplore = this.state.tableDataExplore.slice();
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
     let tempMapping = colMapping.slice();
@@ -1707,24 +1707,28 @@ class MainBody extends Component {
 
     // Support for undo: 
     let lastAction = "unionTable";
+    let prevState = 
+        {
+          "tableDataExplore":this.state.tableDataExplore,
+        };
 
     this.setState({
       tableDataExplore: tableDataExplore,
       lastAction: lastAction,
+      prevState: prevState,
     });
   }
 
   // The following function unions all similar tables found under a sibling page with the selected table
   unionPage(firstIndex, secondIndex) {
+    // First we create a copy of the current tableDataExplore
+    let tableDataExplore = _.cloneDeep(this.state.tableDataExplore);
     // We get the tableArray and name of the current sibling page
     let tableArray = this.state.propertyNeighbours[firstIndex].siblingArray[
       secondIndex
     ].tableArray;
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex]
       .siblingArray[secondIndex].name;
-
-    // We create a copy of the table data that is in the table panel
-    let tableDataExplore = this.state.tableDataExplore.slice();
 
     for (let i = 0; i < tableArray.length; ++i) {
       // We get the clean data for the current "other table"
@@ -1745,10 +1749,15 @@ class MainBody extends Component {
 
     // Support for undo: 
     let lastAction = "unionPage";
+    let prevState = 
+        {
+          "tableDataExplore":this.state.tableDataExplore,
+        };
 
     this.setState({
       tableDataExplore: tableDataExplore,
       lastAction: lastAction,
+      prevState: prevState,
     });
   }
 
@@ -1757,7 +1766,7 @@ class MainBody extends Component {
 
   unionProperty(firstIndex) {
     // First we create a copy of the current tableDataExplore
-    let tableDataExplore = this.state.tableDataExplore.slice();
+    let tableDataExplore = _.cloneDeep(this.state.tableDataExplore);
 
     // we get the siblingArray of the current property neighbour
     let siblingArray = this.state.propertyNeighbours[firstIndex].siblingArray;
@@ -1795,10 +1804,15 @@ class MainBody extends Component {
 
     // Support for undo: 
     let lastAction = "unionProperty";
+    let prevState = 
+        {
+          "tableDataExplore":this.state.tableDataExplore,
+        };
 
     this.setState({
       tableDataExplore: tableDataExplore,
       lastAction: lastAction,
+      prevState: prevState,
     });
   }
 
@@ -2029,14 +2043,12 @@ class MainBody extends Component {
         lastAction: "",
       })
     }
-    else if (lastAction === "unionTable") {
-
-    }
-    else if (lastAction === "unionPage") {
-
-    }
-    else if (lastAction === "unionProperty") {
-
+    else if (lastAction === "unionTable" || lastAction === "unionPage" || lastAction === "unionProperty") {
+      // In this case we need to restore tableDataExplore
+      this.setState({
+        tableDataExplore: prevState.tableDataExplore,
+        lastAction: "",
+      })
     }
     // This is an empty else clause.
     else {
