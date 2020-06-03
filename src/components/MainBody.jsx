@@ -223,12 +223,11 @@ class MainBody extends Component {
     } else if (taskSelected === "exploreTable") {
       // If user chooses "exploreTable", we want to update the originTableArray, which stores all the tables found on the pasted URL
       // We also initialize tableOpenList to all false
-      fetch(this.state.urlPasted)
-        .then((response) => {
-          return response.text();
-        })
-        .then((htmlText) => {
+      let promiseArray = [];
+      promiseArray.push(fetchText(this.state.urlPasted));
+      allPromiseReady(promiseArray).then((values) => {
           // We first parse the pasted URL and store the list of tables from the pasted URL
+          let htmlText = values[0];
           let doc = new DOMParser().parseFromString(htmlText, "text/html");
           let originTableArray = doc.getElementsByClassName("wikitable");
           let tableOpenList = [];
@@ -288,27 +287,26 @@ class MainBody extends Component {
       let suffixURL =
         "%0D%0A%7D%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       let queryURL = prefixURL + queryBody + suffixURL;
-      fetch(queryURL)
-        .then((response) => {
-          return response.json();
-        })
-        .then((myJson) => {
-          let keyColOptions = [];
-          for (let i = 0; i < myJson.results.bindings.length; ++i) {
-            let tempObj = {};
-            let neighbour = myJson.results.bindings[i].somevar.value.slice(37);
-            tempObj["label"] = neighbour;
-            tempObj["value"] = neighbour;
-            keyColOptions.push(tempObj);
-          }
-          // We create a copy of the optionsMap.
-          // Then change the entry in the optionsMap corresponding to the key column to what we have just fetched: keyColOptions.
-          let optionsMap = this.state.optionsMap.slice();
-          optionsMap[this.state.keyColIndex] = keyColOptions;
-          this.setState({
-            optionsMap: optionsMap,
-          });
+      let promiseArray = [];
+      promiseArray.push(fetchJSON(queryURL));
+      allPromiseReady(promiseArray).then((values) => {
+        let myJson = values[0];
+        let keyColOptions = [];
+        for (let i = 0; i < myJson.results.bindings.length; ++i) {
+          let tempObj = {};
+          let neighbour = myJson.results.bindings[i].somevar.value.slice(37);
+          tempObj["label"] = neighbour;
+          tempObj["value"] = neighbour;
+          keyColOptions.push(tempObj);
+        }
+        // We create a copy of the optionsMap.
+        // Then change the entry in the optionsMap corresponding to the key column to what we have just fetched: keyColOptions.
+        let optionsMap = this.state.optionsMap.slice();
+        optionsMap[this.state.keyColIndex] = keyColOptions;
+        this.setState({
+          optionsMap: optionsMap,
         });
+      });
     }
   }
 
@@ -349,28 +347,27 @@ class MainBody extends Component {
             ".";
         }
         let queryURL = prefixURL + queryBody + suffixURL;
-        fetch(queryURL)
-          .then((response) => {
-            return response.json();
-          })
-          .then((myJson) => {
-            let otherColOptions = [];
-            for (let i = 0; i < myJson.results.bindings.length; ++i) {
-              let tempObj = {};
-              let neighbour = myJson.results.bindings[i].somevar.value.slice(
-                28
-              );
-              tempObj["label"] = neighbour;
-              tempObj["value"] = neighbour;
-              tempObj["type"] = "subject"; // for now we only allow the subject search
-              otherColOptions.push(tempObj);
-            }
-            let optionsMap = this.state.optionsMap.slice();
-            optionsMap[colIndex] = otherColOptions;
-            this.setState({
-              optionsMap: optionsMap,
-            });
+        let promiseArray = [];
+        promiseArray.push(fetchJSON(queryURL));
+        allPromiseReady(promiseArray).then((values) => {
+          let myJson = values[0];
+          let otherColOptions = [];
+          for (let i = 0; i < myJson.results.bindings.length; ++i) {
+            let tempObj = {};
+            let neighbour = myJson.results.bindings[i].somevar.value.slice(
+              28
+            );
+            tempObj["label"] = neighbour;
+            tempObj["value"] = neighbour;
+            tempObj["type"] = "subject"; // for now we only allow the subject search
+            otherColOptions.push(tempObj);
+          }
+          let optionsMap = this.state.optionsMap.slice();
+          optionsMap[colIndex] = otherColOptions;
+          this.setState({
+            optionsMap: optionsMap,
           });
+        });
       } else {
         let optionsMap = this.state.optionsMap.slice();
         optionsMap[colIndex] = this.state.keyColNeighbours;
@@ -2151,12 +2148,14 @@ export default MainBody;
 
 // This function takes in a queryURL and returns its JSON format
 function fetchJSON(url) {
-  return fetch(url).then((response) => response.json());
+  let urlCORS = "https://mysterious-ridge-15861.herokuapp.com/"+url;
+  return fetch(urlCORS).then((response) => response.json());
 }
 
 // This function takes in a queryURL and returns its Text format
 function fetchText(url) {
-  return fetch(url).then((response) => response.text());
+  let urlCORS = "https://mysterious-ridge-15861.herokuapp.com/"+url;
+  return fetch(urlCORS).then((response) => response.text());
 }
 
 // This function ensures that all promises in promiseArray are ready
