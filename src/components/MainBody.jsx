@@ -44,7 +44,8 @@ class MainBody extends Component {
       prevState: "",           // objects storing the information needed to undo the last step. Information stored depends on lastAction
 
       // states below are useful for startSubject
-      keyColIndex: 0, // initially the key column is the first column
+      keyColIndex: 0,   // number storing the index of the search column. initially the key column is the first column
+      keyEntryIndex: 0, // number storing the index of the search entry in the search column. initially 0. (the first entry in the search column)
       // 1D array of objects with four properties storing the table headers. This array is used to create the column headers in table panel
       // 1) label:  string storing the label of an option (ex: spouse)
       // 2) value:  string storing the value of an option (ex: spouse)
@@ -98,7 +99,7 @@ class MainBody extends Component {
     this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
     this.populateSameRange = this.populateSameRange.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
-    this.contextSetKey = this.contextSetKey.bind(this);
+    this.contextSetCell = this.contextSetCell.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
 
     // functions below are useful for exploreTable
@@ -263,8 +264,8 @@ class MainBody extends Component {
 
   getKeyOptions(e, colIndex) {
     if (colIndex === this.state.keyColIndex) {
+      
       // We first get all the non-empty values from the key column
-
       let allSubject = [];
       for (let i = 0; i < this.state.tableData.length; ++i) {
         if (this.state.tableData[i][colIndex].data === "") {
@@ -382,6 +383,8 @@ class MainBody extends Component {
   // Note: we want to deal with the selection of key column header vs non key column header differently
 
   selectColHeader(e, colIndex) {
+    console.log("Check table header here");
+    console.log(this.state.tableHeader);
     //  We first create a copy of the existing table headers
     let tableHeader = this.state.tableHeader.slice();
 
@@ -424,7 +427,14 @@ class MainBody extends Component {
       } else {
         keyColLabel = tableHeader[this.state.keyColIndex].label;
       }
+      // Bugfix for Go Table Creation: if at this stage, keyColLable is still "", that means we came from the tabel union task first.
+      // In this case, tableHeader[keyColIndex] is an object, not an array. 
+      // So we just set keyColLabel as tableHeader[this.state.keyColIndex].label
+      if (keyColLabel === "") {
+        keyColLabel = tableHeader[this.state.keyColIndex].label;
+      }
       // We then append the current column's label to it
+      // console.log(keyColLabel);
       tableHeader[colIndex].label =
         tableHeader[colIndex].label + "--" + keyColLabel;
       // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
@@ -480,7 +490,7 @@ class MainBody extends Component {
 
     // Below is the first query we will make.
     // This query populates the first columns.
-    // Note: since neighbour is now an array instead of a single value, we need to adjust our query
+    // Note: since neighbour is now an array instead of a single value (as we are allowing multiselects), we need to adjust our query
     // let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     // let suffixURLOne = "%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     // let queryBodyOne = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A%09%3Fsomevar+dct%3Asubject+dbc%3A"
@@ -493,6 +503,7 @@ class MainBody extends Component {
       emptyEntryCount +
       "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyOne = "select+%3Fsomevar%0D%0Awhere+%7B";
+    // We are using a loop here because multi-select is possible
     for (let i = 0; i < neighbour.length; ++i) {
       queryBodyOne =
         queryBodyOne +
@@ -1264,76 +1275,73 @@ class MainBody extends Component {
     });
   }
 
-  // The following functions sets the cotextmenu selected column to be the key column
-  contextSetKey(e, colIndex) {
-    // We only want to make changes if argument colIndex is not equal to the current key column index
-    if (colIndex !== this.state.keyColIndex) {
-      let promiseArray = [];
+  // The following functions sets the selected cell to be the search cell.
+  // As a result, the column of the cell needs to be set as the search column as well.
+  contextSetCell(e, rowIndex, colIndex) {
+    // console.log("Row index of search cell is "+rowIndex);
+    // console.log("Col index of search cell is "+colIndex);
 
-      // Below is the first query we will make.
-      // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
-      // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+    // This is the function that we need to fill out
+    let promiseArray = [];
+    // Below is the first query we will make.
+    // This query fetches the neighbours for tableData[rowIndex][colIndex]. So the search cell in the search column.
+    // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
 
-      // Note: we need to modify this query so it looks for ranges of certain attributes as well
-      // let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      // let suffixURLOne = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      // let queryBodyOne =
-      //   "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
-      //   +regexReplace(this.state.tableData[0][colIndex].data)
-      //   +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
-      let prefixURLOne =
-        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      let suffixURLOne =
-        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      let queryBodyOne =
-        "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
-        regexReplace(this.state.tableData[0][colIndex].data) +
-        "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
-      let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
-      let otherColPromiseSubject = fetchJSON(queryURLOne);
-      promiseArray.push(otherColPromiseSubject);
+    // Note: we need to modify this query so it looks for ranges of certain attributes as well
+    let prefixURLOne =
+      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURLOne =
+      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyOne =
+      "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
+      regexReplace(this.state.tableData[rowIndex][colIndex].data) +
+      "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+    let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
+    let otherColPromiseSubject = fetchJSON(queryURLOne);
+    promiseArray.push(otherColPromiseSubject);
 
-      // Below is the second query we will make.
-      // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
-      let prefixURLTwo =
-        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      let suffixURLTwo =
-        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      let queryBodyTwo =
-        "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
-        regexReplace(this.state.tableData[0][colIndex].data) +
-        ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
-      let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
-      let otherColPromiseObject = fetchJSON(queryURLTwo);
-      promiseArray.push(otherColPromiseObject);
+    // Below is the second query we will make.
+    // Difference with the previous query is that we are using tableData[rowIndex][colIndex] as OBJECT
+    let prefixURLTwo =
+      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURLTwo =
+      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyTwo =
+      "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
+      regexReplace(this.state.tableData[rowIndex][colIndex].data) +
+      ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+    let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
+    let otherColPromiseObject = fetchJSON(queryURLTwo);
+    promiseArray.push(otherColPromiseObject);
 
-      allPromiseReady(promiseArray).then((values) => {
-        let keyColNeighbours = [];
-        keyColNeighbours = updateKeyColNeighbours(
-          keyColNeighbours,
-          values[0].results.bindings,
-          "subject"
-        );
-        keyColNeighbours = updateKeyColNeighbours(
-          keyColNeighbours,
-          values[1].results.bindings,
-          "object"
-        );
-        // console.log(keyColNeighbours);
-        let optionsMap = this.state.optionsMap.slice();
-        for (let i = 0; i < optionsMap.length; ++i) {
-          if (i !== colIndex) {
-            optionsMap[i] = keyColNeighbours;
-          }
+    // continue from here
+    allPromiseReady(promiseArray).then((values) => {
+      let keyColNeighbours = [];
+      keyColNeighbours = updateKeyColNeighbours(
+        keyColNeighbours,
+        values[0].results.bindings,
+        "subject"
+      );
+      keyColNeighbours = updateKeyColNeighbours(
+        keyColNeighbours,
+        values[1].results.bindings,
+        "object"
+      );
+      // console.log(keyColNeighbours);
+      let optionsMap = this.state.optionsMap.slice();
+      for (let i = 0; i < optionsMap.length; ++i) {
+        if (i !== colIndex) {
+          optionsMap[i] = keyColNeighbours;
         }
-        this.setState({
-          keyColIndex: colIndex,
-          keyColNeighbours: keyColNeighbours,
-          curActionInfo: null,
-          optionsMap: optionsMap,
-        });
+      }
+      this.setState({
+        keyEntryIndex: rowIndex,
+        keyColIndex: colIndex,
+        keyColNeighbours: keyColNeighbours,
+        curActionInfo: null,
+        optionsMap: optionsMap,
       });
-    }
+    });
   }
 
   // The following function displays the origin of a cell in the Action Panel.
@@ -1629,17 +1637,17 @@ class MainBody extends Component {
 
       // If the bottom page is shown, we want to change its URL
       // else we want to show the bottom page, and change its URL
-      if (this.state.pageHidden === true) {
-        document.getElementsByClassName("bottom-content")[0].style.height =
-          "55vh";
-        document.getElementsByClassName("wiki-page")[0].style.height = "55vh";
-        document.getElementsByClassName("wiki-page")[0].style.visibility =
-          "visible";
-        document.getElementsByClassName("top-content")[0].style.height = "35vh";
-        document.getElementsByClassName("table-panel")[0].style.height = "35vh";
-        document.getElementsByClassName("action-panel")[0].style.height =
-          "35vh";
-      }
+      // if (this.state.pageHidden === true) {
+      //   document.getElementsByClassName("bottom-content")[0].style.height =
+      //     "55vh";
+      //   document.getElementsByClassName("wiki-page")[0].style.height = "55vh";
+      //   document.getElementsByClassName("wiki-page")[0].style.visibility =
+      //     "visible";
+      //   document.getElementsByClassName("top-content")[0].style.height = "35vh";
+      //   document.getElementsByClassName("table-panel")[0].style.height = "35vh";
+      //   document.getElementsByClassName("action-panel")[0].style.height =
+      //     "35vh";
+      // }
       let iframeURL = "https://en.wikipedia.org/wiki/" + selectedSibling.name;
       this.setState({
         pageHidden: false,
@@ -1848,7 +1856,7 @@ class MainBody extends Component {
    
   goTableCreation() {
     // We need to take care of keyColIndex, tableHeader, tableData, optionsMap, and keyColNeighbours, and usecaseSelected
-    // This function should share some similarity between contextSetKey
+    // This function should share some similarity between contextSetCell
 
     if (this.state.usecaseSelected === "exploreTable") {
       let tableDataExplore = this.state.tableDataExplore;
@@ -1908,7 +1916,7 @@ class MainBody extends Component {
       // console.log(tableData);
   
       // Now, let's deal with keyColNeighbours and optionsMap
-      // Note: the following part is really similar to what we have in contextSetKey
+      // Note: the following part is really similar to what we have in contextSetCell
       let promiseArray = [];
   
       // Below is the first query we will make.
@@ -1971,6 +1979,7 @@ class MainBody extends Component {
         // console.log("Use case selected is now: ");
         // console.log(usecaseSelected);
         
+        console.log(tableHeader);
         this.setState({
           keyColIndex: keyColIndex,
           tableHeader: tableHeader,
@@ -2079,13 +2088,14 @@ class MainBody extends Component {
                   tableHeader={this.state.tableHeader}
                   tableData={this.state.tableData}
                   keyColIndex={this.state.keyColIndex}
+                  keyEntryIndex={this.state.keyEntryIndex}
                   onCellChange={this.cellChange}
                   selectColHeader={this.selectColHeader}
                   getKeyOptions={this.getKeyOptions}
                   getOtherOptions={this.getOtherOptions}
                   optionsMap={this.state.optionsMap}
                   contextAddColumn={this.contextAddColumn}
-                  contextSetKey={this.contextSetKey}
+                  contextSetCell={this.contextSetCell}
                   contextCellOrigin={this.contextCellOrigin}
                   // Folloiwng states are passed to "exploreTable"
                   originTableArray={this.state.originTableArray}
@@ -2179,6 +2189,7 @@ function regexReplace(str) {
     .replace(/\*/g, "%5Cu002A")
     .replace(/\+/g, "%5Cu002B")
     .replace(/-/g, "%5Cu002D")
+    .replace(/;/g, "%5Cu003B")
     .replace(/=/g, "%5Cu003D")
     .replace(/\?/g, "%5Cu003F")
     .replace(/\./g, "%5Cu002E")
@@ -2202,6 +2213,7 @@ function urlReplace(str) {
     .replace(/\*/g, "%5Cu002A")
     .replace(/\+/g, "%5Cu002B")
     .replace(/-/g, "%5Cu002D")
+    .replace(/;/g, "%5Cu003B")
     .replace(/=/g, "%5Cu003D")
     .replace(/\?/g, "%5Cu003F")
     .replace(/\./g, "%5Cu002E")
