@@ -5,8 +5,9 @@ import LandingPage from "../components/LandingPage";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
 import PagePanel from "../components/PagePanel";
+import _ from "lodash";
 
-const maxNeighbourCount = 100;
+const maxNeighbourCount = 50;
 const initialColNum = 4;
 const initialRowNum = 30;
 
@@ -33,14 +34,18 @@ class MainBody extends Component {
     }
     this.state = {
       // states below are general states used throughout the app
-      urlPasted: "",
+      urlPasted: "",  
       tablePasted: "",
       usecaseSelected: "",
       pageHidden: false,
       iframeURL: "",
+      curActionInfo: null, // object storing the current action that should be displayed in ActionPanel. Initially null.
+      lastAction: "",          // string storing the last action that has modified the result table in the table panel
+      prevState: "",           // objects storing the information needed to undo the last step. Information stored depends on lastAction
 
       // states below are useful for startSubject
-      keyColIndex: 0, // initially the key column is the first column
+      keyColIndex: 0,   // number storing the index of the search column. initially the key column is the first column
+      keyEntryIndex: 0, // number storing the index of the search entry in the search column. initially 0. (the first entry in the search column)
       // 1D array of objects with four properties storing the table headers. This array is used to create the column headers in table panel
       // 1) label:  string storing the label of an option (ex: spouse)
       // 2) value:  string storing the value of an option (ex: spouse)
@@ -50,14 +55,15 @@ class MainBody extends Component {
       tableData: tableData, // 2D array of objects storing the table data (not including the table headers).
       optionsMap: optionsMap, // 2D array storing the options map
       keyColNeighbours: [], // 1D array storing the neighbours of the key column
-      curActionInfo: null, // object storing the current action that should be displayed in ActionPanel. Initially null.
 
       // startes below are useful for exploreTable
       originTableArray: [], // 1D array storing all tables found on pasted URL
       tableOpenList: [], // 1D array storing whether each table in originTableArray has been toggled open or not
       selectedTableIndex: -1, // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
       selectedClassAnnotation: [], // semantic class annotation for each column of selected table
-      tableDataExplore: [], // 2D arary of objects storing the table data from explore table task. Similar to tableData above. Three properties: data, origin, rowSpan.
+      // 2D arary of objects with three properties, which store the table data from explore table task. Similar to tableData above. 
+      // Three properties: data, origin, rowSpan, colSpan.
+      tableDataExplore: [], 
       // array of objects with four properties storing the status/content for each property neighbour
       // 1) predicate: string storing the predicate (ex. dbp:league)
       // 2) object: string storing the object (ex. dbo:NBA)
@@ -93,7 +99,7 @@ class MainBody extends Component {
     this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
     this.populateSameRange = this.populateSameRange.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
-    this.contextSetKey = this.contextSetKey.bind(this);
+    this.contextSetCell = this.contextSetCell.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
 
     // functions below are useful for exploreTable
@@ -107,10 +113,12 @@ class MainBody extends Component {
     this.unionProperty = this.unionProperty.bind(this);
     this.toggleSemantic = this.toggleSemantic.bind(this);
     this.unionCutOffChange = this.unionCutOffChange.bind(this);
+    this.goTableCreation = this.goTableCreation.bind(this);
 
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
     this.toggleWikiPage = this.toggleWikiPage.bind(this);
+    this.undoPreviousStep = this.undoPreviousStep.bind(this);
   }
 
   handleURLPaste(urlPasted) {
@@ -201,6 +209,8 @@ class MainBody extends Component {
     });
   }
 
+  // This function handles the selection of the starting task.
+
   handleSelectTask(e, taskSelected) {
     if (taskSelected === "startSubject") {
       // If user chooses "startSubject", we set the URL to be the first cell in the table
@@ -214,12 +224,11 @@ class MainBody extends Component {
     } else if (taskSelected === "exploreTable") {
       // If user chooses "exploreTable", we want to update the originTableArray, which stores all the tables found on the pasted URL
       // We also initialize tableOpenList to all false
-      fetch(this.state.urlPasted)
-        .then((response) => {
-          return response.text();
-        })
-        .then((htmlText) => {
+      let promiseArray = [];
+      promiseArray.push(fetchText(this.state.urlPasted));
+      allPromiseReady(promiseArray).then((values) => {
           // We first parse the pasted URL and store the list of tables from the pasted URL
+          let htmlText = values[0];
           let doc = new DOMParser().parseFromString(htmlText, "text/html");
           let originTableArray = doc.getElementsByClassName("wikitable");
           let tableOpenList = [];
@@ -255,8 +264,8 @@ class MainBody extends Component {
 
   getKeyOptions(e, colIndex) {
     if (colIndex === this.state.keyColIndex) {
+      
       // We first get all the non-empty values from the key column
-
       let allSubject = [];
       for (let i = 0; i < this.state.tableData.length; ++i) {
         if (this.state.tableData[i][colIndex].data === "") {
@@ -279,27 +288,26 @@ class MainBody extends Component {
       let suffixURL =
         "%0D%0A%7D%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       let queryURL = prefixURL + queryBody + suffixURL;
-      fetch(queryURL)
-        .then((response) => {
-          return response.json();
-        })
-        .then((myJson) => {
-          let keyColOptions = [];
-          for (let i = 0; i < myJson.results.bindings.length; ++i) {
-            let tempObj = {};
-            let neighbour = myJson.results.bindings[i].somevar.value.slice(37);
-            tempObj["label"] = neighbour;
-            tempObj["value"] = neighbour;
-            keyColOptions.push(tempObj);
-          }
-          // We create a copy of the optionsMap.
-          // Then change the entry in the optionsMap corresponding to the key column to what we have just fetched: keyColOptions.
-          let optionsMap = this.state.optionsMap.slice();
-          optionsMap[this.state.keyColIndex] = keyColOptions;
-          this.setState({
-            optionsMap: optionsMap,
-          });
+      let promiseArray = [];
+      promiseArray.push(fetchJSON(queryURL));
+      allPromiseReady(promiseArray).then((values) => {
+        let myJson = values[0];
+        let keyColOptions = [];
+        for (let i = 0; i < myJson.results.bindings.length; ++i) {
+          let tempObj = {};
+          let neighbour = myJson.results.bindings[i].somevar.value.slice(37);
+          tempObj["label"] = neighbour;
+          tempObj["value"] = neighbour;
+          keyColOptions.push(tempObj);
+        }
+        // We create a copy of the optionsMap.
+        // Then change the entry in the optionsMap corresponding to the key column to what we have just fetched: keyColOptions.
+        let optionsMap = this.state.optionsMap.slice();
+        optionsMap[this.state.keyColIndex] = keyColOptions;
+        this.setState({
+          optionsMap: optionsMap,
         });
+      });
     }
   }
 
@@ -340,28 +348,27 @@ class MainBody extends Component {
             ".";
         }
         let queryURL = prefixURL + queryBody + suffixURL;
-        fetch(queryURL)
-          .then((response) => {
-            return response.json();
-          })
-          .then((myJson) => {
-            let otherColOptions = [];
-            for (let i = 0; i < myJson.results.bindings.length; ++i) {
-              let tempObj = {};
-              let neighbour = myJson.results.bindings[i].somevar.value.slice(
-                28
-              );
-              tempObj["label"] = neighbour;
-              tempObj["value"] = neighbour;
-              tempObj["type"] = "subject"; // for now we only allow the subject search
-              otherColOptions.push(tempObj);
-            }
-            let optionsMap = this.state.optionsMap.slice();
-            optionsMap[colIndex] = otherColOptions;
-            this.setState({
-              optionsMap: optionsMap,
-            });
+        let promiseArray = [];
+        promiseArray.push(fetchJSON(queryURL));
+        allPromiseReady(promiseArray).then((values) => {
+          let myJson = values[0];
+          let otherColOptions = [];
+          for (let i = 0; i < myJson.results.bindings.length; ++i) {
+            let tempObj = {};
+            let neighbour = myJson.results.bindings[i].somevar.value.slice(
+              28
+            );
+            tempObj["label"] = neighbour;
+            tempObj["value"] = neighbour;
+            tempObj["type"] = "subject"; // for now we only allow the subject search
+            otherColOptions.push(tempObj);
+          }
+          let optionsMap = this.state.optionsMap.slice();
+          optionsMap[colIndex] = otherColOptions;
+          this.setState({
+            optionsMap: optionsMap,
           });
+        });
       } else {
         let optionsMap = this.state.optionsMap.slice();
         optionsMap[colIndex] = this.state.keyColNeighbours;
@@ -376,6 +383,8 @@ class MainBody extends Component {
   // Note: we want to deal with the selection of key column header vs non key column header differently
 
   selectColHeader(e, colIndex) {
+    // console.log("Check table header here");
+    // console.log(this.state.tableHeader);
     //  We first create a copy of the existing table headers
     let tableHeader = this.state.tableHeader.slice();
 
@@ -418,7 +427,14 @@ class MainBody extends Component {
       } else {
         keyColLabel = tableHeader[this.state.keyColIndex].label;
       }
+      // Bugfix for Go Table Creation: if at this stage, keyColLable is still "", that means we came from the tabel union task first.
+      // In this case, tableHeader[keyColIndex] is an object, not an array. 
+      // So we just set keyColLabel as tableHeader[this.state.keyColIndex].label
+      if (keyColLabel === "") {
+        keyColLabel = tableHeader[this.state.keyColIndex].label;
+      }
       // We then append the current column's label to it
+      // console.log(keyColLabel);
       tableHeader[colIndex].label =
         tableHeader[colIndex].label + "--" + keyColLabel;
       // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
@@ -474,7 +490,7 @@ class MainBody extends Component {
 
     // Below is the first query we will make.
     // This query populates the first columns.
-    // Note: since neighbour is now an array instead of a single value, we need to adjust our query
+    // Note: since neighbour is now an array instead of a single value (as we are allowing multiselects), we need to adjust our query
     // let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     // let suffixURLOne = "%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     // let queryBodyOne = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A%09%3Fsomevar+dct%3Asubject+dbc%3A"
@@ -487,6 +503,7 @@ class MainBody extends Component {
       emptyEntryCount +
       "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyOne = "select+%3Fsomevar%0D%0Awhere+%7B";
+    // We are using a loop here because multi-select is possible
     for (let i = 0; i < neighbour.length; ++i) {
       queryBodyOne =
         queryBodyOne +
@@ -550,7 +567,7 @@ class MainBody extends Component {
       // let's first work with the first promise result: fill in table data with the entities we have fetched
 
       // First part sets the data for each cell
-      let tableData = this.state.tableData.slice();
+      let tableData = _.cloneDeep(this.state.tableData);
       let rowNum = tableData.length;
       for (let i = 0; i < values[0].results.bindings.length; ++i) {
         tableData[i + rowNum - emptyEntryCount][
@@ -593,12 +610,28 @@ class MainBody extends Component {
           optionsMap[i] = keyColNeighbours;
         }
       }
+
+      // Support for undo: 
+      // Let's save the previous state in an object
+      let lastAction = "populateKeyColumn";
+      let prevState = 
+        {
+          "keyColIndex":this.state.keyColIndex,
+          "keyColNeighbours":this.state.keyColNeighbours,
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+          "optionsMap":this.state.optionsMap
+        };
+
+
       this.setState({
         keyColIndex: colIndex,
         keyColNeighbours: keyColNeighbours,
         curActionInfo: null,
         tableData: tableData,
         optionsMap: optionsMap,
+        lastAction: lastAction,
+        prevState: prevState,
       });
     });
   }
@@ -646,13 +679,16 @@ class MainBody extends Component {
   }
 
   populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type, range) {
+
+    // Support for "populateSameRange":
+
     // When the range is not equal to undefined, we want to ask user if they want to populate all other attributes from this range
     // console.log(range);
 
     // we need to make a number of queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
     let promiseArray = this.getOtherColPromise(neighbour, type);
     allPromiseReady(promiseArray).then((values) => {
-      let tableData = this.state.tableData.slice();
+      let tableData = _.cloneDeep(this.state.tableData);
       let requiredLength = neighbourIndex === -1 ? 1 : neighbourIndex + 1;
       for (let i = 0; i < values.length; ++i) {
         if (values[i].results.bindings.length < requiredLength) {
@@ -712,7 +748,11 @@ class MainBody extends Component {
         tempObj["neighbourIndex"] = neighbourIndex;
         tempObj["type"] = type;
         tempObj["numCols"] = remainNeighbourCount;
-      }
+        // Note that if we populateSameNeighbour in different columns, we may also need this range attribute
+        if (range !== undefined) {
+          tempObj["range"] = range;
+        }
+      } 
       // If we are not populating a column with duplicate names, but it has a range, we ask user if they want to populate
       // other columns from the same range
       else if (range !== undefined) {
@@ -761,9 +801,21 @@ class MainBody extends Component {
       else {
       }
       // console.log(tempObj);
+
+      // Support for undo: 
+      // Let's save the previous state in an object
+      let lastAction = "populateOtherColumn";
+      let prevState = 
+        {
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+        };
+
       this.setState({
         curActionInfo: tempObj,
         tableData: tableData,
+        lastAction: lastAction,
+        prevState: prevState,
       });
     });
   }
@@ -810,6 +862,7 @@ class MainBody extends Component {
     // console.log(tableData);
     // console.log("Options map is: ");
     // console.log(optionsMap);
+    // console.log(values);
 
     // Now we need to write the body for this function
 
@@ -962,7 +1015,8 @@ class MainBody extends Component {
   // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
   // Note: currently it only populates "later" neighbour with same name.
 
-  sameNeighbourDiffCol(e, colIndex, neighbour, neighbourIndex, type, numCols) {
+  sameNeighbourDiffCol(e,colIndex,neighbour,neighbourIndex,type,numCols,range) {
+
     // The following is testing for 2D Promise arrays. Turns out it works!
     // let promiseArrayOne = this.getOtherColPromise(neighbour,type);
     // let promiseArrayTwo = this.getOtherColPromise(neighbour,type);
@@ -971,27 +1025,89 @@ class MainBody extends Component {
     //   console.log(values);
     // })
 
-    let promiseArray = this.getOtherColPromise(neighbour, type);
+    // console.log(neighbourIndex);
+    // console.log(range);
+
+    let promiseArray = this.getOtherColPromise(neighbour,type);
     allPromiseReady(promiseArray).then((values) => {
-      let newState = this.addAllNeighbour(
-        colIndex,
-        neighbour,
-        neighbourIndex,
-        type,
-        numCols,
-        values,
-        this.state.tableHeader,
-        this.state.tableData,
-        this.state.optionsMap
-      );
+      let newState = this.addAllNeighbour(colIndex,
+                                        neighbour,
+                                        neighbourIndex,
+                                        type,
+                                        numCols,
+                                        values,
+                                        this.state.tableHeader,
+                                        this.state.tableData,
+                                        this.state.optionsMap);
+      // Let's also create the object we need for populateSameRange
+      // Note: the following code is identical to what we have in populateOtherColumn
+      let tempObj = {};
+      let siblingNeighbour = [];
+      // console.log("Range is "+range);
+      // console.log(this.state.keyColNeighbours);
+      for (let i=0;i<this.state.keyColNeighbours.length;++i) {
+        if (range !== undefined
+            &&this.state.keyColNeighbours[i].range === range 
+            && this.state.keyColNeighbours[i].value !== neighbour) {
+          siblingNeighbour.push(this.state.keyColNeighbours[i].value);
+        }
+      }
+      // If we have found columns from the same range (other than the current neighbour), 
+      // we give user the option to populate other columns from the same range.
+      if (siblingNeighbour.length > 0) {
+        // This needs some additional checking to prevent bugs
+        // console.log("We may have a bug here");
+        // console.log("Range is: "+range);
+        // console.log("SiblingNeighbour is "+siblingNeighbour);
+        // console.log("Is undefined equal to undefined? "+(undefined === undefined));
+        // First, we want to keep track of the number of occurences for each sibling attribute
+        let siblingUnique = [...new Set(siblingNeighbour)];
+        let siblingCount = [];
+        for (let i=0;i<siblingUnique.length;++i) {
+          // console.log(siblingNeighbour);
+          siblingCount.push({"name":siblingUnique[i],"count":siblingNeighbour.filter(x => x === siblingUnique[i]).length})
+        }
+        // console.log(siblingCount);
+        // Let's do some string processing to improve UI clarity
+        let rangeLiteral = "";
+        if (range.includes("http://dbpedia.org/ontology/")) {
+          rangeLiteral = range.slice(28);
+        } 
+        else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
+          rangeLiteral = range.slice(33);
+        } 
+        else {
+          rangeLiteral = range;
+        }
+        tempObj["task"] = "populateSameRange";
+        tempObj["colIndex"] = colIndex+numCols;  // Small change here: we need to adjust the position of the column index
+        tempObj["range"] = rangeLiteral;
+        tempObj["siblingNeighbour"] = siblingCount;
+      }
+
+      // Support for undo: 
+      // Let's save the previous state in an object
+      let lastAction = "sameNeighbourDiffCol";
+      let prevState = 
+        {
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+          "tableHeader":this.state.tableHeader,
+          "optionsMap":this.state.optionsMap,
+        };
+
       this.setState({
-        curActionInfo: null,
-        tableData: newState.tableData,
-        tableHeader: newState.tableHeader,
-        optionsMap: newState.optionsMap,
-      });
-    });
+        curActionInfo:tempObj,
+        tableData:newState.tableData,
+        tableHeader:newState.tableHeader,
+        optionsMap:newState.optionsMap,
+        lastAction: lastAction,
+        prevState: prevState,
+      })
+    })
   }
+
+  // This function populates all neighbour with the same names in the same columns, if that neighbour has multiple occurences.
 
   sameNeighbourOneCol(e, colIndex, neighbour, neighbourIndex, type, numCols) {
     // console.log(colIndex);
@@ -1001,7 +1117,7 @@ class MainBody extends Component {
     // console.log(numCols);
 
     // In this option, we just need to change data in column "ColIndex", by putting "numCols" numbers of new values into it
-    let tableData = this.state.tableData.slice();
+    let tableData = _.cloneDeep(this.state.tableData);
     let promiseArray = this.getOtherColPromise(neighbour, type);
     allPromiseReady(promiseArray).then((values) => {
       for (
@@ -1027,9 +1143,20 @@ class MainBody extends Component {
           }
         }
       }
+
+      // Support for undo: 
+      let lastAction = "sameNeighbourOneCol";
+      let prevState = 
+        {
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+        };
+
       this.setState({
         curActionInfo: null,
         tableData: tableData,
+        lastAction: lastAction,
+        prevState: prevState,
       });
     });
   }
@@ -1037,15 +1164,73 @@ class MainBody extends Component {
   // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
   // This function should use addAllNeighbour as a helper function
   populateSameRange(e, colIndex, range, siblingNeighbour) {
-    console.log("Column index is " + colIndex);
-    console.log("Range is " + range);
+
+    // console.log("Column index is "+colIndex);
+    // console.log("Range is "+range);
     // console.log("Sibling neighbours are: ");
     // console.log(siblingNeighbour);
-    for (let i = 0; i < siblingNeighbour.length; ++i) {
-      console.log("Neighbour name is: " + siblingNeighbour[i].name);
-      console.log("Count is: " + siblingNeighbour[i].count);
-    }
-    // Start working from this function
+    // for (let i=0;i<siblingNeighbour.length;++i) {
+    //   console.log("Neighbour name is: "+siblingNeighbour[i].name);
+    //   console.log("Count is: "+siblingNeighbour[i].count);
+    // }
+    let promiseArrayTwoD = [];
+    for (let i=0;i<siblingNeighbour.length;++i) {
+      let curPromiseArray = this.getOtherColPromise(siblingNeighbour[i].name,"subject");
+      for (let j=0;j<curPromiseArray.length;++j) {
+        promiseArrayTwoD.push(curPromiseArray[j]);
+      }
+      // promiseArrayTwoD.push(this.getOtherColPromise(siblingNeighbour[i].name,"subject"));
+    } 
+    allPromiseReady(promiseArrayTwoD).then((values) => {
+
+      // for (let i=0;i<values.length;++i) {
+      //   console.log(values[i]);
+      // }
+
+      // first we fetch the initial state of tableHeader, tableData, and optionsMap
+      let tempHeader = this.state.tableHeader;
+      let tempData = this.state.tableData;
+      let tempOptions = this.state.optionsMap;
+      let curColIndex = colIndex;
+      for (let i=0;i<siblingNeighbour.length;++i) {
+        let curValueArray = [];
+        for (let j=0;j<initialRowNum;++j) {
+          curValueArray.push(values[initialRowNum*i+j]) // since working with 2D promise array is not figured out yet, we need to manipulate index
+        }
+        let newState = this.addAllNeighbour(curColIndex,
+                                            siblingNeighbour[i].name,    // this is name of the neighbour
+                                            -1,                          // this is neighbour index. -1 indicates that we have not populated any neighbour of this name
+                                            "subject",                   // for now, type can only be subject
+                                            siblingNeighbour[i].count,   // we need to populate this number of columns for this neighbour
+                                            curValueArray,               // This is the fetched data
+                                            tempHeader,
+                                            tempData,
+                                            tempOptions);
+        curColIndex+=siblingNeighbour[i].count;
+        tempHeader = newState.tableHeader;
+        tempData = newState.tableData;
+        tempOptions = newState.optionsMap;
+      }
+
+      // Support for undo: 
+      let lastAction = "populateSameRange";
+      let prevState = 
+        {
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+          "tableHeader":this.state.tableHeader,
+          "optionsMap":this.state.optionsMap,
+        };
+
+      this.setState({
+        curActionInfo:null,
+        tableData:tempData,
+        tableHeader:tempHeader,
+        optionsMap:tempOptions,
+        lastAction:lastAction,
+        prevState:prevState,
+      })
+    })
   }
 
   // The follwing function adds a new column to the table, to the right of the context-menu clicked column.
@@ -1091,77 +1276,76 @@ class MainBody extends Component {
     });
   }
 
-  // The following functions sets the cotextmenu selected column to be the key column
-  contextSetKey(e, colIndex) {
-    // We only want to make changes if argument colIndex is not equal to the current key column index
-    if (colIndex !== this.state.keyColIndex) {
-      let promiseArray = [];
+  // The following functions sets the selected cell to be the search cell.
+  // As a result, the column of the cell needs to be set as the search column as well.
+  contextSetCell(e, rowIndex, colIndex) {
+    // console.log("Row index of search cell is "+rowIndex);
+    // console.log("Col index of search cell is "+colIndex);
 
-      // Below is the first query we will make.
-      // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
-      // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+    // This is the function that we need to fill out
+    let promiseArray = [];
+    // Below is the first query we will make.
+    // This query fetches the neighbours for tableData[rowIndex][colIndex]. So the search cell in the search column.
+    // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
 
-      // Note: we need to modify this query so it looks for ranges of certain attributes as well
-      // let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      // let suffixURLOne = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      // let queryBodyOne =
-      //   "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
-      //   +regexReplace(this.state.tableData[0][colIndex].data)
-      //   +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
-      let prefixURLOne =
-        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      let suffixURLOne =
-        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      let queryBodyOne =
-        "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
-        regexReplace(this.state.tableData[0][colIndex].data) +
-        "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
-      let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
-      let otherColPromiseSubject = fetchJSON(queryURLOne);
-      promiseArray.push(otherColPromiseSubject);
+    // Note: we need to modify this query so it looks for ranges of certain attributes as well
+    let prefixURLOne =
+      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURLOne =
+      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyOne =
+      "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
+      regexReplace(this.state.tableData[rowIndex][colIndex].data) +
+      "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+    let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
+    let otherColPromiseSubject = fetchJSON(queryURLOne);
+    promiseArray.push(otherColPromiseSubject);
 
-      // Below is the second query we will make.
-      // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
-      let prefixURLTwo =
-        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      let suffixURLTwo =
-        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      let queryBodyTwo =
-        "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
-        regexReplace(this.state.tableData[0][colIndex].data) +
-        ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
-      let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
-      let otherColPromiseObject = fetchJSON(queryURLTwo);
-      promiseArray.push(otherColPromiseObject);
+    // Below is the second query we will make.
+    // Difference with the previous query is that we are using tableData[rowIndex][colIndex] as OBJECT
+    let prefixURLTwo =
+      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURLTwo =
+      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyTwo =
+      "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
+      regexReplace(this.state.tableData[rowIndex][colIndex].data) +
+      ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+    let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
+    let otherColPromiseObject = fetchJSON(queryURLTwo);
+    promiseArray.push(otherColPromiseObject);
 
-      allPromiseReady(promiseArray).then((values) => {
-        let keyColNeighbours = [];
-        keyColNeighbours = updateKeyColNeighbours(
-          keyColNeighbours,
-          values[0].results.bindings,
-          "subject"
-        );
-        keyColNeighbours = updateKeyColNeighbours(
-          keyColNeighbours,
-          values[1].results.bindings,
-          "object"
-        );
-        // console.log(keyColNeighbours);
-        let optionsMap = this.state.optionsMap.slice();
-        for (let i = 0; i < optionsMap.length; ++i) {
-          if (i !== colIndex) {
-            optionsMap[i] = keyColNeighbours;
-          }
+    // continue from here
+    allPromiseReady(promiseArray).then((values) => {
+      let keyColNeighbours = [];
+      keyColNeighbours = updateKeyColNeighbours(
+        keyColNeighbours,
+        values[0].results.bindings,
+        "subject"
+      );
+      keyColNeighbours = updateKeyColNeighbours(
+        keyColNeighbours,
+        values[1].results.bindings,
+        "object"
+      );
+      // console.log(keyColNeighbours);
+      let optionsMap = this.state.optionsMap.slice();
+      for (let i = 0; i < optionsMap.length; ++i) {
+        if (i !== colIndex) {
+          optionsMap[i] = keyColNeighbours;
         }
-        this.setState({
-          keyColIndex: colIndex,
-          keyColNeighbours: keyColNeighbours,
-          curActionInfo: null,
-          optionsMap: optionsMap,
-        });
+      }
+      this.setState({
+        keyEntryIndex: rowIndex,
+        keyColIndex: colIndex,
+        keyColNeighbours: keyColNeighbours,
+        curActionInfo: null,
+        optionsMap: optionsMap,
       });
-    }
+    });
   }
+
+  // The following function displays the origin of a cell in the Action Panel.
 
   contextCellOrigin(e, rowIndex, colIndex) {
     // To get the origin of a cell, we simply returns its "origin field"
@@ -1461,17 +1645,17 @@ class MainBody extends Component {
 
       // If the bottom page is shown, we want to change its URL
       // else we want to show the bottom page, and change its URL
-      if (this.state.pageHidden === true) {
-        document.getElementsByClassName("bottom-content")[0].style.height =
-          "55vh";
-        document.getElementsByClassName("wiki-page")[0].style.height = "55vh";
-        document.getElementsByClassName("wiki-page")[0].style.visibility =
-          "visible";
-        document.getElementsByClassName("top-content")[0].style.height = "35vh";
-        document.getElementsByClassName("table-panel")[0].style.height = "35vh";
-        document.getElementsByClassName("action-panel")[0].style.height =
-          "35vh";
-      }
+      // if (this.state.pageHidden === true) {
+      //   document.getElementsByClassName("bottom-content")[0].style.height =
+      //     "55vh";
+      //   document.getElementsByClassName("wiki-page")[0].style.height = "55vh";
+      //   document.getElementsByClassName("wiki-page")[0].style.visibility =
+      //     "visible";
+      //   document.getElementsByClassName("top-content")[0].style.height = "35vh";
+      //   document.getElementsByClassName("table-panel")[0].style.height = "35vh";
+      //   document.getElementsByClassName("action-panel")[0].style.height =
+      //     "35vh";
+      // }
       let iframeURL = "https://en.wikipedia.org/wiki/" + selectedSibling.name;
       this.setState({
         pageHidden: false,
@@ -1531,16 +1715,16 @@ class MainBody extends Component {
   // by changing tableDataExplore
 
   unionTable(firstIndex, secondIndex, otherTableHTML, colMapping) {
-    // First we get the clean data and set the origin for the other table by calling setTableFromHTML
+    // First we create a copy of the current tableDataExplore
+    let tableDataExplore = _.cloneDeep(this.state.tableDataExplore);
+
+    // Then we get the clean data and set the origin for the other table by calling setTableFromHTML
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex]
       .siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML, otherTableOrigin);
 
     // We remove the column header row
     otherTableData = otherTableData.slice(1);
-
-    // We create a copy of the table data that is in the table panel
-    let tableDataExplore = this.state.tableDataExplore.slice();
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
     let tempMapping = colMapping.slice();
@@ -1549,22 +1733,31 @@ class MainBody extends Component {
       otherTableData,
       tempMapping
     );
+
+    // Support for undo: 
+    let lastAction = "unionTable";
+    let prevState = 
+        {
+          "tableDataExplore":this.state.tableDataExplore,
+        };
+
     this.setState({
       tableDataExplore: tableDataExplore,
+      lastAction: lastAction,
+      prevState: prevState,
     });
   }
 
   // The following function unions all similar tables found under a sibling page with the selected table
   unionPage(firstIndex, secondIndex) {
+    // First we create a copy of the current tableDataExplore
+    let tableDataExplore = _.cloneDeep(this.state.tableDataExplore);
     // We get the tableArray and name of the current sibling page
     let tableArray = this.state.propertyNeighbours[firstIndex].siblingArray[
       secondIndex
     ].tableArray;
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex]
       .siblingArray[secondIndex].name;
-
-    // We create a copy of the table data that is in the table panel
-    let tableDataExplore = this.state.tableDataExplore.slice();
 
     for (let i = 0; i < tableArray.length; ++i) {
       // We get the clean data for the current "other table"
@@ -1582,8 +1775,18 @@ class MainBody extends Component {
         tempMapping
       );
     }
+
+    // Support for undo: 
+    let lastAction = "unionPage";
+    let prevState = 
+        {
+          "tableDataExplore":this.state.tableDataExplore,
+        };
+
     this.setState({
       tableDataExplore: tableDataExplore,
+      lastAction: lastAction,
+      prevState: prevState,
     });
   }
 
@@ -1592,7 +1795,7 @@ class MainBody extends Component {
 
   unionProperty(firstIndex) {
     // First we create a copy of the current tableDataExplore
-    let tableDataExplore = this.state.tableDataExplore.slice();
+    let tableDataExplore = _.cloneDeep(this.state.tableDataExplore);
 
     // we get the siblingArray of the current property neighbour
     let siblingArray = this.state.propertyNeighbours[firstIndex].siblingArray;
@@ -1627,8 +1830,18 @@ class MainBody extends Component {
         }
       }
     }
+
+    // Support for undo: 
+    let lastAction = "unionProperty";
+    let prevState = 
+        {
+          "tableDataExplore":this.state.tableDataExplore,
+        };
+
     this.setState({
       tableDataExplore: tableDataExplore,
+      lastAction: lastAction,
+      prevState: prevState,
     });
   }
 
@@ -1662,6 +1875,217 @@ class MainBody extends Component {
     });
   }
 
+  // This function handles the transition from the table union scenario to the table creation scenario
+  // Fow now, this function should only work when the usecaseSelected is exploreTable
+   
+  goTableCreation() {
+    // We need to take care of keyColIndex, tableHeader, tableData, optionsMap, and keyColNeighbours, and usecaseSelected
+    // This function should share some similarity between contextSetCell
+
+    if (this.state.usecaseSelected === "exploreTable") {
+      let tableDataExplore = this.state.tableDataExplore;
+      // console.log(tableDataExplore);
+  
+      // this.state.tableDataExplore contains all the information we need to set the five states listed above
+      // We just need to make use of the "data" and "origin" attributes. rowSpan and colSpan makes no impact here.
+      // Also, since we are not modifying tableDataExplore, we do not need to make a copy of it.
+  
+      // First, let's deal with keyColIndex. 
+      // We will use the first column such that it's class annotation is not [] or ["Number"]
+      // If no such column exists, we default it to the first column
+  
+      let keyColIndex = -1;
+      for (let i=0;i<this.state.selectedClassAnnotation.length;++i) {
+        if (this.state.selectedClassAnnotation[i].length > 0 
+            && !(this.state.selectedClassAnnotation[i].length === 1 && this.state.selectedClassAnnotation[i][0] === "Number")) {
+          keyColIndex = i;
+          break;
+        }
+      }
+      if (keyColIndex === -1) {
+        keyColIndex = 0;
+      }
+      // console.log("Key Column Index is: ");
+      // console.log(keyColIndex);
+  
+      // Now, let's deal with tableHeader. Note: these tableHeaders only have value and label, no range or type
+      let tableHeader = [];
+      for (let j=1;j<tableDataExplore[0].length;++j) {
+        tableHeader.push(
+          {"value":tableDataExplore[0][j].data
+          ,"label":tableDataExplore[0][j].data}
+        )
+      }
+      // console.log("Table header is: ");
+      // console.log(tableHeader);
+  
+      // Now, let's deal with tableData. Wee need to handle both data and origin.
+      let tableData = [];
+      // This starts the loop for rows
+      for (let i=1;i<tableDataExplore.length;++i) {
+        let tempRow = [];
+        // This starts the loop for columns
+        for (let j=1;j<tableDataExplore[i].length;++j) {
+          // First set the data
+          let data = tableDataExplore[i][j].data;
+          // Then set the origin
+          let origin = [];
+          let originText = tableDataExplore[i][j].origin+": "+tableHeader[j-1].value+": "+tableDataExplore[i][j].data;
+          origin.push(originText);
+          tempRow.push({"data":data,"origin":origin});
+        }
+        tableData.push(tempRow);
+      }
+      // console.log("Table data is: ");
+      // console.log(tableData);
+  
+      // Now, let's deal with keyColNeighbours and optionsMap
+      // Note: the following part is really similar to what we have in contextSetCell
+      let promiseArray = [];
+  
+      // Below is the first query we will make.
+      // This query fetches the neighbours for tableData[0][keyColIndex], so the first cell in column with index keyColIndex
+      // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+  
+      let prefixURLOne =
+        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURLOne =
+        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBodyOne =
+        "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
+        regexReplace(tableData[0][keyColIndex].data) +
+        "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+      let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
+      let otherColPromiseSubject = fetchJSON(queryURLOne);
+      promiseArray.push(otherColPromiseSubject);
+  
+      // Below is the second query we will make.
+      // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
+      let prefixURLTwo =
+        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURLTwo =
+        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBodyTwo =
+        "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
+        regexReplace(tableData[0][keyColIndex].data) +
+        ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+      let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
+      let otherColPromiseObject = fetchJSON(queryURLTwo);
+      promiseArray.push(otherColPromiseObject);
+  
+      allPromiseReady(promiseArray).then((values) => {
+        // Now we finalize the keyColNeighbours
+        let keyColNeighbours = [];
+        keyColNeighbours = updateKeyColNeighbours(
+          keyColNeighbours,
+          values[0].results.bindings,
+          "subject"
+        );
+        keyColNeighbours = updateKeyColNeighbours(
+          keyColNeighbours,
+          values[1].results.bindings,
+          "object"
+        );
+        // console.log("Key Column Neighbours are: ");
+        // console.log(keyColNeighbours);
+  
+        // Now, we handle the optionsMaps
+        // We can just put on empty options.
+        let optionsMap = [];
+        for (let j=0;j<tableHeader.length;++j) {
+          optionsMap.push([]);
+        }
+        // console.log("Options Map are: ");
+        // console.log(optionsMap);
+  
+        // Lastly, let's modify usecaseSelected so that TablePanel can display the correct content
+        let usecaseSelected = "startSubject";
+        // console.log("Use case selected is now: ");
+        // console.log(usecaseSelected);
+        
+        // console.log(tableHeader);
+        this.setState({
+          keyColIndex: keyColIndex,
+          tableHeader: tableHeader,
+          tableData: tableData,
+          keyColNeighbours: keyColNeighbours,
+          optionsMap: optionsMap,
+          usecaseSelected: usecaseSelected,
+          curActionInfo: null,
+        });
+      })
+    }
+  }
+
+  // This function undos the previous change that user has made to the result table in table panel
+
+  undoPreviousStep() {
+    // We first get which action we need to undo
+    let lastAction = this.state.lastAction;
+    // Then we fetch the previous state
+    let prevState = this.state.prevState;
+    // Note, since we are allowing one step undo only, we set lastAction to "" everytime we run this function
+
+    if (lastAction === "populateKeyColumn") {
+      // In this case we need to restore keyColIndex, keyColNeighbours, curActionInfo, tableData, optionsMap
+      this.setState({
+        keyColIndex: prevState.keyColIndex,
+        keyColNeighbours: prevState.keyColNeighbours,
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        optionsMap: prevState.optionsMap,
+        lastAction: "",
+      })
+    }
+    else if (lastAction === "populateOtherColumn") {
+      // In this case we need to restore curActionInfo, tableData
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        lastAction: "",
+      })
+    }
+    else if (lastAction === "sameNeighbourDiffCol") {
+      // In this case we need to restore curActionInfo, tableData, tableHeader, optionsMap 
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        optionsMap: prevState.optionsMap,
+        lastAction: "",
+      })
+    }
+    else if (lastAction === "sameNeighbourOneCol") {
+      // In this case we need to restore the curActionInfo, tableData
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        lastAction: "",
+      })
+    }
+    else if (lastAction === "populateSameRange") {
+      // In this case we need to restore curActionInfo, tableData, tableHeader, optionsMap
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        optionsMap: prevState.optionsMap,
+        lastAction: "",
+      })
+    }
+    else if (lastAction === "unionTable" || lastAction === "unionPage" || lastAction === "unionProperty") {
+      // In this case we need to restore tableDataExplore
+      this.setState({
+        tableDataExplore: prevState.tableDataExplore,
+        lastAction: "",
+      })
+    }
+    // This is an empty else clause.
+    else {
+
+    }
+  }
+
   render() {
     let bodyEle;
     let bottomContentClass = " bottom-content";
@@ -1688,13 +2112,14 @@ class MainBody extends Component {
                   tableHeader={this.state.tableHeader}
                   tableData={this.state.tableData}
                   keyColIndex={this.state.keyColIndex}
+                  keyEntryIndex={this.state.keyEntryIndex}
                   onCellChange={this.cellChange}
                   selectColHeader={this.selectColHeader}
                   getKeyOptions={this.getKeyOptions}
                   getOtherOptions={this.getOtherOptions}
                   optionsMap={this.state.optionsMap}
                   contextAddColumn={this.contextAddColumn}
-                  contextSetKey={this.contextSetKey}
+                  contextSetCell={this.contextSetCell}
                   contextCellOrigin={this.contextCellOrigin}
                   // Folloiwng states are passed to "exploreTable"
                   originTableArray={this.state.originTableArray}
@@ -1729,8 +2154,10 @@ class MainBody extends Component {
                   toggleSemantic={this.toggleSemantic}
                   unionCutOff={this.state.unionCutOff}
                   unionCutOffChange={this.unionCutOffChange}
+                  goTableCreation={this.goTableCreation}
                   // Following states are passed for general purposes
                   copyTable={this.copyTable}
+                  undoPreviousStep={this.undoPreviousStep}
                 />
               </div>
             </div>
@@ -1755,12 +2182,14 @@ export default MainBody;
 
 // This function takes in a queryURL and returns its JSON format
 function fetchJSON(url) {
-  return fetch(url).then((response) => response.json());
+  let urlCORS = "https://mysterious-ridge-15861.herokuapp.com/"+url;
+  return fetch(urlCORS).then((response) => response.json());
 }
 
 // This function takes in a queryURL and returns its Text format
 function fetchText(url) {
-  return fetch(url).then((response) => response.text());
+  let urlCORS = "https://mysterious-ridge-15861.herokuapp.com/"+url;
+  return fetch(urlCORS).then((response) => response.text());
 }
 
 // This function ensures that all promises in promiseArray are ready
@@ -1784,6 +2213,7 @@ function regexReplace(str) {
     .replace(/\*/g, "%5Cu002A")
     .replace(/\+/g, "%5Cu002B")
     .replace(/-/g, "%5Cu002D")
+    .replace(/;/g, "%5Cu003B")
     .replace(/=/g, "%5Cu003D")
     .replace(/\?/g, "%5Cu003F")
     .replace(/\./g, "%5Cu002E")
@@ -1807,6 +2237,7 @@ function urlReplace(str) {
     .replace(/\*/g, "%5Cu002A")
     .replace(/\+/g, "%5Cu002B")
     .replace(/-/g, "%5Cu002D")
+    .replace(/;/g, "%5Cu003B")
     .replace(/=/g, "%5Cu003D")
     .replace(/\?/g, "%5Cu003F")
     .replace(/\./g, "%5Cu002E")
@@ -2056,7 +2487,8 @@ function findTableFromHTML(
         originCols,
         selectedClassAnnotation,
         semanticEnabled,
-        unionCutOff
+        unionCutOff,
+        pageName
       )
     );
   }
@@ -2090,7 +2522,8 @@ function findTableFromTable(
   originCols,
   selectedClassAnnotation,
   semanticEnabled,
-  unionCutOff
+  unionCutOff,
+  pageName
 ) {
   // Define some constants
   const ontologySize = 780;
@@ -2197,7 +2630,7 @@ function findTableFromTable(
         // and remainCols stores the columns from the current table that can still be used for mapping
         // Let's ask a query to find the class annotations for the remainCols
         // if (remainCols.length > 0) {
-        promiseArray.push(findClassAnnotation(tableHTML, remainCols));
+        promiseArray.push(findClassAnnotation(tableHTML, remainCols, pageName));
         // }
       }
 
@@ -2389,8 +2822,8 @@ function findTableFromTable(
 }
 
 // This function takes in the HTML of a table, and returns a Promise that resolves to the class annotation for all the columns of the table
-function findClassAnnotation(tableHTML, remainCols) {
-  // console.log("Page Name is: "+name);
+function findClassAnnotation(tableHTML, remainCols, pageName) {
+  // console.log("Page Name is: "+pageName);
   // console.log("Table HTML is: ");
   // console.log(tableHTML);
   // console.log(remainCols);
@@ -2615,6 +3048,9 @@ function findClassAnnotation(tableHTML, remainCols) {
     }
     // return classAnnotation;
     // console.log("Current class annotation is ");
+    // if (classAnnotation.length === 5 && pageName === "2008–09_Premier_League") {
+      // console.log(classAnnotation);
+    // }
     // console.log(classAnnotation);
     return Promise.resolve(classAnnotation);
   });

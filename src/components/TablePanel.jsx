@@ -43,7 +43,7 @@ class TablePanel extends Component {
               <FaSearch
                 className="search-icon"
                 title={"Set as key column"}
-                onClick={(e) => this.props.contextSetKey(e, colIndex)}
+                onClick={(e) => this.props.contextSetCell(e, 0, colIndex)}
               />
             </div>
           </th>
@@ -68,7 +68,7 @@ class TablePanel extends Component {
               <FaSearch
                 className="search-icon"
                 title={"Set as key column"}
-                onClick={(e) => this.props.contextSetKey(e, colIndex)}
+                onClick={(e) => this.props.contextSetCell(e, 0, colIndex)}
               />
             </div>
           </th>
@@ -94,7 +94,11 @@ class TablePanel extends Component {
         let tempID = "cellRow" + i + "Col" + j;
         let cellColor;
         if (j === this.props.keyColIndex) {
-          cellColor = { backgroundColor: "#a6d8d0" };
+          if (i === this.props.keyEntryIndex) {
+            cellColor = { backgroundColor: "Yellow" };
+          } else {
+            cellColor = { backgroundColor: "LightBlue" };
+          }
         } else {
           cellColor = { backgroundColor: "White" };
         }
@@ -181,10 +185,10 @@ class TablePanel extends Component {
                 Add Column to the Right
               </MenuItem>
               <MenuItem divider />
-              {/* <MenuItem onClick={(e) => this.props.contextSetKey(e,j)}>
-                Set as Key Column
+              <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
+                Set as Search Cell
               </MenuItem>
-              <MenuItem divider /> */}
+              <MenuItem divider />
               <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
                 Show Origin of Cell
               </MenuItem>

@@ -162,10 +162,12 @@ class ActionPanel extends Component {
       const object = propertyNeighbours[i].object;
       let propertyText = predicate + ": " + object + " ";
       let tooltipText = "Show other pages with " + predicate + ": " + object;
+
       let listClass = "list-group-item";
       if (this.props.propertyNeighbours[i].isOpen) {
         listClass = "list-group-item list-with-background";
       }
+
       propertyElement.push(
         <li class={listClass} title={tooltipText}>
           <span onClick={(e) => this.props.togglePropertyNeighbours(e, i)}>
@@ -227,14 +229,30 @@ class ActionPanel extends Component {
               Select your next action
             </span>
           </h4>
-          <ul className="list-group list-css">
+          {/* <ul className="list-group list-css">
             <li
               className="col-md-4 list-group-item list-button"
               onClick={() => this.props.copyTable()}
             >
               Copy Table in CSV format
             </li>
-          </ul>
+          </ul> */}
+
+          <button className="col-md-4" onClick={() => this.props.copyTable()}>
+            Copy Table
+          </button>
+          <button
+            className="col-md-4"
+            onClick={() => this.props.goTableCreation()}
+          >
+            Go to Table Creation
+          </button>
+          <button
+            className="col-md-4"
+            onClick={() => this.props.undoPreviousStep()}
+          >
+            Undo Last Step
+          </button>
         </div>
       );
     }
@@ -332,7 +350,8 @@ class ActionPanel extends Component {
                     actionInfo.neighbour,
                     actionInfo.neighbourIndex,
                     actionInfo.type,
-                    actionInfo.numCols
+                    actionInfo.numCols,
+                    actionInfo.range
                   )
                 }
               >
