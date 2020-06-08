@@ -383,8 +383,8 @@ class MainBody extends Component {
   // Note: we want to deal with the selection of key column header vs non key column header differently
 
   selectColHeader(e, colIndex) {
-    console.log("Check table header here");
-    console.log(this.state.tableHeader);
+    // console.log("Check table header here");
+    // console.log(this.state.tableHeader);
     //  We first create a copy of the existing table headers
     let tableHeader = this.state.tableHeader.slice();
 
@@ -1979,7 +1979,7 @@ class MainBody extends Component {
         // console.log("Use case selected is now: ");
         // console.log(usecaseSelected);
         
-        console.log(tableHeader);
+        // console.log(tableHeader);
         this.setState({
           keyColIndex: keyColIndex,
           tableHeader: tableHeader,
