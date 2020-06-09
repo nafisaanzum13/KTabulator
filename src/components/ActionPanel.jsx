@@ -49,18 +49,20 @@ class ActionPanel extends Component {
             <Card>
               <CardBody>
                 <div>
-                  <button
-                    onClick={(e) =>
-                      this.props.unionTable(
-                        firstIndex,
-                        secondIndex,
-                        tableArray[thirdIndex].data,
-                        tableArray[thirdIndex].colMapping
-                      )
-                    }
-                  >
-                    Union this table
-                  </button>
+                  <ul className="list-group list-css">
+                    <li
+                      className="col-md-4 list-group-item list-button list-button-backgound-pink"
+                      onClick={(e) =>
+                        this.props.unionTable(
+                          firstIndex,
+                          secondIndex,
+                          tableArray[thirdIndex].data,
+                          tableArray[thirdIndex].colMapping
+                        )}
+                    >
+                      Union table
+                    </li>
+                  </ul>
                   <div
                     dangerouslySetInnerHTML={{
                       __html: tableArray[thirdIndex].data.outerHTML,
@@ -87,7 +89,7 @@ class ActionPanel extends Component {
     ) {
       let tooltipText =
         "Examine tables on page " + siblingArray[secondIndex].name;
-      let divider = null;
+      // let divider = null;
       let listClassSib = "list-group-item";
       if (siblingArray[secondIndex].isOpen) {
         listClassSib = "list-group-item list-with-background";
@@ -134,7 +136,7 @@ class ActionPanel extends Component {
                   className="col-md-4 list-group-item list-button"
                   onClick={(e) => this.props.unionPage(firstIndex, secondIndex)}
                 >
-                  Union all tables from page
+                  Union from page
                 </li>
               </ul>
               {this.createTableArray(firstIndex, secondIndex)}
@@ -180,10 +182,10 @@ class ActionPanel extends Component {
               <hr />
               <ul className="list-group list-css">
                 <li
-                  className="col-md-6 list-group-item list-button list-button-backgound-pink"
+                  className="col-md-4 list-group-item list-button list-button-backgound-pink"
                   onClick={(e) => this.props.unionProperty(i)}
                 >
-                  Union tables from all pages
+                  Union from all pages
                 </li>
               </ul>
               {this.createSiblingArray(i)}
@@ -210,49 +212,39 @@ class ActionPanel extends Component {
         this.props.selectedTableIndex === -1)
     ) {
       titleEle = (
-        <div>
-          <h4 className="logo-left-color">
-            ACTIONS
-            <span> </span>
-            <span className="logo-right-color xsmall">
-              Select your next action
-            </span>
-          </h4>
+        <div className="row">
+          <div className="col-md-8">
+            <h4 className="logo-left-color">
+              ACTIONS
+              <span> </span>
+              <span className="logo-right-color xsmall">
+                Select your next action
+              </span>
+            </h4>
+          </div>
         </div>
       );
     } else {
       titleEle = (
-        <div>
-          <h4 className="logo-left-color">
-            ACTIONS<span> </span>
-            <span className="logo-right-color xsmall">
-              Select your next action
-            </span>
-          </h4>
-          {/* <ul className="list-group list-css">
-            <li
-              className="col-md-4 list-group-item list-button"
-              onClick={() => this.props.copyTable()}
-            >
-              Copy Table in CSV format
-            </li>
-          </ul> */}
-
-          <button className="col-md-4" onClick={() => this.props.copyTable()}>
-            Copy Table
-          </button>
-          <button
-            className="col-md-4"
-            onClick={() => this.props.goTableCreation()}
-          >
-            Go to Table Creation
-          </button>
-          <button
-            className="col-md-4"
-            onClick={() => this.props.undoPreviousStep()}
-          >
-            Undo Last Step
-          </button>
+        <div className="row action-header">
+          <div className="col-md-8">
+            <h4 className="logo-left-color">
+              ACTIONS
+              <span> </span>
+              <span className="logo-right-color xsmall">
+                Select your next action
+              </span>
+            </h4>
+          </div>
+          {/* <div className="col-md-1" title="copy table to csv">
+            <FaCopy onClick={() => this.props.copyTable()}/>
+          </div>
+          <div className="col-md-1" title="go to table creation mode">
+            <FaExchangeAlt onClick={() => this.props.goTableCreation()}/>
+          </div>
+          <div className="col-md-1" title="undo previous action">
+            <FaUndo onClick={() => this.props.undoPreviousStep()}/>
+          </div> */}
         </div>
       );
     }
@@ -403,7 +395,7 @@ class ActionPanel extends Component {
                 this.props.onSelectTable(e, actionInfo.tableIndex)
               }
             >
-              <span>Select table #{actionInfo.tableIndex}?</span>
+              <span>Select table {actionInfo.tableIndex}?</span>
             </button>
           </div>
         );

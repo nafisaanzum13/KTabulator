@@ -1,7 +1,7 @@
 // import { Route, Switch, Link } from "react-router-dom";
 import React, { Component } from "react";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+// import Header from "../components/Header";
+// import Footer from "../components/Footer";
 import MainBody from "../components/MainBody";
 
 class App extends Component {
@@ -10,15 +10,15 @@ class App extends Component {
     return (
       <div className="wrapper ">
         <div className="font-body">
-          <div className="header">
+          {/* <div className="header">
             <Header />
-          </div>
-          <div className="mainbody">
+          </div> */}
+          <div>
             <MainBody />
           </div>
-          <div className="footer">
+          {/* <div className="footer">
             <Footer />
-          </div>
+          </div> */}
         </div>
       </div>
     );

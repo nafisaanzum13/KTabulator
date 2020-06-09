@@ -1,6 +1,8 @@
 // import { Route, Switch, Link } from "react-router-dom";
 import React, { Component } from "react";
 import { combinations } from "mathjs";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 import LandingPage from "../components/LandingPage";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
@@ -2012,6 +2014,7 @@ class MainBody extends Component {
           optionsMap: optionsMap,
           usecaseSelected: usecaseSelected,
           curActionInfo: null,
+          lastAction: "goTableCreation", // this adds support for undoPreviousStep
         });
       })
     }
@@ -2080,6 +2083,17 @@ class MainBody extends Component {
         lastAction: "",
       })
     }
+    else if (lastAction === "goTableCreation") {
+      // In this case we need to do two things:
+      // 1) go back to the tableUnion task by setting usecaseSelected to "exploreTable"
+      // 2) setting the curAction info to be "showPropertyNeighbours" so that ActionPanel can display the right thing
+      let curActionInfo = { task: "showPropertyNeighbours" };
+      this.setState({
+        usecaseSelected: "exploreTable",
+        curActionInfo: curActionInfo,
+        lastAction: "",
+      })
+    }
     // This is an empty else clause.
     else {
 
@@ -2101,76 +2115,85 @@ class MainBody extends Component {
     // Else, we show the three panels: TablePanel, ActionPanel, and PagePanel
     else {
       bodyEle = (
-        <div className=" ">
-          <div className="">
-            <div className={topContentClass}>
-              <div className="col-md-7 small-padding  table-panel">
-                <TablePanel
-                  urlPasted={this.state.urlPasted}
-                  usecaseSelected={this.state.usecaseSelected}
-                  // Following states are passed to "startSubject"
-                  tableHeader={this.state.tableHeader}
-                  tableData={this.state.tableData}
-                  keyColIndex={this.state.keyColIndex}
-                  keyEntryIndex={this.state.keyEntryIndex}
-                  onCellChange={this.cellChange}
-                  selectColHeader={this.selectColHeader}
-                  getKeyOptions={this.getKeyOptions}
-                  getOtherOptions={this.getOtherOptions}
-                  optionsMap={this.state.optionsMap}
-                  contextAddColumn={this.contextAddColumn}
-                  contextSetCell={this.contextSetCell}
-                  contextCellOrigin={this.contextCellOrigin}
-                  // Folloiwng states are passed to "exploreTable"
-                  originTableArray={this.state.originTableArray}
-                  tableDataExplore={this.state.tableDataExplore}
-                  tableOpenList={this.state.tableOpenList}
-                  toggleTable={this.toggleTable}
-                  selectedTableIndex={this.state.selectedTableIndex}
-                />
+        <div>
+          <div className="header">
+            <Header 
+              // Following states are passed for general purposes
+              copyTable={this.copyTable}
+              undoPreviousStep={this.undoPreviousStep}
+              goTableCreation={this.goTableCreation}
+            />
+          </div> 
+          <div className="mainbody">
+            <div className="">
+              <div className={topContentClass}>
+                <div className="col-md-7 small-padding  table-panel">
+                  <TablePanel
+                    urlPasted={this.state.urlPasted}
+                    usecaseSelected={this.state.usecaseSelected}
+                    // Following states are passed to "startSubject"
+                    tableHeader={this.state.tableHeader}
+                    tableData={this.state.tableData}
+                    keyColIndex={this.state.keyColIndex}
+                    keyEntryIndex={this.state.keyEntryIndex}
+                    onCellChange={this.cellChange}
+                    selectColHeader={this.selectColHeader}
+                    getKeyOptions={this.getKeyOptions}
+                    getOtherOptions={this.getOtherOptions}
+                    optionsMap={this.state.optionsMap}
+                    contextAddColumn={this.contextAddColumn}
+                    contextSetCell={this.contextSetCell}
+                    contextCellOrigin={this.contextCellOrigin}
+                    // Folloiwng states are passed to "exploreTable"
+                    originTableArray={this.state.originTableArray}
+                    tableDataExplore={this.state.tableDataExplore}
+                    tableOpenList={this.state.tableOpenList}
+                    toggleTable={this.toggleTable}
+                    selectedTableIndex={this.state.selectedTableIndex}
+                  />
+                </div>
+                <div className="col-md-5 small-padding action-panel">
+                  <ActionPanel
+                    urlPasted={this.state.urlPasted}
+                    usecaseSelected={this.state.usecaseSelected}
+                    curActionInfo={this.state.curActionInfo}
+                    handleSelectTask={this.handleSelectTask}
+                    populateKeyColumn={this.populateKeyColumn}
+                    populateOtherColumn={this.populateOtherColumn}
+                    sameNeighbourDiffCol={this.sameNeighbourDiffCol}
+                    sameNeighbourOneCol={this.sameNeighbourOneCol}
+                    populateSameRange={this.populateSameRange}
+                    // Folloiwng states are passed to "exploreTable"
+                    selectedTableIndex={this.state.selectedTableIndex}
+                    onSelectTable={this.onSelectTable}
+                    propertyNeighbours={this.state.propertyNeighbours}
+                    togglePropertyNeighbours={this.togglePropertyNeighbours}
+                    toggleSibling={this.toggleSibling}
+                    toggleOtherTable={this.toggleOtherTable}
+                    unionTable={this.unionTable}
+                    unionPage={this.unionPage}
+                    unionProperty={this.unionProperty}
+                    semanticEnabled={this.state.semanticEnabled}
+                    toggleSemantic={this.toggleSemantic}
+                    unionCutOff={this.state.unionCutOff}
+                    unionCutOffChange={this.unionCutOffChange}
+                  />
+                </div>
               </div>
-              <div className="col-md-5 small-padding action-panel">
-                <ActionPanel
-                  urlPasted={this.state.urlPasted}
-                  usecaseSelected={this.state.usecaseSelected}
-                  curActionInfo={this.state.curActionInfo}
-                  handleSelectTask={this.handleSelectTask}
-                  populateKeyColumn={this.populateKeyColumn}
-                  populateOtherColumn={this.populateOtherColumn}
-                  sameNeighbourDiffCol={this.sameNeighbourDiffCol}
-                  sameNeighbourOneCol={this.sameNeighbourOneCol}
-                  populateSameRange={this.populateSameRange}
-                  // Folloiwng states are passed to "exploreTable"
-                  selectedTableIndex={this.state.selectedTableIndex}
-                  onSelectTable={this.onSelectTable}
-                  propertyNeighbours={this.state.propertyNeighbours}
-                  togglePropertyNeighbours={this.togglePropertyNeighbours}
-                  toggleSibling={this.toggleSibling}
-                  toggleOtherTable={this.toggleOtherTable}
-                  unionTable={this.unionTable}
-                  unionPage={this.unionPage}
-                  unionProperty={this.unionProperty}
-                  semanticEnabled={this.state.semanticEnabled}
-                  toggleSemantic={this.toggleSemantic}
-                  unionCutOff={this.state.unionCutOff}
-                  unionCutOffChange={this.unionCutOffChange}
-                  goTableCreation={this.goTableCreation}
-                  // Following states are passed for general purposes
-                  copyTable={this.copyTable}
-                  undoPreviousStep={this.undoPreviousStep}
-                />
-              </div>
-            </div>
-            <div className={bottomContentClass}>
-              <div>
-                <PagePanel
-                  pageHidden={this.state.pageHidden}
-                  iframeURL={this.state.iframeURL}
-                  toggleWikiPage={this.toggleWikiPage}
-                />
+              <div className={bottomContentClass}>
+                <div>
+                  <PagePanel
+                    pageHidden={this.state.pageHidden}
+                    iframeURL={this.state.iframeURL}
+                    toggleWikiPage={this.toggleWikiPage}
+                  />
+                </div>
               </div>
             </div>
           </div>
+          <div className="footer">
+            <Footer />
+          </div> 
         </div>
       );
     }
