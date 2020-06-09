@@ -214,16 +214,29 @@ class MainBody extends Component {
   // This function handles the selection of the starting task.
 
   handleSelectTask(e, taskSelected) {
+
     if (taskSelected === "startSubject") {
       // If user chooses "startSubject", we set the URL to be the first cell in the table
       const subject = reverseReplace(this.state.urlPasted.slice(30)); // add a reverseReplace here
-      let tableData = this.state.tableData.slice();
+      let tableData = _.cloneDeep(this.state.tableData);
       tableData[0][0].data = subject;
+
+      // Adding support for undo:
+      let lastAction = "handleSelectTask&startSubject";
+      let prevState = 
+        {
+          "usecaseSelected":this.state.usecaseSelected,
+          "tableData":this.state.tableData,
+        };
+
       this.setState({
         usecaseSelected: taskSelected,
         tableData: tableData,
+        lastAction: lastAction,
+        prevState: prevState,
       });
-    } else if (taskSelected === "exploreTable") {
+    } 
+    else if (taskSelected === "exploreTable") {
       // If user chooses "exploreTable", we want to update the originTableArray, which stores all the tables found on the pasted URL
       // We also initialize tableOpenList to all false
       let promiseArray = [];
@@ -237,15 +250,36 @@ class MainBody extends Component {
           for (let i = 0; i < originTableArray.length; ++i) {
             tableOpenList.push(false);
           }
+
+          // Adding support for undo:
+          let lastAction = "handleSelectTask&exploreTable";
+          let prevState = 
+            {
+              "usecaseSelected":this.state.usecaseSelected,
+              "originTableArray":this.state.originTableArray,
+              "tableOpenList":this.state.tableOpenList,
+            };
+
           this.setState({
             usecaseSelected: taskSelected,
             originTableArray: originTableArray,
             tableOpenList: tableOpenList,
+            lastAction: lastAction,
+            prevState: prevState,
           });
         });
-    } else {
+    } 
+    else {
+      // Adding support for undo:
+      let lastAction = "handleSelectTask&startTable";
+      let prevState = 
+        {
+          "usecaseSelected":this.state.usecaseSelected,
+        };
       this.setState({
         usecaseSelected: taskSelected,
+        lastAction: lastAction,
+        prevState: prevState,
       });
     }
   }
@@ -2094,6 +2128,33 @@ class MainBody extends Component {
         lastAction: "",
       })
     }
+    else if (lastAction.includes("handleSelectTask")) {
+      // In this case we have three subcases, depends on whether the selected task was starSubject, exploreTable, or startTable
+      if (lastAction === "handleSelectTask&startSubject") {
+        this.setState({
+          usecaseSelected: prevState.usecaseSelected,
+          tableData: prevState.tableData,
+          curActionInfo: "",
+          lastAction: "",
+        })
+      } 
+      else if (lastAction === "handleSelectTask&exploreTable") {
+        this.setState({
+          usecaseSelected: prevState.usecaseSelected,
+          originTableArray: prevState.originTableArray,
+          tableOpenList: prevState.tableOpenList,
+          curActionInfo: "",
+          lastAction: "",
+        })
+      }
+      else {
+        this.setState({
+          usecaseSelected: prevState.usecaseSelected,
+          curActionInfo: "",
+          lastAction: "",
+        })
+      }
+    }
     // This is an empty else clause.
     else {
 
@@ -3019,6 +3080,7 @@ function findClassAnnotation(tableHTML, remainCols, pageName) {
         // if (queryURL === "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A") {
         //   console.log("Here is where the problem occurs");
         // }
+        console.log(queryURL);
         promiseArray.push(fetchJSON(queryURL));
         // console.log("Query pushed successfully. This is queryBody: ");
         // console.log(queryBody);
