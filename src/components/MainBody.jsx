@@ -1571,12 +1571,26 @@ class MainBody extends Component {
         // Then we call the parse table helper function to update the tableDataExplore
         let selectedTableHTML = this.state.originTableArray[tableIndex];
         let tableDataExplore = setTableFromHTML(selectedTableHTML, urlOrigin);
+
+        // Support for undo: 
+        let lastAction = "onSelectTable";
+        let prevState = 
+            {
+              "selectedTableIndex": this.state.selectedTableIndex,
+              "propertyNeighbours": this.state.propertyNeighbours,
+              "curActionInfo": this.state.curActionInfo,
+              "tableDataExplore": this.state.tableDataExplore,
+              "selectedClassAnnotation": this.state.selectedClassAnnotation,
+            };
+
         this.setState({
           selectedTableIndex: tableIndex,
           propertyNeighbours: propertyNeighbours,
           curActionInfo: curActionInfo,
           tableDataExplore: tableDataExplore,
           selectedClassAnnotation: selectedClassAnnotation,
+          lastAction: lastAction,
+          prevState: prevState,
         });
       });
     });
@@ -2191,6 +2205,17 @@ class MainBody extends Component {
           lastAction: "",
         })
       }
+    }
+    else if (lastAction === "onSelectTable") {
+      // in this case we need to restore selectedTableIndex, propertyNeighbours, curAcionInfo, tableDataExplore, and selectedClassAnnotation
+      this.setState({
+        selectedTableIndex: prevState.selectedTableIndex,
+        propertyNeighbours: prevState.propertyNeighbours,
+        curActionInfo: prevState.curActionInfo,
+        tableDataExplore: prevState.tableDataExplore,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        lastAction: "",
+      })
     }
     // This is an empty else clause.
     else {
