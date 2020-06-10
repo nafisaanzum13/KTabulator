@@ -80,7 +80,7 @@ class MainBody extends Component {
       //         4.2.5) title:         array of strings storing the column headers of the current table
       propertyNeighbours: [],
       semanticEnabled: "disabled", // boolean value indicating whether semantic mapping is enabled or not. Default to true
-      unionCutOff: 0.5, // number representing the union percentage a table must have to be considered unionable (>=)
+      unionCutOff: 1, // number representing the union percentage a table must have to be considered unionable (>=)
     };
 
     // functions below are useful during start up
@@ -1664,20 +1664,20 @@ class MainBody extends Component {
 
   toggleSibling(e, firstIndex, secondIndex) {
     // Handle the toggling task
-    console.log("Here we start the sibling toggle");
-    console.log("The current property neighbour is ");
-    console.log(
-      "The current property neighbour is ",
-      this.state.propertyNeighbours.slice()
-    );
+    // console.log("Here we start the sibling toggle");
+    // console.log("The current property neighbour is ");
+    // console.log(
+    //   "The current property neighbour is ",
+    //   this.state.propertyNeighbours.slice()
+    // );
     let propertyNeighbours = this.state.propertyNeighbours.slice();
-    console.log(propertyNeighbours);
+    // console.log(propertyNeighbours);
     let selectedSibling =
       propertyNeighbours[firstIndex].siblingArray[secondIndex];
 
     // Note that if this sibling's tableArray is empty, we probably do not want to toggle it.
     if (selectedSibling.tableArray.length === 0) {
-      console.log("Selected sibling has no tables: " + selectedSibling.name);
+      // console.log("Selected sibling has no tables: " + selectedSibling.name);
 
       // If the bottom page is shown, we want to change its URL
       // else we want to show the bottom page, and change its URL
@@ -1700,8 +1700,8 @@ class MainBody extends Component {
     } else {
       // if the sibling's tableArray is not empty, we want to toggle it
       selectedSibling.isOpen = !selectedSibling.isOpen;
-      console.log("Let's take a look at the current property neighbour");
-      console.log(propertyNeighbours[firstIndex]);
+      // console.log("Let's take a look at the current property neighbour");
+      // console.log(propertyNeighbours[firstIndex]);
       // if (propertyNeighbours[firstIndex].isOpen === false) {
       // propertyNeighbours[firstIndex].isOpen = true;
       // console.log("In here we should have fixed the problem.");
@@ -1709,16 +1709,16 @@ class MainBody extends Component {
       // }
       // We also want to change the iframe displayed at the bottom if we are toggling a sibling open
       if (selectedSibling.isOpen === true) {
-        console.log("If we get here, then sibling page should be opened");
+        // console.log("If we get here, then sibling page should be opened");
         let iframeURL = "https://en.wikipedia.org/wiki/" + selectedSibling.name;
-        console.log(propertyNeighbours[firstIndex].isOpen);
+        // console.log(propertyNeighbours[firstIndex].isOpen);
         propertyNeighbours[firstIndex].isOpen = true;
-        console.log(propertyNeighbours[firstIndex]);
-        console.log(propertyNeighbours[firstIndex].isOpen);
-        console.log("First index is: " + firstIndex);
-        console.log("In here we should have fixed the problem.");
-        console.log("This is the property neighbour we will pass in");
-        console.log(propertyNeighbours);
+        // console.log(propertyNeighbours[firstIndex]);
+        // console.log(propertyNeighbours[firstIndex].isOpen);
+        // console.log("First index is: " + firstIndex);
+        // console.log("In here we should have fixed the problem.");
+        // console.log("This is the property neighbour we will pass in");
+        // console.log(propertyNeighbours);
         this.setState({
           propertyNeighbours: propertyNeighbours,
           iframeURL: iframeURL,
@@ -1802,16 +1802,34 @@ class MainBody extends Component {
         otherTableOrigin
       );
       // We remove the column header row
+      let headerRow = otherTableData[0];
       otherTableData = otherTableData.slice(1);
-      // We create a copy of the colMapping of the current "oother table"
+      // Let's do some checking here: we do not want to union the same table with itself
+      let sameTable = false;
+      if (otherTableOrigin === reverseReplace(this.state.urlPasted.slice(30)) && headerRow.length === tableDataExplore[0].length) {
+        let diffColFound = false;
+        for (let m=0; m<headerRow.length; ++m) {
+          if (headerRow[m].data !== tableDataExplore[0][m].data) {
+            diffColFound = true;
+            break;
+          }
+        }
+        if (diffColFound === false) {
+          sameTable = true;
+        }
+      }
+      // We create a copy of the colMapping of the current "other table"
       let tempMapping = tableArray[i].colMapping.slice();
-      tableDataExplore = tableConcat(
-        tableDataExplore,
-        otherTableData,
-        tempMapping
-      );
-    }
 
+      // if sameTable is false, we can safely union the data
+      if (sameTable === false) {
+        tableDataExplore = tableConcat(
+          tableDataExplore,
+          otherTableData,
+          tempMapping
+        );
+      }
+    }
     // Support for undo: 
     let lastAction = "unionPage";
     let prevState = 
@@ -1855,14 +1873,33 @@ class MainBody extends Component {
             otherTableOrigin
           );
           // We remove the column header row
+          let headerRow = otherTableData[0];
           otherTableData = otherTableData.slice(1);
+          // Let's do some checking here: we do not want to union the same table with itself
+          let sameTable = false;
+          if (otherTableOrigin === reverseReplace(this.state.urlPasted.slice(30)) && headerRow.length === tableDataExplore[0].length) {
+            let diffColFound = false;
+            for (let m=0; m<headerRow.length; ++m) {
+              if (headerRow[m].data !== tableDataExplore[0][m].data) {
+                diffColFound = true;
+                break;
+              }
+            }
+            if (diffColFound === false) {
+              sameTable = true;
+            }
+          }
           // We create a copy of the colMapping of the current "oother table"
           let tempMapping = tableArray[j].colMapping.slice();
-          tableDataExplore = tableConcat(
-            tableDataExplore,
-            otherTableData,
-            tempMapping
-          );
+
+          // if sameTable is false, we can safely union the data
+          if (sameTable === false) {
+            tableDataExplore = tableConcat(
+              tableDataExplore,
+              otherTableData,
+              tempMapping
+            );
+          }
         }
       }
     }

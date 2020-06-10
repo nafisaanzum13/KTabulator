@@ -119,7 +119,13 @@ class ActionPanel extends Component {
       }
 
       siblingElement.push(
-        <li className={listClassSib} title={tooltipText}>
+        <li 
+          className={listClassSib} 
+          title={tooltipText}
+          // onClick={(e) =>
+          //   this.props.toggleSibling(e, firstIndex, secondIndex)
+          // }
+        >
           <span
             onClick={(e) =>
               this.props.toggleSibling(e, firstIndex, secondIndex)
