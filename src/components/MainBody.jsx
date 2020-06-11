@@ -770,12 +770,15 @@ class MainBody extends Component {
 
       // If we just populated a column with duplicate names, we want to give users an option to "populate all other columns of this name"
 
+      // Note: the index we use in the values array has to be this.state.keyEntryIndex, because that one is the entry currently in effect
       let maxCount = Math.min(
-        values[0].results.bindings.length,
+        values[this.state.keyEntryIndex].results.bindings.length,
         maxNeighbourCount
       );
+      console.log("neighbour index is "+neighbourIndex);
+      console.log("max count is "+maxCount);
       let remainNeighbourCount = maxCount - neighbourIndex - 1;
-
+      console.log("remain neighbour count is "+remainNeighbourCount);
       let tempObj = {};
       if (neighbourIndex !== -1 && remainNeighbourCount > 0) {
         tempObj["task"] = "populateSameNeighbour";
@@ -1371,6 +1374,7 @@ class MainBody extends Component {
           optionsMap[i] = keyColNeighbours;
         }
       }
+      console.log(keyColNeighbours);
       this.setState({
         keyEntryIndex: rowIndex,
         keyColIndex: colIndex,
@@ -2011,7 +2015,7 @@ class MainBody extends Component {
   
       // Now, let's deal with tableData. Wee need to handle both data and origin.
       let tableData = [];
-      console.log(tableDataExplore);
+      // console.log(tableDataExplore);
       // This starts the loop for rows
       for (let i=1;i<tableDataExplore.length;++i) {
         let tempRow = [];
