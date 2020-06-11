@@ -1570,6 +1570,7 @@ class MainBody extends Component {
         let curActionInfo = { task: "showPropertyNeighbours" };
         // Then we call the parse table helper function to update the tableDataExplore
         let selectedTableHTML = this.state.originTableArray[tableIndex];
+        // setTableFromHTML is the function that prepares the data for tableDataExplore
         let tableDataExplore = setTableFromHTML(selectedTableHTML, urlOrigin);
 
         // Support for undo: 
@@ -1985,7 +1986,9 @@ class MainBody extends Component {
       for (let i=0;i<this.state.selectedClassAnnotation.length;++i) {
         if (this.state.selectedClassAnnotation[i].length > 0 
             && !(this.state.selectedClassAnnotation[i].length === 1 && this.state.selectedClassAnnotation[i][0] === "Number")) {
-          keyColIndex = i;
+          // Note: we have to include the plus 1 here, because selectedClassAnnotation's length is 1 smaller than the number of columns 
+          // Since OriginURL column does not have class annotation
+          keyColIndex = i+1; 
           break;
         }
       }
@@ -1997,7 +2000,7 @@ class MainBody extends Component {
   
       // Now, let's deal with tableHeader. Note: these tableHeaders only have value and label, no range or type
       let tableHeader = [];
-      for (let j=1;j<tableDataExplore[0].length;++j) {
+      for (let j=0;j<tableDataExplore[0].length;++j) {
         tableHeader.push(
           {"value":tableDataExplore[0][j].data
           ,"label":tableDataExplore[0][j].data}
@@ -2008,16 +2011,17 @@ class MainBody extends Component {
   
       // Now, let's deal with tableData. Wee need to handle both data and origin.
       let tableData = [];
+      console.log(tableDataExplore);
       // This starts the loop for rows
       for (let i=1;i<tableDataExplore.length;++i) {
         let tempRow = [];
         // This starts the loop for columns
-        for (let j=1;j<tableDataExplore[i].length;++j) {
+        for (let j=0;j<tableDataExplore[i].length;++j) {
           // First set the data
           let data = tableDataExplore[i][j].data;
           // Then set the origin
           let origin = [];
-          let originText = tableDataExplore[i][j].origin+": "+tableHeader[j-1].value+": "+tableDataExplore[i][j].data;
+          let originText = tableDataExplore[i][j].origin+": "+tableHeader[j].value+": "+tableDataExplore[i][j].data;
           origin.push(originText);
           tempRow.push({"data":data,"origin":origin});
         }
@@ -3142,7 +3146,7 @@ function findClassAnnotation(tableHTML, remainCols, pageName) {
         // if (queryURL === "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A") {
         //   console.log("Here is where the problem occurs");
         // }
-        console.log(queryURL);
+        // console.log(queryURL);
         promiseArray.push(fetchJSON(queryURL));
         // console.log("Query pushed successfully. This is queryBody: ");
         // console.log(queryBody);
@@ -3215,10 +3219,36 @@ function setTableFromHTML(selecteTableHTML, urlOrigin) {
   let tempTable = [];
 
   // We first fetch the plain, unprocessed version of the table.
+  // This is the part where we make the modification: use links instead of cell literals
+
   for (let i = 0; i < selectedTable.rows.length; ++i) {
     let tempRow = [];
     for (let j = 0; j < selectedTable.rows[i].cells.length; ++j) {
       let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
+      // Note: We want to use the href as data (if such href exists) instead of its innerText.
+      if (i > 0) {
+        // We get all the links from this current cell (there may be more than one)
+        let anchorArray = selectedTable.rows[i].cells[j].getElementsByTagName(
+          "a"
+        );
+        // we want to use the first valid link as the search element for this cell
+        // Definition of being valid: its associated innerText is not empty (thus not the link of a picture)
+        //                            and it is not a citation (so [0] is not "[")
+        for (let k = 0; k < anchorArray.length; ++k) {
+          if (
+            anchorArray[k].innerText !== "" &&
+            anchorArray[k].innerText[0] !== "["
+          ) {
+            let hrefArray = anchorArray[k].href.split("/");
+            // console.log("InnerText is "+anchorArray[k].innerText);
+            // console.log("It exists in DBPedia as "+hrefArray[hrefArray.length-1]);
+            curCellText = reverseReplace(hrefArray[hrefArray.length - 1]);
+            // if (curCellText.includes("UEFA")) {
+            // console.log(curCellText);
+            // }
+          }
+        }
+      }
       let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
       let curColSpan = selectedTable.rows[i].cells[j].colSpan;
       // console.log(curColSpan);
@@ -3272,7 +3302,7 @@ function setTableFromHTML(selecteTableHTML, urlOrigin) {
   // We now add in an additional column: the originURL of the page
   tempTable[0].splice(0, 0, {
     data: "OriginURL",
-    origin: "null",
+    origin: urlOrigin,
     rowSpan: 1,
     colSpan: 1,
   });

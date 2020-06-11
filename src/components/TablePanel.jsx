@@ -123,6 +123,8 @@ class TablePanel extends Component {
     return table;
   }
 
+  // This function makes no modification of the data at all.
+  // It takes all the data from this.props.tableDataExplore, and convert them into HTML
   createSelectedTableView() {
     // console.log(rowNum);
     // console.log(colNum);
