@@ -405,7 +405,9 @@ class MainBody extends Component {
             optionsMap: optionsMap,
           });
         });
-      } else {
+      } 
+      // If this non-key column is empty, we just use keyColNeighbours for the list of options
+      else {
         let optionsMap = this.state.optionsMap.slice();
         optionsMap[colIndex] = this.state.keyColNeighbours;
         this.setState({
@@ -673,6 +675,8 @@ class MainBody extends Component {
   }
 
   // The following function serves as a helper function for "populateOtherColumn" and "populateSameNeighbour"
+  // It makes an array of queries. 
+  // This may affect the performance of our system. Let's change this now.
 
   getOtherColPromise(neighbour, type) {
     let promiseArray = [];
@@ -775,10 +779,10 @@ class MainBody extends Component {
         values[this.state.keyEntryIndex].results.bindings.length,
         maxNeighbourCount
       );
-      console.log("neighbour index is "+neighbourIndex);
-      console.log("max count is "+maxCount);
+      // console.log("neighbour index is "+neighbourIndex);
+      // console.log("max count is "+maxCount);
       let remainNeighbourCount = maxCount - neighbourIndex - 1;
-      console.log("remain neighbour count is "+remainNeighbourCount);
+      // console.log("remain neighbour count is "+remainNeighbourCount);
       let tempObj = {};
       if (neighbourIndex !== -1 && remainNeighbourCount > 0) {
         tempObj["task"] = "populateSameNeighbour";
@@ -1374,7 +1378,7 @@ class MainBody extends Component {
           optionsMap[i] = keyColNeighbours;
         }
       }
-      console.log(keyColNeighbours);
+      // console.log(keyColNeighbours);
       this.setState({
         keyEntryIndex: rowIndex,
         keyColIndex: colIndex,
