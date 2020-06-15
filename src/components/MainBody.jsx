@@ -95,6 +95,7 @@ class MainBody extends Component {
     this.getOtherOptions = this.getOtherOptions.bind(this);
     this.populateKeyColumn = this.populateKeyColumn.bind(this);
     this.getOtherColPromise = this.getOtherColPromise.bind(this);
+    // this.getOtherColPromiseTwo = this.getOtherColPromiseTwo.bind(this);
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
     this.addAllNeighbour = this.addAllNeighbour.bind(this);
     this.sameNeighbourDiffCol = this.sameNeighbourDiffCol.bind(this);
@@ -674,9 +675,61 @@ class MainBody extends Component {
     });
   }
 
+  // TEST FUNCTION----------------------------------------------------
+
+  // getOtherColPromiseTwo(neighbour, type) {
+  //   let promiseArray = [];
+  //   // The following is the query we will make
+
+  //   // SELECT ?key ?val
+  //   // WHERE{
+  //   //       ?key (dbo:spouse|dbp:spouse) ?val.
+  //   //       VALUES ?key {dbr:Barack_Obama dbr:Ronald_Reagan dbr:Donald_Trump }
+  //   // }
+
+
+  //   let prefixURL = 
+  //     "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+  //   let suffixURL = 
+  //     "%7D%0D%0A%7D%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=300000&debug=on&run=+Run+Query+";
+  //   let queryBody;
+  //   // This clause handles the case of "Obama -> property -> object"
+  //   if (type === "subject") {
+  //     queryBody = 
+  //       "SELECT+%3Fkey+%3Fval%0D%0AWHERE%7B%0D%0A++++++%3Fkey+%28dbo%3A" +
+  //       regexReplace(neighbour) +
+  //       "%7Cdbp%3A" +
+  //       regexReplace(neighbour) +
+  //       "%29+%3Fval.%0D%0A++++++VALUES+%3Fkey+%7B";
+  //   } 
+  //   // This clause handles the case of "subject -> property -> Obama"
+  //   else {
+  //     queryBody = 
+  //       "SELECT+%3Fkey+%3Fval%0D%0AWHERE%7B%0D%0A++++++%3Fval+%28dbo%3A" +
+  //       regexReplace(neighbour) +
+  //       "%7Cdbp%3A" +
+  //       regexReplace(neighbour) +
+  //       "%29+%3Fkey.%0D%0A++++++VALUES+%3Fkey+%7B";
+  //   }
+  //   for (let i = 0; i < this.state.tableData.length; ++i) {
+  //     let cellValue = regexReplace(
+  //       this.state.tableData[i][this.state.keyColIndex].data
+  //     );
+  //     // N/A's will block the search, let's replace it with some string that does not block the search
+  //     if (cellValue === "N/A") {
+  //       cellValue = "NONEXISTINGSTRING";
+  //     }
+  //     let curQueryText = "dbr%3A"+cellValue+"+";
+  //     queryBody+=curQueryText;
+  //   }
+  //   let queryURL = prefixURL + queryBody + suffixURL;
+  //   // console.log(queryURL);
+  //   promiseArray.push(fetchJSON(queryURL));
+  //   return promiseArray;
+  // }
+
   // The following function serves as a helper function for "populateOtherColumn" and "populateSameNeighbour"
-  // It makes an array of queries. 
-  // This may affect the performance of our system. Let's change this now.
+  // It makes an array of querie, which may affect the performance of our system. Let's change it now.
 
   getOtherColPromise(neighbour, type) {
     let promiseArray = [];
@@ -688,8 +741,9 @@ class MainBody extends Component {
       let cellValue = regexReplace(
         this.state.tableData[i][this.state.keyColIndex].data
       );
+      // N/A's will block the search, let's replace it with some string that does not block the search
       if (cellValue === "N/A") {
-        cellValue = "NONEXISTINGSTRING"; // N/A's will block the search, let's replace it with some string that does not block the search
+        cellValue = "NONEXISTINGSTRING";
       }
       let queryBody;
       if (type === "subject") {
@@ -726,8 +780,35 @@ class MainBody extends Component {
     // console.log(range);
 
     // we need to make a number of queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
+    // let promiseArrayTwo = this.getOtherColPromiseTwo(neighbour, type); // this is for testing
     let promiseArray = this.getOtherColPromise(neighbour, type);
+
     allPromiseReady(promiseArray).then((values) => {
+    // allPromiseReady(promiseArrayTwo).then((testValues) => {
+
+      // // Now we need to process the testValues
+
+      // let pairArray = [];
+
+      // // First we removed the prefixes from resultArray
+      // for (let i=0; i<testValues[0].results.bindings.length; ++i) {
+      //   pairArray.push(
+      //     {
+      //       "key":removePrefix(testValues[0].results.bindings[i].key.value),
+      //       "value":removePrefix(testValues[0].results.bindings[i].val.value)
+      //     }
+      //   )
+      // }
+      // console.log(pairArray);
+
+      // // Then we create a keyArray
+      // let keyArray = [];
+
+      // for (let i=0; i<this.state.tableData.length; ++i) {
+      //   keyArray.push(this.state.tableData[i][this.state.keyColIndex].data);
+      // }
+      // console.log(keyArray);
+
       let tableData = _.cloneDeep(this.state.tableData);
       let requiredLength = neighbourIndex === -1 ? 1 : neighbourIndex + 1;
       for (let i = 0; i < values.length; ++i) {
@@ -747,13 +828,8 @@ class MainBody extends Component {
           // console.log(values[])
           let dbResult =
             values[i].results.bindings[requiredLength - 1].somevar.value;
-          let prefixToRemove = "http://dbpedia.org/resource/";
-          // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
-          if (dbResult.includes(prefixToRemove) === true) {
-            dbResult = dbResult.slice(28);
-          }
           // We first set the data of the cell
-          tableData[i][colIndex].data = dbResult;
+          tableData[i][colIndex].data = removePrefix(dbResult);
           // We then set the origin of the cell
           // This origin depends on whether type is "subject" or "object"
           let originToAdd;
@@ -861,6 +937,7 @@ class MainBody extends Component {
         prevState: prevState,
       });
     });
+    // });
   }
 
   // This function is a helper function that takes in 9 parameters:
@@ -1015,13 +1092,8 @@ class MainBody extends Component {
           // Think about what to do when there are duplicates
           let dbResult =
             values[i].results.bindings[requiredLength - 1].somevar.value;
-          let prefixToRemove = "http://dbpedia.org/resource/";
-          // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
-          if (dbResult.includes(prefixToRemove) === true) {
-            dbResult = dbResult.slice(28);
-          }
           // We first set the data of the cell
-          tableDataUpdated[i][curCol].data = dbResult;
+          tableDataUpdated[i][curCol].data = removePrefix(dbResult);
           // We then set the origin of the cell
           // This origin depends on whether type is "subject" or "object"
           let originToAdd;
@@ -1172,13 +1244,8 @@ class MainBody extends Component {
           if (values[i].results.bindings.length >= requiredLength) {
             let dbResult =
               values[i].results.bindings[requiredLength - 1].somevar.value;
-            let prefixToRemove = "http://dbpedia.org/resource/";
-            // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
-            if (dbResult.includes(prefixToRemove) === true) {
-              dbResult = dbResult.slice(28);
-            }
             tableData[i][colIndex].data =
-              tableData[i][colIndex].data + ";" + dbResult;
+              tableData[i][colIndex].data + ";" + removePrefix(dbResult);
             let updatedOrigin = tableData[i][colIndex].origin.slice();
             updatedOrigin[updatedOrigin.length - 1] =
               updatedOrigin[updatedOrigin.length - 1] + ";" + dbResult;
@@ -2404,9 +2471,23 @@ function urlReplace(str) {
     .replace(/\s/g, "_");
 }
 
+// This function changes the copied text "%E2%80%93" to "-" when we copy a URL from google. 
+
 function reverseReplace(str) {
   return str.replace(/%E2%80%93/, "–");
 }
+
+// This function removes the prefix "http://dbpedia.org/resource/" from query results, if it includes one
+
+function removePrefix(str) {
+  let prefixToRemove = "http://dbpedia.org/resource/";
+  // If dbResult contains prefix of "http://dbpedia.org/resource/", we want to remove it
+  if (str.includes(prefixToRemove) === true) {
+     str = str.slice(28);
+  }
+  return str;
+}
+
 
 // This function updates the key column's neighbours.
 
