@@ -1078,6 +1078,7 @@ class MainBody extends Component {
       let requiredLength = neighbourIndex + curCol - colIndex + 1;
       for (let i = 0; i < values.length; ++i) {
         // Firt case: result is not found, or there is not enough results (in duplicate neighbour case)
+        // console.log(values[i]);
         if (values[i].results.bindings.length < requiredLength) {
           if (tableDataUpdated[i][this.state.keyColIndex].data === "") {
             tableDataUpdated[i][curCol].data = "";
@@ -1304,8 +1305,8 @@ class MainBody extends Component {
       let curColIndex = colIndex;
       for (let i=0;i<siblingNeighbour.length;++i) {
         let curValueArray = [];
-        for (let j=0;j<initialRowNum;++j) {
-          curValueArray.push(values[initialRowNum*i+j]) // since working with 2D promise array is not figured out yet, we need to manipulate index
+        for (let j=0;j<tempData.length;++j) {
+          curValueArray.push(values[tempData.length*i+j]) // since working with 2D promise array is not figured out yet, we need to manipulate index
         }
         let newState = this.addAllNeighbour(curColIndex,
                                             siblingNeighbour[i].name,    // this is name of the neighbour
@@ -1648,7 +1649,9 @@ class MainBody extends Component {
         let tableDataExplore = setTableFromHTML(selectedTableHTML, urlOrigin);
 
         // Modeless Change: Now we need to do something similar to what we did in goTableCreation.
-        // We have to process the tableDataExplore to get the right states for 
+        // We have to process the tableDataExplore to get the right states for the Excel-style table.
+
+        // To do this, we need to call getTableStates here
 
         // Support for undo: 
         let lastAction = "onSelectTable";
@@ -3343,8 +3346,8 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
   if (keyColIndex === -1) {
     keyColIndex = 0;
   }
-  console.log("Key Column Index is: ");
-  console.log(keyColIndex);
+  // console.log("Key Column Index is: ");
+  // console.log(keyColIndex);
 
   // Now, let's deal with tableHeader. Note: these tableHeaders only have value and label, no range or type
   let tableHeader = [];
@@ -3354,8 +3357,8 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
       ,"label":tableDataExplore[0][j].data}
     )
   }
-  console.log("Table header is: ");
-  console.log(tableHeader);
+  // console.log("Table header is: ");
+  // console.log(tableHeader);
 
   // Now, let's deal with tableData. Wee need to handle both data and origin.
   let tableData = [];
@@ -3375,8 +3378,8 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
     }
     tableData.push(tempRow);
   }
-  console.log("Table data is: ");
-  console.log(tableData);
+  // console.log("Table data is: ");
+  // console.log(tableData);
 
   // Now, let's deal with keyColNeighbours and optionsMap
   // Note: the following part is really similar to what we have in contextSetCell
@@ -3425,8 +3428,8 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
       values[1].results.bindings,
       "object"
     );
-    console.log("Key Column Neighbours are: ");
-    console.log(keyColNeighbours);
+    // console.log("Key Column Neighbours are: ");
+    // console.log(keyColNeighbours);
 
     // Now, we handle the optionsMaps
     // We can just put on empty options.
@@ -3434,8 +3437,8 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
     for (let j=0;j<tableHeader.length;++j) {
       optionsMap.push([]);
     }
-    console.log("Options Map are: ");
-    console.log(optionsMap);
+    // console.log("Options Map are: ");
+    // console.log(optionsMap);
 
     // Lastly, let's put all the information together in a single object, and return it as a Promise
     return Promise.resolve(
