@@ -1783,20 +1783,6 @@ class MainBody extends Component {
     // Note that if this sibling's tableArray is empty, we probably do not want to toggle it.
     if (selectedSibling.tableArray.length === 0) {
       // console.log("Selected sibling has no tables: " + selectedSibling.name);
-
-      // If the bottom page is shown, we want to change its URL
-      // else we want to show the bottom page, and change its URL
-      // if (this.state.pageHidden === true) {
-      //   document.getElementsByClassName("bottom-content")[0].style.height =
-      //     "55vh";
-      //   document.getElementsByClassName("wiki-page")[0].style.height = "55vh";
-      //   document.getElementsByClassName("wiki-page")[0].style.visibility =
-      //     "visible";
-      //   document.getElementsByClassName("top-content")[0].style.height = "35vh";
-      //   document.getElementsByClassName("table-panel")[0].style.height = "35vh";
-      //   document.getElementsByClassName("action-panel")[0].style.height =
-      //     "35vh";
-      // }
       let iframeURL = "https://en.wikipedia.org/wiki/" + selectedSibling.name;
       this.setState({
         pageHidden: false,
@@ -1856,34 +1842,40 @@ class MainBody extends Component {
   // by changing tableDataExplore
 
   unionTable(firstIndex, secondIndex, otherTableHTML, colMapping) {
-    // First we create a copy of the current tableDataExplore
-    let tableDataExplore = _.cloneDeep(this.state.tableDataExplore);
+    // First we create a copy of the current tableData
+    let tableData = _.cloneDeep(this.state.tableData);
+    // console.log(tableData);
 
-    // Then we get the clean data and set the origin for the other table by calling setTableFromHTML
+    // Then we get the clean data and set the origin for the other table.
+    // We do so by calling setTableFromHTML, and setUnionData.
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex]
       .siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML, otherTableOrigin);
+    otherTableData = setUnionData(otherTableData);
+    // console.log(otherTableData);
 
-    // We remove the column header row
-    otherTableData = otherTableData.slice(1);
+    // Start from here. We just need to modify function tableConcat
+    // console.log(colMapping);
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
     let tempMapping = colMapping.slice();
-    tableDataExplore = tableConcat(
-      tableDataExplore,
+    tableData = tableConcat(
+      tableData,
       otherTableData,
       tempMapping
     );
+
+    // console.log(tableData);
 
     // Support for undo: 
     let lastAction = "unionTable";
     let prevState = 
         {
-          "tableDataExplore":this.state.tableDataExplore,
+          "tableData":this.state.tableData,
         };
 
     this.setState({
-      tableDataExplore: tableDataExplore,
+      tableData: tableData,
       lastAction: lastAction,
       prevState: prevState,
     });
@@ -1892,13 +1884,12 @@ class MainBody extends Component {
   // The following function unions all similar tables found under a sibling page with the selected table
   unionPage(firstIndex, secondIndex) {
     // First we create a copy of the current tableDataExplore
-    let tableDataExplore = _.cloneDeep(this.state.tableDataExplore);
+    let tableData = _.cloneDeep(this.state.tableData);
     // We get the tableArray and name of the current sibling page
-    let tableArray = this.state.propertyNeighbours[firstIndex].siblingArray[
-      secondIndex
-    ].tableArray;
-    let otherTableOrigin = this.state.propertyNeighbours[firstIndex]
-      .siblingArray[secondIndex].name;
+    let tableArray = 
+      this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].tableArray;
+    let otherTableOrigin = 
+      this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
 
     for (let i = 0; i < tableArray.length; ++i) {
       // We get the clean data for the current "other table"
@@ -1906,15 +1897,18 @@ class MainBody extends Component {
         tableArray[i].data,
         otherTableOrigin
       );
-      // We remove the column header row
+      // We fetch the header row now
       let headerRow = otherTableData[0];
-      otherTableData = otherTableData.slice(1);
+      otherTableData = setUnionData(otherTableData);
+      // console.log(headerRow);
+      // console.log(this.state.tableHeader);
+
       // Let's do some checking here: we do not want to union the same table with itself
       let sameTable = false;
-      if (otherTableOrigin === reverseReplace(this.state.urlPasted.slice(30)) && headerRow.length === tableDataExplore[0].length) {
+      if (otherTableOrigin === reverseReplace(this.state.urlPasted.slice(30)) && headerRow.length === tableData[0].length) {
         let diffColFound = false;
         for (let m=0; m<headerRow.length; ++m) {
-          if (headerRow[m].data !== tableDataExplore[0][m].data) {
+          if (headerRow[m].data !== this.state.tableHeader[m].value) {
             diffColFound = true;
             break;
           }
@@ -1928,8 +1922,8 @@ class MainBody extends Component {
 
       // if sameTable is false, we can safely union the data
       if (sameTable === false) {
-        tableDataExplore = tableConcat(
-          tableDataExplore,
+        tableData = tableConcat(
+          tableData,
           otherTableData,
           tempMapping
         );
@@ -1939,11 +1933,11 @@ class MainBody extends Component {
     let lastAction = "unionPage";
     let prevState = 
         {
-          "tableDataExplore":this.state.tableDataExplore,
+          "tableData":this.state.tableData,
         };
 
     this.setState({
-      tableDataExplore: tableDataExplore,
+      tableData: tableData,
       lastAction: lastAction,
       prevState: prevState,
     });
@@ -1954,7 +1948,7 @@ class MainBody extends Component {
 
   unionProperty(firstIndex) {
     // First we create a copy of the current tableDataExplore
-    let tableDataExplore = _.cloneDeep(this.state.tableDataExplore);
+    let tableData = _.cloneDeep(this.state.tableData);
 
     // we get the siblingArray of the current property neighbour
     let siblingArray = this.state.propertyNeighbours[firstIndex].siblingArray;
@@ -1977,15 +1971,15 @@ class MainBody extends Component {
             tableArray[j].data,
             otherTableOrigin
           );
-          // We remove the column header row
+          // We fetch the column header row
           let headerRow = otherTableData[0];
-          otherTableData = otherTableData.slice(1);
+          otherTableData = setUnionData(otherTableData);
           // Let's do some checking here: we do not want to union the same table with itself
           let sameTable = false;
-          if (otherTableOrigin === reverseReplace(this.state.urlPasted.slice(30)) && headerRow.length === tableDataExplore[0].length) {
+          if (otherTableOrigin === reverseReplace(this.state.urlPasted.slice(30)) && headerRow.length === tableData[0].length) {
             let diffColFound = false;
             for (let m=0; m<headerRow.length; ++m) {
-              if (headerRow[m].data !== tableDataExplore[0][m].data) {
+              if (headerRow[m].data !== this.state.tableHeader[m].value) {
                 diffColFound = true;
                 break;
               }
@@ -1999,8 +1993,8 @@ class MainBody extends Component {
 
           // if sameTable is false, we can safely union the data
           if (sameTable === false) {
-            tableDataExplore = tableConcat(
-              tableDataExplore,
+            tableData = tableConcat(
+              tableData,
               otherTableData,
               tempMapping
             );
@@ -2013,11 +2007,11 @@ class MainBody extends Component {
     let lastAction = "unionProperty";
     let prevState = 
         {
-          "tableDataExplore":this.state.tableDataExplore,
+          "tableData":this.state.tableData,
         };
 
     this.setState({
-      tableDataExplore: tableDataExplore,
+      tableData: tableData,
       lastAction: lastAction,
       prevState: prevState,
     });
@@ -2477,7 +2471,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
 // This function takes in the clean data for the first table, clean data for the second table, and colMapping between these two tables
 // And returns the unioned clean data for the first table
 
-function tableConcat(tableDataExplore, otherTableData, tempMapping) {
+function tableConcat(tableData, otherTableData, tempMapping) {
   // We want to correctly modify tableDataExplore, based on colMapping.
   // If colMapping is null for some column, we want to set the data as "N/A"
   // console.log(tableDataExplore);
@@ -2504,7 +2498,7 @@ function tableConcat(tableDataExplore, otherTableData, tempMapping) {
     }
     dataToAdd.push(tempRow);
   }
-  return tableDataExplore.concat(dataToAdd);
+  return tableData.concat(dataToAdd);
 }
 
 function HTMLCleanCell(str) {
@@ -3301,6 +3295,42 @@ function setTableFromHTML(selecteTableHTML, urlOrigin) {
     });
   }
   return tempTable; // tempTable is a 2D array of objects storing the table data. Object has two fields: data(string) and origin(string).
+}
+
+// This function takes in 1 parameter
+// 1) tableDataExplore, returned from setTableFromHTML.
+
+// And returns tableData (with no header rows) that can be unioned with the selected table.
+
+function setUnionData(tableDataExplore) {
+
+  // We first need to set the tableHeader, so that cells have the correct origins
+  let tableHeader = [];
+  for (let j=0;j<tableDataExplore[0].length;++j) {
+    tableHeader.push(
+      {"value":tableDataExplore[0][j].data
+      ,"label":tableDataExplore[0][j].data}
+    )
+  }
+  // We then need to handle both data and origin.
+  let tableData = [];
+  // console.log(tableDataExplore);
+  // This starts the loop for rows
+  for (let i=1;i<tableDataExplore.length;++i) {
+    let tempRow = [];
+    // This starts the loop for columns
+    for (let j=0;j<tableDataExplore[i].length;++j) {
+      // First set the data
+      let data = tableDataExplore[i][j].data;
+      // Then set the origin
+      let origin = [];
+      let originText = tableDataExplore[i][j].origin+": "+tableHeader[j].value+": "+tableDataExplore[i][j].data;
+      origin.push(originText);
+      tempRow.push({"data":data,"origin":origin});
+    }
+    tableData.push(tempRow);
+  }
+  return tableData;
 }
 
 // This function takes in four parameters and return the CDF for hypergeometric distribution, for x
