@@ -1554,7 +1554,7 @@ class MainBody extends Component {
       // console.log(queryResults[1].results.bindings);
       // console.log(queryResults[2]);
       let selectedClassAnnotation = queryResults[2];
-      console.log(selectedClassAnnotation);
+      // console.log(selectedClassAnnotation);
 
       // First we fetch the property neighbours
       // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings (150)
@@ -1651,28 +1651,38 @@ class MainBody extends Component {
         // Modeless Change: Now we need to do something similar to what we did in goTableCreation.
         // We have to process the tableDataExplore to get the right states for the Excel-style table.
 
-        // To do this, we need to call getTableStates here
+        // To do this, we need to call getTableStates here. We just need to pass in tableDataExplore and selectedClassAnnotation 
+        let statePromise = [getTableStates(tableDataExplore, selectedClassAnnotation)];
+        allPromiseReady(statePromise).then((values) => {
+          let stateInfo = values[0];
+          // console.log(stateInfo);
 
-        // Support for undo: 
-        let lastAction = "onSelectTable";
-        let prevState = 
-            {
-              "selectedTableIndex": this.state.selectedTableIndex,
-              "propertyNeighbours": this.state.propertyNeighbours,
-              "curActionInfo": this.state.curActionInfo,
-              "tableDataExplore": this.state.tableDataExplore,
-              "selectedClassAnnotation": this.state.selectedClassAnnotation,
-            };
+          // Support for undo: 
+          // let lastAction = "onSelectTable";
+          // let prevState = 
+          //     {
+          //       "selectedTableIndex": this.state.selectedTableIndex,
+          //       "propertyNeighbours": this.state.propertyNeighbours,
+          //       "curActionInfo": this.state.curActionInfo,
+          //       "tableDataExplore": this.state.tableDataExplore,
+          //       "selectedClassAnnotation": this.state.selectedClassAnnotation,
+          //     };
 
-        this.setState({
-          selectedTableIndex: tableIndex,
-          propertyNeighbours: propertyNeighbours,
-          curActionInfo: curActionInfo,
-          tableDataExplore: tableDataExplore,
-          selectedClassAnnotation: selectedClassAnnotation,
-          lastAction: lastAction,
-          prevState: prevState,
-        });
+          this.setState({
+            selectedTableIndex: tableIndex,
+            propertyNeighbours: propertyNeighbours,
+            curActionInfo: curActionInfo,
+            // tableDataExplore: tableDataExplore,
+            selectedClassAnnotation: selectedClassAnnotation,
+            keyColIndex: stateInfo.keyColIndex,
+            keyColNeighbours: stateInfo.keyColNeighbours,
+            tableData: stateInfo.tableData,
+            tableHeader: stateInfo.tableHeader,
+            optionsMap: stateInfo.optionsMap,
+            // lastAction: lastAction,
+            // prevState: prevState,
+          });
+        })
       });
     });
   }

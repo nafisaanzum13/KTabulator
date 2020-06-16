@@ -13,6 +13,9 @@ class TablePanel extends Component {
     this.createSelectedTableView = this.createSelectedTableView.bind(this);
   }
 
+  // This function takes the states tableData, keyColIndex, keyEntryIndex, tableHeader, optionsMap
+  // And convert them into HTML for the super table
+
   createSuperTable() {
     const rowNum = this.props.tableData.length;
     const colNum = this.props.tableData[0].length;
@@ -224,15 +227,34 @@ class TablePanel extends Component {
       // Case 3.2: User has selected a table
       // Make the second part into its own component
       else {
-        // let originURL = reverseReplace(this.props.urlPasted.slice(30));
-        // console.log(this.props.tableDataExplore);
-        // Instead of logging tableDataExplore in the console, we want to use it to render a table
+        let menuArray = [];
+        for (let i = 0; i < this.props.tableData.length; ++i) {
+          for (let j = 0; j < this.props.tableData[0].length; ++j) {
+            let tempID = "cellRow" + i + "Col" + j;
+            menuArray.push(
+              <ContextMenu id={tempID}>
+                <MenuItem onClick={(e) => this.props.contextAddColumn(e, j)}>
+                  Add Column to the Right
+                </MenuItem>
+                <MenuItem divider />
+                <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
+                  Set as Search Cell
+                </MenuItem>
+                <MenuItem divider />
+                <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
+                  Show Origin of Cell
+                </MenuItem>
+              </ContextMenu>
+            );
+          }
+        }
         tableEle = (
-          <div className="">
-            {/* <div>Origin URL of table: {originURL}</div> */}
-            <table className="table table-stripped table-hover">
-              {this.createSelectedTableView()}
+          // class table-fixed helps with sticky column headers
+          <div>
+            <table class border="1" className="table table-sm table-bordered">
+              {this.createSuperTable()}
             </table>
+            {menuArray}
           </div>
         );
       }
