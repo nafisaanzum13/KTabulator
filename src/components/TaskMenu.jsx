@@ -23,12 +23,6 @@ class TaskMenu extends Component {
           >
             Explore Table on URL
           </li>
-          <li
-            className="list-group-item"
-            onClick={(e) => this.props.handleSelectTask(e, "startTable")}
-          >
-            Start from Pasted Table
-          </li>
           <hr className="m-0"></hr>
         </ul>
       </div>

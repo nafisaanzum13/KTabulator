@@ -80,7 +80,7 @@ class MainBody extends Component {
       //         4.2.5) title:         array of strings storing the column headers of the current table
       propertyNeighbours: [],
       semanticEnabled: "disabled", // boolean value indicating whether semantic mapping is enabled or not. Default to true
-      unionCutOff: 1, // number representing the union percentage a table must have to be considered unionable (>=)
+      unionCutOff: 0.75, // number representing the union percentage a table must have to be considered unionable (>=)
     };
 
     // functions below are useful during start up
@@ -122,6 +122,7 @@ class MainBody extends Component {
     this.copyTable = this.copyTable.bind(this);
     this.toggleWikiPage = this.toggleWikiPage.bind(this);
     this.undoPreviousStep = this.undoPreviousStep.bind(this);
+    this.handleTabSwitch = this.handleTabSwitch.bind(this);
   }
 
   handleURLPaste(urlPasted) {
@@ -142,25 +143,25 @@ class MainBody extends Component {
   copyTable() {
     const textArea = document.createElement("textarea"); // this line allows the use of select() function
     let copiedText = "";
-    // We handle the case for exploreTable and startSubject differently
+    // // We handle the case for exploreTable and startSubject differently
 
-    // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
-    if (this.state.usecaseSelected === "exploreTable") {
-      // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
-      const rowNum = this.state.tableDataExplore.length;
-      const colNum = this.state.tableDataExplore[0].length;
-      for (let i = 0; i < rowNum; ++i) {
-        for (let j = 0; j < colNum - 1; ++j) {
-          copiedText =
-            copiedText + this.state.tableDataExplore[i][j].data + "\t";
-        }
-        copiedText =
-          copiedText + this.state.tableDataExplore[i][colNum - 1].data + "\n";
-      }
-    }
+    // // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
+    // if (this.state.usecaseSelected === "exploreTable") {
+    //   // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
+    //   const rowNum = this.state.tableDataExplore.length;
+    //   const colNum = this.state.tableDataExplore[0].length;
+    //   for (let i = 0; i < rowNum; ++i) {
+    //     for (let j = 0; j < colNum - 1; ++j) {
+    //       copiedText =
+    //         copiedText + this.state.tableDataExplore[i][j].data + "\t";
+    //     }
+    //     copiedText =
+    //       copiedText + this.state.tableDataExplore[i][colNum - 1].data + "\n";
+    //   }
+    // }
 
     // This case handles the copy table for start subject
-    else if (this.state.usecaseSelected === "startSubject") {
+    if (this.state.usecaseSelected === "startSubject" || this.state.usecaseSelected === "exploreTable") {
       // We first push on the text for column headers (using the labels)
       let tableHeader = this.state.tableHeader;
       for (let i = 0; i < tableHeader.length; ++i) {
@@ -271,17 +272,6 @@ class MainBody extends Component {
         });
     } 
     else {
-      // Adding support for undo:
-      let lastAction = "handleSelectTask&startTable";
-      let prevState = 
-        {
-          "usecaseSelected":this.state.usecaseSelected,
-        };
-      this.setState({
-        usecaseSelected: taskSelected,
-        lastAction: lastAction,
-        prevState: prevState,
-      });
     }
   }
 
@@ -940,7 +930,7 @@ class MainBody extends Component {
     // });
   }
 
-  // This function is a helper function that takes in 9 parameters:
+  // This function is a helper function that takes in 10 parameters:
   // Note: this function does not make any fetch requests, thus does NOT involve promises.
 
   // 1) colIndex:        index of the column that we just filled     (ex. 1, if we just filled in column 1)
@@ -950,14 +940,16 @@ class MainBody extends Component {
   // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
   // 6) values:          query results that are passed in
 
-  // 7) tableHeader:   original tableHeader
-  // 8) tableData:     original tableData
-  // 9) optionsMap:    original optionsMap
+  // 7) tableHeader:                 original tableHeader
+  // 8) tableData:                   original tableData
+  // 9) optionsMap:                  original optionsMap
+  // 10) selectedClassAnnotation:    original selectedClassAnnotation
 
-  // and returns an object with three values:
-  // 1) tableHeader:   tableHeader after modification
-  // 2) tableData:     tableData after modification
-  // 3) optionsMap:    optionsMap after modification
+  // and returns an object with four values:
+  // 1) tableHeader:                tableHeader after modification
+  // 2) tableData:                  tableData after modification
+  // 3) optionsMap:                 optionsMap after modification
+  // 4) selectedClassAnnotation:    selectedClassAnnotation after modification
   addAllNeighbour(
     colIndex,
     neighbour,
@@ -967,7 +959,8 @@ class MainBody extends Component {
     values,
     tableHeader,
     tableData,
-    optionsMap
+    optionsMap,
+    selectedClassAnnotation
   ) {
     // Let's first check if all the variables are as expected
 
@@ -1026,6 +1019,7 @@ class MainBody extends Component {
         labelText += tableHeaderUpdated[this.state.keyColIndex][i].value;
       }
     } else {
+      // there's a bug somewhere here. Needs to fix it later.
       labelText = tableHeaderUpdated[this.state.keyColIndex].label;
     }
     for (let j = 0; j < numCols; ++j) {
@@ -1055,6 +1049,18 @@ class MainBody extends Component {
     }
     for (let k = colIndex + 1; k < colNum; ++k) {
       tableHeaderUpdated.push(tableHeader[k]);
+    }
+
+    // We now take care of selectedClassAnnotation. For now, we just add some empty arrays to it
+    let selectedClassAnnotationUpdated = [];
+    for (let j = 0; j < colIndex; ++j) {
+      selectedClassAnnotationUpdated.push(selectedClassAnnotation[j]);
+    }
+    for (let j = 0; j < numCols; ++j) {
+      selectedClassAnnotationUpdated.push([]);
+    }
+    for (let k = colIndex; k < colNum-1; ++k) {
+      selectedClassAnnotationUpdated.push(selectedClassAnnotation[k]);
     }
 
     // we now take care of optionMap's addition. We just need to add some empty arrays to it
@@ -1119,16 +1125,20 @@ class MainBody extends Component {
       tableHeader: tableHeaderUpdated,
       tableData: tableDataUpdated,
       optionsMap: optionsMapUpdated,
+      selectedClassAnnotation: selectedClassAnnotationUpdated,
     };
   }
 
   // This function populates all neighbour with the same names in different columns, if that neighbour has multiple occurences.
-  // It takes in 5 parameters:
+
+  // It takes in 6 parameters:
   // 1) colIndex:        index of the column that we just filled     (ex. 1, if we just filled in column 1)
   // 2) neighbour:       attribute name of the column we just filled (ex. almaMater)
   // 3) neighbourIndex:  index of the attribute we just filled       (ex. 0, if we have filled in almaMater-1)
   // 4) type:            type of the attribute. Either "subject" or "object"
   // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
+  // 6) range:           range for the neighbour to be filled (ex: Person for vicePresident)
+  
   // Note: currently it only populates "later" neighbour with same name.
 
   sameNeighbourDiffCol(e,colIndex,neighbour,neighbourIndex,type,numCols,range) {
@@ -1154,7 +1164,8 @@ class MainBody extends Component {
                                         values,
                                         this.state.tableHeader,
                                         this.state.tableData,
-                                        this.state.optionsMap);
+                                        this.state.optionsMap,
+                                        this.state.selectedClassAnnotation);
       // Let's also create the object we need for populateSameRange
       // Note: the following code is identical to what we have in populateOtherColumn
       let tempObj = {};
@@ -1217,6 +1228,7 @@ class MainBody extends Component {
         tableData:newState.tableData,
         tableHeader:newState.tableHeader,
         optionsMap:newState.optionsMap,
+        selectedClassAnnotation:newState.selectedClassAnnotation,
         lastAction: lastAction,
         prevState: prevState,
       })
@@ -1298,10 +1310,11 @@ class MainBody extends Component {
       //   console.log(values[i]);
       // }
 
-      // first we fetch the initial state of tableHeader, tableData, and optionsMap
+      // first we fetch the initial state of tableHeader, tableData, optionsMap, and selectedClassAnnotation
       let tempHeader = this.state.tableHeader;
       let tempData = this.state.tableData;
       let tempOptions = this.state.optionsMap;
+      let tempAnnotation = this.state.selectedClassAnnotation;
       let curColIndex = colIndex;
       for (let i=0;i<siblingNeighbour.length;++i) {
         let curValueArray = [];
@@ -1316,11 +1329,13 @@ class MainBody extends Component {
                                             curValueArray,               // This is the fetched data
                                             tempHeader,
                                             tempData,
-                                            tempOptions);
+                                            tempOptions,
+                                            tempAnnotation);
         curColIndex+=siblingNeighbour[i].count;
         tempHeader = newState.tableHeader;
         tempData = newState.tableData;
         tempOptions = newState.optionsMap;
+        tempAnnotation = newState.selectedClassAnnotation;
       }
 
       // Support for undo: 
@@ -1338,6 +1353,7 @@ class MainBody extends Component {
         tableData:tempData,
         tableHeader:tempHeader,
         optionsMap:tempOptions,
+        selectedClassAnnotation:tempAnnotation,
         lastAction:lastAction,
         prevState:prevState,
       })
@@ -1365,7 +1381,7 @@ class MainBody extends Component {
       tableData.push(tempRow);
     }
 
-    // we now take care of tabler header and optionMap's addition
+    // we now take care of tabler header, optionMap, and selectedClassAnnotation's addition
     // This added column will have options equal to the neighbours of the key column
     let optionsMap = [];
     let tableHeader = [];
@@ -1379,11 +1395,31 @@ class MainBody extends Component {
       optionsMap.push(this.state.optionsMap[k]);
       tableHeader.push(this.state.tableHeader[k]);
     }
+
+    // we now take care of selectedClassAnnotation
+    let selectedClassAnnotation = [];
+    for (let j = 0; j < colIndex; ++j) {
+      selectedClassAnnotation.push(this.state.selectedClassAnnotation[j]);
+    }
+    selectedClassAnnotation.push([]);
+    for (let k = colIndex; k < colNum-1; ++k) {
+      selectedClassAnnotation.push(this.state.selectedClassAnnotation[k]);
+    }
+
+    // Lastly, if colIndex is less than keyColIndex, we need to increase keyColIndex by 1
+    let keyColIndex = this.state.keyColIndex;
+    if (colIndex < keyColIndex) {
+      ++keyColIndex;
+    }
+    // console.log(this.state.selectedClassAnnotation);
+    // console.log(tableHeader);
     this.setState({
       tableData: tableData,
       tableHeader: tableHeader,
       curActionInfo: null,
       optionsMap: optionsMap,
+      keyColIndex: keyColIndex,
+      selectedClassAnnotation: selectedClassAnnotation,
     });
   }
 
@@ -1711,14 +1747,13 @@ class MainBody extends Component {
         // tableArrayPromise stores an array of promises that resolve to tableArray
         let tableArrayPromise = [];
         for (let i = 0; i < values.length; ++i) {
-          let tableHTML = this.state.originTableArray[
-            this.state.selectedTableIndex
-          ];
           let pageHTML = values[i];
           // This is a helper function that fetches useful tables from pageHTML
+          // console.log("The class annotation for the selected table is: ");
+          // console.log(this.state.selectedClassAnnotation);
           tableArrayPromise.push(
             findTableFromHTML(
-              tableHTML,
+              this.state.tableHeader,
               pageHTML,
               this.state.selectedClassAnnotation,
               this.state.semanticEnabled,
@@ -2044,7 +2079,25 @@ class MainBody extends Component {
     }
     this.setState({
       unionCutOff: e.target.value,
+      propertyNeighbours: propertyNeighbours,
     });
+  }
+
+  // This function hanles switching tabs, if starting task is exploreTable
+
+  handleTabSwitch(index) {
+    // If we are switching to "Union Table" tab from "Wrangling Actions" tab, we want to toggle off all the property neighbours.
+    // Since we might have potentially changed the table in table panel, thus changed the search criteria as well
+    console.log(this.state.selectedClassAnnotation);
+    if (index === 1) {
+      let propertyNeighbours = this.state.propertyNeighbours.slice();
+      for (let i = 0; i < propertyNeighbours.length; ++i) {
+        propertyNeighbours[i].isOpen = false;
+      }
+      this.setState({
+        propertyNeighbours: propertyNeighbours,
+      });
+    }
   }
 
   // This function handles the transition from the table union scenario to the table creation scenario
@@ -2150,7 +2203,7 @@ class MainBody extends Component {
       })
     }
     else if (lastAction.includes("handleSelectTask")) {
-      // In this case we have three subcases, depends on whether the selected task was starSubject, exploreTable, or startTable
+      // In this case we have two subcases, depends on whether the selected task was starSubject, or exploreTable
       if (lastAction === "handleSelectTask&startSubject") {
         this.setState({
           usecaseSelected: prevState.usecaseSelected,
@@ -2169,11 +2222,6 @@ class MainBody extends Component {
         })
       }
       else {
-        this.setState({
-          usecaseSelected: prevState.usecaseSelected,
-          curActionInfo: "",
-          lastAction: "",
-        })
       }
     }
     else if (lastAction === "onSelectTable") {
@@ -2270,6 +2318,8 @@ class MainBody extends Component {
                     toggleSemantic={this.toggleSemantic}
                     unionCutOff={this.state.unionCutOff}
                     unionCutOffChange={this.unionCutOffChange}
+                    // Follow state handles tab switch
+                    handleTabSwitch={this.handleTabSwitch}
                   />
                 </div>
               </div>
@@ -2521,20 +2571,20 @@ function HTMLCleanCell(str) {
 // Once semantic mapping feature is added, the colMapping will be updated
 
 function findTableFromHTML(
-  tableHTML,
+  tableHeader,
   pageHTML,
   selectedClassAnnotation,
   semanticEnabled,
   unionCutOff,
   pageName
 ) {
-  // We first get the column names of the selected table
-  let selectedHeaderCells = tableHTML.rows[0].cells;
+  // We first get the column names of the table in the table panel, using this.state.tableHeader.
+  // Note: the index starts from 1 because we don't care about the originURL column (column 0).
   let originCols = [];
-  for (let j = 0; j < selectedHeaderCells.length; ++j) {
-    let headerName = HTMLCleanCell(selectedHeaderCells[j].innerText);
-    originCols.push(headerName);
+  for (let j = 1; j < tableHeader.length; ++j) {
+    originCols.push(tableHeader[j].value);
   }
+  // console.log(originCols);
 
   // We now fetch all the tables from pageHTML (the current sibling page)
   let doc = new DOMParser().parseFromString(pageHTML, "text/html");
@@ -2547,63 +2597,6 @@ function findTableFromHTML(
   }
 
   // console.log(tablesFound);
-  // Let's try to log in console the class annotation found for these tables
-  // let classAnnotationPromise = [];
-  // for (let i=0;i<tablesFound.length;++i) {
-  //   classAnnotationPromise.push(findClassAnnotation(tablesFound[i],pageName));
-  // }
-
-  // allPromiseReady(classAnnotationPromise).then((values) => {
-  //   for (let i=0;i<values.length;++i) {
-  //     // console.log(tablesFound[i]);
-  //     let selectedTable = tablesFound[i];
-  //     let tempTable = [];
-
-  //     // We first fetch the plain, unprocessed version of the table.
-  //     for (let i=0;i<selectedTable.rows.length;++i) {
-  //       let tempRow = [];
-  //       for (let j=0;j<selectedTable.rows[i].cells.length;++j) {
-  //           let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
-  //           let curRowSpan = selectedTable.rows[i].cells[j].rowSpan;
-  //           let curColSpan = selectedTable.rows[i].cells[j].colSpan;
-  //           tempRow.push({"data":curCellText,"rowSpan":curRowSpan,"colSpan":curColSpan});
-  //       }
-  //       tempTable.push(tempRow);
-  //     }
-
-  //     // We first deal with colspans.
-  //     for (let i=0;i<tempTable.length;++i) {
-  //       for (let j=0;j<tempTable[i].length;++j) {
-  //         let curCellText = tempTable[i][j].data;
-  //         if (tempTable[i][j].colSpan > 1) {
-  //             for (let k=1;k<tempTable[i][j].colSpan;++k) {
-  //                 tempTable[i].splice(j+1,0,{"data":curCellText,"rowSpan":1,"colSpan":1});
-  //             }
-  //         }
-  //       }
-  //     }
-
-  //     // We now deal with rowspans.
-  //     for (let i=0;i<tempTable.length;++i) {
-  //       for (let j=0;j<tempTable[i].length;++j) {
-  //           let curCellText = tempTable[i][j].data;
-  //           if (tempTable[i][j].rowSpan > 1) {
-  //               for (let k=1;k<tempTable[i][j].rowSpan;++k) {
-  //                 // Note: the if condition is necessary to take care of error conditions (the original HTML table element has errors)
-  //                 if (i+k < tempTable.length) {
-  //                   tempTable[i+k].splice(j,0,{"data":curCellText,"rowSpan":1,"colSpan":1});
-  //                 }
-  //               }
-  //           }
-  //       }
-  //     }
-  //     console.log("Page name is "+pageName);
-  //     console.log("The following is the data for the table: ");
-  //     console.log(tempTable);
-  //     console.log("Now we show the class annotations for its columns: ");
-  //     console.log(values[i]);
-  //   }
-  // })
 
   // This is the array we will return.
   let tableArray = [];

@@ -17,6 +17,7 @@ class TablePanel extends Component {
   // And convert them into HTML for the super table
 
   createSuperTable() {
+    // console.log(this.props.tableData);
     const rowNum = this.props.tableData.length;
     const colNum = this.props.tableData[0].length;
 

@@ -6,8 +6,8 @@ import { FaList, FaTable } from "react-icons/fa";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
 // The two following lines are for range sliders
-import RangeSlider from "react-bootstrap-range-slider";
-import "react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
+// import RangeSlider from "react-bootstrap-range-slider";
+// import "react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
 
 class ActionPanel extends Component {
   constructor(props) {
@@ -208,8 +208,9 @@ class ActionPanel extends Component {
   }
 
   render() {
-    let actionEle;
-    let titleEle;
+    let actionEle;  // contains either wrangling actions or unionable tables for the action panel
+    let wrapperEle; // wrapper element for actionEle. This is what we will render in the HTML.
+    let titleEle;   // contains what we will display as the title for the action panel
 
     // We first decide the content for the titleElement
     if (
@@ -230,7 +231,8 @@ class ActionPanel extends Component {
           </div>
         </div>
       );
-    } else {
+    } 
+    else {
       titleEle = (
         <div className="row action-header">
           <div className="col-md-8">
@@ -242,15 +244,6 @@ class ActionPanel extends Component {
               </span>
             </h4>
           </div>
-          {/* <div className="col-md-1" title="copy table to csv">
-            <FaCopy onClick={() => this.props.copyTable()}/>
-          </div>
-          <div className="col-md-1" title="go to table creation mode">
-            <FaExchangeAlt onClick={() => this.props.goTableCreation()}/>
-          </div>
-          <div className="col-md-1" title="undo previous action">
-            <FaUndo onClick={() => this.props.undoPreviousStep()}/>
-          </div> */}
         </div>
       );
     }
@@ -258,9 +251,9 @@ class ActionPanel extends Component {
     // We now decide the content for the actionElement
     // Case 1: URL has been pasted, but task has not been selected. User needs to select task.
     if (this.props.usecaseSelected === "") {
-      actionEle = <TaskMenu handleSelectTask={this.props.handleSelectTask} />;
+      wrapperEle = <TaskMenu handleSelectTask={this.props.handleSelectTask} />;
     }
-    // Case 2: curActionInfo is not null, meaning we have to display some task in ActionPanel
+    // Case 2: Task has been selected. curActionInfo is not null, meaning we have to display some task in ActionPanel
     else if (this.props.curActionInfo !== null) {
       const actionInfo = this.props.curActionInfo;
       if (actionInfo.task === "populateKeyColumn") {
@@ -289,7 +282,8 @@ class ActionPanel extends Component {
             </button>
           </div>
         );
-      } else if (actionInfo.task === "populateOtherColumn") {
+      } 
+      else if (actionInfo.task === "populateOtherColumn") {
         let neighbourText =
           actionInfo.type === "subject"
             ? actionInfo.neighbour
@@ -314,7 +308,8 @@ class ActionPanel extends Component {
             </button>
           </div>
         );
-      } else if (actionInfo.task === "populateSameNeighbour") {
+      } 
+      else if (actionInfo.task === "populateSameNeighbour") {
         let neighbourText =
           actionInfo.type === "subject"
             ? actionInfo.neighbour
@@ -358,7 +353,8 @@ class ActionPanel extends Component {
             </div>
           </div>
         );
-      } else if (actionInfo.task === "populateSameRange") {
+      } 
+      else if (actionInfo.task === "populateSameRange") {
         let siblingText = "";
         for (let i = 0; i < actionInfo.siblingNeighbour.length; ++i) {
           if (i > 0) {
@@ -384,14 +380,16 @@ class ActionPanel extends Component {
             </button>
           </div>
         );
-      } else if (actionInfo.task === "contextCellOrigin") {
+      } 
+      else if (actionInfo.task === "contextCellOrigin") {
         actionEle = (
           <div>
             <p>Origin of selected cell is:</p>
             <div>{actionInfo.origin}</div>
           </div>
         );
-      } else if (actionInfo.task === "selectTableIndex") {
+      } 
+      else if (actionInfo.task === "selectTableIndex") {
         actionEle = (
           <div>
             {/* <p></p> */}
@@ -405,14 +403,100 @@ class ActionPanel extends Component {
             </button>
           </div>
         );
-      } else if (actionInfo.task === "showPropertyNeighbours") {
-        actionEle = (
+      } 
+      else if (actionInfo.task === "showPropertyNeighbours") {
+        // actionEle = (
+        //   <div>
+        //     <Tabs>
+        //       <TabList>
+        //         <Tab>Results</Tab>
+        //         <Tab>Setting</Tab>
+        //       </TabList>
+        //       <TabPanel>
+        //         <small>
+        //           Explore relations below to look for other pages with similar
+        //           tables:
+        //         </small>{" "}
+        //         <br></br>
+        //         {this.createPropertyArray()}
+        //       </TabPanel>
+        //       <TabPanel>
+        //         <div className="row">
+        //           <div className="col-md-4">Semantic Mapping:</div>
+        //           <div className="col-md-6">
+        //             <div onChange={(e) => this.props.toggleSemantic(e)}>
+        //               <input
+        //                 type="radio"
+        //                 value="enabled"
+        //                 checked={this.props.semanticEnabled === "enabled"}
+        //               />{" "}
+        //               Enabled
+        //               <input
+        //                 type="radio"
+        //                 value="disabled"
+        //                 checked={this.props.semanticEnabled === "disabled"}
+        //               />{" "}
+        //               Disabled
+        //             </div>
+        //           </div>
+        //         </div>
+        //         <br />
+        //         <div className="row">
+        //           <div className="col-md-4">Union Cutoff Percentage:</div>
+        //           <div className="col-md-6">
+        //             <RangeSlider
+        //               value={this.props.unionCutOff}
+        //               onChange={(e) => this.props.unionCutOffChange(e)}
+        //               min={0}
+        //               max={1}
+        //               step={0.05}
+        //             />
+        //           </div>
+        //         </div>
+        //       </TabPanel>
+        //     </Tabs>
+        //   </div>
+        // );
+      }
+    } 
+    // This is an empty else clause
+    else {
+    }
+
+    // Now we have to determine whether we are rendering one tab or two tabs.
+    // One tab for startSubject. Two tabs for startTable.
+    // console.log(this.props.usecaseSelected);
+    // In the startSubject case, we will have one tab: wrangling actions
+    if (this.props.usecaseSelected === "startSubject") {
+      wrapperEle = (
+        <div>
+          <Tabs>
+            <TabList>
+              <Tab>Wrangling Actions</Tab>
+            </TabList>
+            <TabPanel>
+              {actionEle}
+            </TabPanel>
+          </Tabs>
+        </div>
+      );
+    }
+    else if (this.props.usecaseSelected === "exploreTable") {
+      // If we have not selected a table, we show both tabs, as we are fully ready.
+      if (this.props.selectedTableIndex !== -1) {
+        wrapperEle = (
           <div>
-            <Tabs>
+            <Tabs 
+              defaultIndex={1}
+              onSelect={(index) => this.props.handleTabSwitch(index)}
+            >
               <TabList>
-                <Tab>Results</Tab>
-                <Tab>Setting</Tab>
+                <Tab>Wrangling Actions</Tab>
+                <Tab>Union Tables</Tab>
               </TabList>
+              <TabPanel>
+                {actionEle}
+              </TabPanel>
               <TabPanel>
                 <small>
                   Explore relations below to look for other pages with similar
@@ -421,50 +505,19 @@ class ActionPanel extends Component {
                 <br></br>
                 {this.createPropertyArray()}
               </TabPanel>
-              <TabPanel>
-                <div className="row">
-                  <div className="col-md-4">Semantic Mapping:</div>
-                  <div className="col-md-6">
-                    <div onChange={(e) => this.props.toggleSemantic(e)}>
-                      <input
-                        type="radio"
-                        value="enabled"
-                        checked={this.props.semanticEnabled === "enabled"}
-                      />{" "}
-                      Enabled
-                      <input
-                        type="radio"
-                        value="disabled"
-                        checked={this.props.semanticEnabled === "disabled"}
-                      />{" "}
-                      Disabled
-                    </div>
-                  </div>
-                </div>
-                <br />
-                <div className="row">
-                  <div className="col-md-4">Union Cutoff Percentage:</div>
-                  <div className="col-md-6">
-                    <RangeSlider
-                      value={this.props.unionCutOff}
-                      onChange={(e) => this.props.unionCutOffChange(e)}
-                      min={0}
-                      max={1}
-                      step={0.05}
-                    />
-                  </div>
-                </div>
-              </TabPanel>
             </Tabs>
           </div>
-        );
+        )
       }
-    } else {
+      // Else, we have not selected a table yet. In this case, wrapperEle should be equal to actionEle
+      else {  
+        wrapperEle = actionEle;
+      }
     }
     return (
       <div>
         {titleEle}
-        {actionEle}
+        {wrapperEle}
       </div>
     );
   }
