@@ -94,3 +94,13 @@
 .list-with-background:hover {
   background-color: #a6d8d0 !important;
 }
+
+/* The following class handles the style for setting modal */
+
+.setting-modal {
+  margin-top: 25vh;
+  margin-left: 25vw;
+  height: 40vh;
+  width: 50vw;
+  background-color: #fff;
+}

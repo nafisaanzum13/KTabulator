@@ -1,5 +1,6 @@
 import React, { Component } from "react";
-import { FaCopy, FaUndo, FaExchangeAlt } from "react-icons/fa";
+import { FaCopy, FaUndo } from "react-icons/fa";
+import { FiSettings } from "react-icons/fi";
 
 class Header extends Component {
   state = {};
@@ -27,11 +28,11 @@ class Header extends Component {
             <div className="col-md-4">
               <button
                 className="btn btn-default"
-                title="go to table creation mode"
+                title="Union Table Settings"
               >
-                <FaExchangeAlt
+                <FiSettings
                   className="logo-left-color"
-                  onClick={() => this.props.goTableCreation()}
+                  onClick={() => this.props.openModal()}
                 />
               </button>
             </div>

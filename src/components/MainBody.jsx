@@ -3,6 +3,7 @@ import React, { Component } from "react";
 import { combinations } from "mathjs";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import SettingModal from "../components/SettingModal";
 import LandingPage from "../components/LandingPage";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
@@ -42,8 +43,9 @@ class MainBody extends Component {
       pageHidden: false,
       iframeURL: "",
       curActionInfo: null, // object storing the current action that should be displayed in ActionPanel. Initially null.
-      lastAction: "",          // string storing the last action that has modified the result table in the table panel
-      prevState: "",           // objects storing the information needed to undo the last step. Information stored depends on lastAction
+      lastAction: "",      // string storing the last action that has modified the result table in the table panel
+      prevState: "",       // objects storing the information needed to undo the last step. Information stored depends on lastAction
+      showModal: false,    // boolean storing whether setting modal is shown or not. Default to false.
 
       // states below are useful for startSubject
       keyColIndex: 0,   // number storing the index of the search column. initially the key column is the first column
@@ -116,13 +118,15 @@ class MainBody extends Component {
     this.unionProperty = this.unionProperty.bind(this);
     this.toggleSemantic = this.toggleSemantic.bind(this);
     this.unionCutOffChange = this.unionCutOffChange.bind(this);
-    this.goTableCreation = this.goTableCreation.bind(this);
+    // this.goTableCreation = this.goTableCreation.bind(this);
 
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
     this.toggleWikiPage = this.toggleWikiPage.bind(this);
     this.undoPreviousStep = this.undoPreviousStep.bind(this);
     this.handleTabSwitch = this.handleTabSwitch.bind(this);
+    this.openModal = this.openModal.bind(this);
+    this.closeModal = this.closeModal.bind(this);
   }
 
   handleURLPaste(urlPasted) {
@@ -2100,33 +2104,33 @@ class MainBody extends Component {
     }
   }
 
-  // This function handles the transition from the table union scenario to the table creation scenario
-  // Fow now, this function should only work when the usecaseSelected is exploreTable
+  // // This function handles the transition from the table union scenario to the table creation scenario
+  // // Fow now, this function should only work when the usecaseSelected is exploreTable
   
-  // It makes use of the helper function getTableStates 
+  // // It makes use of the helper function getTableStates 
    
-  goTableCreation() {
+  // goTableCreation() {
 
-    if (this.state.usecaseSelected === "exploreTable") {
+  //   if (this.state.usecaseSelected === "exploreTable") {
       
-      let promiseArray = [getTableStates(this.state.tableDataExplore, this.state.selectedClassAnnotation)];
-      allPromiseReady(promiseArray).then((values) => {
+  //     let promiseArray = [getTableStates(this.state.tableDataExplore, this.state.selectedClassAnnotation)];
+  //     allPromiseReady(promiseArray).then((values) => {
 
-        let stateInfo = values[0];
+  //       let stateInfo = values[0];
 
-        this.setState({
-          keyColIndex: stateInfo.keyColIndex,
-          tableHeader: stateInfo.tableHeader,
-          tableData: stateInfo.tableData,
-          keyColNeighbours: stateInfo.keyColNeighbours,
-          optionsMap: stateInfo.optionsMap,
-          usecaseSelected: "startSubject", // We set usecaseSelected to be "startSubject"so that TablePanel can display the correct content
-          curActionInfo: null,
-          lastAction: "goTableCreation", // this adds support for undoPreviousStep
-        });
-      })
-    }
-  }
+  //       this.setState({
+  //         keyColIndex: stateInfo.keyColIndex,
+  //         tableHeader: stateInfo.tableHeader,
+  //         tableData: stateInfo.tableData,
+  //         keyColNeighbours: stateInfo.keyColNeighbours,
+  //         optionsMap: stateInfo.optionsMap,
+  //         usecaseSelected: "startSubject", // We set usecaseSelected to be "startSubject"so that TablePanel can display the correct content
+  //         curActionInfo: null,
+  //         lastAction: "goTableCreation", // this adds support for undoPreviousStep
+  //       });
+  //     })
+  //   }
+  // }
 
   // This function undos the previous change that user has made to the result table in table panel
 
@@ -2241,6 +2245,20 @@ class MainBody extends Component {
     }
   }
 
+  // The two following functions opens/closes the modal for union table settings.
+
+  openModal() {
+    this.setState({
+      showModal: true,
+    })
+  }
+
+  closeModal() {
+    this.setState({
+      showModal: false,
+    })
+  }
+
   render() {
     let bodyEle;
     let bottomContentClass = " bottom-content";
@@ -2262,7 +2280,8 @@ class MainBody extends Component {
               // Following states are passed for general purposes
               copyTable={this.copyTable}
               undoPreviousStep={this.undoPreviousStep}
-              goTableCreation={this.goTableCreation}
+              // goTableCreation={this.goTableCreation}
+              openModal = {this.openModal}
             />
           </div> 
           <div className="mainbody">
@@ -2314,10 +2333,10 @@ class MainBody extends Component {
                     unionTable={this.unionTable}
                     unionPage={this.unionPage}
                     unionProperty={this.unionProperty}
-                    semanticEnabled={this.state.semanticEnabled}
-                    toggleSemantic={this.toggleSemantic}
-                    unionCutOff={this.state.unionCutOff}
-                    unionCutOffChange={this.unionCutOffChange}
+                    // semanticEnabled={this.state.semanticEnabled}
+                    // toggleSemantic={this.toggleSemantic}
+                    // unionCutOff={this.state.unionCutOff}
+                    // unionCutOffChange={this.unionCutOffChange}
                     // Follow state handles tab switch
                     handleTabSwitch={this.handleTabSwitch}
                   />
@@ -2331,6 +2350,16 @@ class MainBody extends Component {
                     toggleWikiPage={this.toggleWikiPage}
                   />
                 </div>
+              </div>
+              <div>
+                <SettingModal 
+                  showModal={this.state.showModal}
+                  closeModal={this.closeModal}
+                  semanticEnabled={this.state.semanticEnabled}
+                  toggleSemantic={this.toggleSemantic}
+                  unionCutOff={this.state.unionCutOff}
+                  unionCutOffChange={this.unionCutOffChange}
+                />
               </div>
             </div>
           </div>
