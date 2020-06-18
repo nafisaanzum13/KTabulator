@@ -32,13 +32,27 @@ class TableSelection extends Component {
           }}
         />
       );
+      let selectButton;
+      if (this.props.tableOpenList[i] === true) {
+        selectButton = 
+          <button
+            onClick={(e) => this.props.onSelectTable(e, i)}
+          >
+            Select
+          </button>
+      }
       buttonArray.push(
         <li
           className="list-group-item"
+          // onClick={(e) => this.props.toggleTable(e, i)}
+        >
+        <span 
           onClick={(e) => this.props.toggleTable(e, i)}
         >
           {buttonText} {}
           <FaTable />
+        </span>
+        {selectButton}
           <Collapse isOpen={this.props.tableOpenList[i]}>
             <div>{tableContent}</div>
           </Collapse>

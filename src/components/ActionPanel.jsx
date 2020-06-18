@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import TaskMenu from "../components/TaskMenu";
 import { Collapse, Button, CardBody, Card } from "reactstrap";
 import { FaList, FaTable } from "react-icons/fa";
+import TableSelection from "../components/TableSelection";
 // The two following lines are for tabs
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
@@ -214,9 +215,10 @@ class ActionPanel extends Component {
 
     // We first decide the content for the titleElement
     if (
-      this.props.usecaseSelected === "" ||
-      (this.props.usecaseSelected === "exploreTable" &&
-        this.props.selectedTableIndex === -1)
+      this.props.usecaseSelected === "" 
+      // ||
+      // (this.props.usecaseSelected === "startTable" &&
+      //   this.props.selectedTableIndex === -1)
     ) {
       titleEle = (
         <div className="row">
@@ -225,7 +227,7 @@ class ActionPanel extends Component {
               ACTIONS
               <span> </span>
               <span className="logo-right-color xsmall">
-                Select your next action
+                Select your starting action
               </span>
             </h4>
           </div>
@@ -251,7 +253,18 @@ class ActionPanel extends Component {
     // We now decide the content for the actionElement
     // Case 1: URL has been pasted, but task has not been selected. User needs to select task.
     if (this.props.usecaseSelected === "") {
-      wrapperEle = <TaskMenu handleSelectTask={this.props.handleSelectTask} />;
+      wrapperEle = 
+        <TaskMenu 
+          handleSelectTask={this.props.handleSelectTask} 
+          urlPasted={this.props.urlPasted}
+          showTableSelection={this.props.showTableSelection}
+          toggleTableSelection={this.props.toggleTableSelection}
+          originTableArray={this.props.originTableArray}
+          tableOpenList={this.props.tableOpenList}
+          toggleTable={this.props.toggleTable}
+          selectedTableIndex={this.props.selectedTableIndex}
+          onSelectTable={this.props.onSelectTable}
+        />;
     }
     // Case 2: Task has been selected. curActionInfo is not null, meaning we have to display some task in ActionPanel
     else if (this.props.curActionInfo !== null) {
@@ -266,7 +279,7 @@ class ActionPanel extends Component {
         }
         actionEle = (
           <div>
-            <p>Populate column {actionInfo.colIndex} with column header:</p>
+            <p>Populate this column with column header:</p>
             <p>{neighbourArrayText}</p>
             <p>?</p>
             <button
@@ -290,7 +303,7 @@ class ActionPanel extends Component {
             : "is " + actionInfo.neighbour + " of";
         actionEle = (
           <div>
-            <p>Populate column {actionInfo.colIndex} with column header:</p>
+            <p>Populate this column with column header:</p>
             <p>{neighbourText} ?</p>
             <button
               onClick={(e) =>
@@ -475,13 +488,45 @@ class ActionPanel extends Component {
               <Tab>Wrangling Actions</Tab>
             </TabList>
             <TabPanel>
-              {actionEle}
+              <div className="wrangling-actions">
+                {actionEle}
+              </div>
+              <div className="table-list">
+                <ul class="list-group list-css list-group-flush">
+                  <hr className="m-0"></hr>
+                  <li
+                    className="list-group-item"
+                  >
+                    <span 
+                      onClick={() => this.props.toggleTableSelection()}
+                    >
+                      Restart with an existing table from page <FaList />
+                    </span>
+
+                    <Collapse isOpen={this.props.showTableSelection}>
+                      <CardBody>
+                        <Card>
+                          <div>
+                            <TableSelection
+                              originTableArray={this.props.originTableArray}
+                              tableOpenList={this.props.tableOpenList}
+                              toggleTable={this.props.toggleTable}
+                              selectedTableIndex={this.props.selectedTableIndex}
+                              onSelectTable={this.props.onSelectTable}
+                            />
+                          </div>
+                        </Card>
+                      </CardBody>
+                    </Collapse>
+                  </li>
+                </ul>
+              </div>
             </TabPanel>
           </Tabs>
         </div>
       );
     }
-    else if (this.props.usecaseSelected === "exploreTable") {
+    else if (this.props.usecaseSelected === "startTable") {
       // If we have not selected a table, we show both tabs, as we are fully ready.
       if (this.props.selectedTableIndex !== -1) {
         wrapperEle = (

@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import TableSelection from "../components/TableSelection";
+// import TableSelection from "../components/TableSelection";
 // import Tooltip from '@atlaskit/tooltip';
 import Select from "react-select";
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
@@ -175,92 +175,124 @@ class TablePanel extends Component {
   render() {
     let tableEle = null;
 
-    // Case one: user hasn't selected any task yet
-    if (this.props.usecaseSelected === "") {
-      tableEle = <h4 className="text-center">Welcome!</h4>;
-    }
-    // Case two: user has chosen task "startSubject"
-    else if (this.props.usecaseSelected === "startSubject") {
-      let menuArray = [];
-      for (let i = 0; i < this.props.tableData.length; ++i) {
-        for (let j = 0; j < this.props.tableData[0].length; ++j) {
-          let tempID = "cellRow" + i + "Col" + j;
-          menuArray.push(
-            <ContextMenu id={tempID}>
-              <MenuItem onClick={(e) => this.props.contextAddColumn(e, j)}>
-                Add Column to the Right
-              </MenuItem>
-              <MenuItem divider />
-              <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
-                Set as Search Cell
-              </MenuItem>
-              <MenuItem divider />
-              <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
-                Show Origin of Cell
-              </MenuItem>
-            </ContextMenu>
-          );
-        }
-      }
-      tableEle = (
-        // class table-fixed helps with sticky column headers
-        <div>
-          <table class border="1" className="table table-sm table-bordered">
-            {this.createSuperTable()}
-          </table>
-          {menuArray}
-        </div>
-      );
-    }
-    // Case three: user has chosen task "exploreTable"
-    else if (this.props.usecaseSelected === "exploreTable") {
-      // Case 3.1: User has not selected a table yet
-      if (this.props.selectedTableIndex === -1) {
-        tableEle = (
-          <TableSelection
-            originTableArray={this.props.originTableArray}
-            tableOpenList={this.props.tableOpenList}
-            toggleTable={this.props.toggleTable}
-            selectedTableIndex={this.props.selectedTableIndex}
-          />
+    // // Case one: user hasn't selected any task yet
+    // if (this.props.usecaseSelected === "") {
+    //   tableEle = <h4 className="text-center">Welcome!</h4>;
+    // }
+    // // Case two: user has chosen task "startSubject"
+    // else if (this.props.usecaseSelected === "startSubject") {
+    //   let menuArray = [];
+    //   for (let i = 0; i < this.props.tableData.length; ++i) {
+    //     for (let j = 0; j < this.props.tableData[0].length; ++j) {
+    //       let tempID = "cellRow" + i + "Col" + j;
+    //       menuArray.push(
+    //         <ContextMenu id={tempID}>
+    //           <MenuItem onClick={(e) => this.props.contextAddColumn(e, j)}>
+    //             Add Column to the Right
+    //           </MenuItem>
+    //           <MenuItem divider />
+    //           <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
+    //             Set as Search Cell
+    //           </MenuItem>
+    //           <MenuItem divider />
+    //           <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
+    //             Show Origin of Cell
+    //           </MenuItem>
+    //         </ContextMenu>
+    //       );
+    //     }
+    //   }
+    //   tableEle = (
+    //     // class table-fixed helps with sticky column headers
+    //     <div>
+    //       <table class border="1" className="table table-sm table-bordered">
+    //         {this.createSuperTable()}
+    //       </table>
+    //       {menuArray}
+    //     </div>
+    //   );
+    // }
+    // // Case three: user has chosen task "startTable"
+    // else if (this.props.usecaseSelected === "startTable") {
+    //   // Case 3.1: User has not selected a table yet
+    //   if (this.props.selectedTableIndex === -1) {
+    //     tableEle = (
+    //       <TableSelection
+    //         originTableArray={this.props.originTableArray}
+    //         tableOpenList={this.props.tableOpenList}
+    //         toggleTable={this.props.toggleTable}
+    //         selectedTableIndex={this.props.selectedTableIndex}
+    //       />
+    //     );
+    //   }
+    //   // Case 3.2: User has selected a table
+    //   // Make the second part into its own component
+    //   else {
+    //     let menuArray = [];
+    //     for (let i = 0; i < this.props.tableData.length; ++i) {
+    //       for (let j = 0; j < this.props.tableData[0].length; ++j) {
+    //         let tempID = "cellRow" + i + "Col" + j;
+    //         menuArray.push(
+    //           <ContextMenu id={tempID}>
+    //             <MenuItem onClick={(e) => this.props.contextAddColumn(e, j)}>
+    //               Add Column to the Right
+    //             </MenuItem>
+    //             <MenuItem divider />
+    //             <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
+    //               Set as Search Cell
+    //             </MenuItem>
+    //             <MenuItem divider />
+    //             <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
+    //               Show Origin of Cell
+    //             </MenuItem>
+    //           </ContextMenu>
+    //         );
+    //       }
+    //     }
+    //     tableEle = (
+    //       // class table-fixed helps with sticky column headers
+    //       <div>
+    //         <table class border="1" className="table table-sm table-bordered">
+    //           {this.createSuperTable()}
+    //         </table>
+    //         {menuArray}
+    //       </div>
+    //     );
+    //   }
+    // } else {
+    // }
+
+    // In all cases, once we have pasted the URL. We want to display the super table in the table panel.
+    let menuArray = [];
+    for (let i = 0; i < this.props.tableData.length; ++i) {
+      for (let j = 0; j < this.props.tableData[0].length; ++j) {
+        let tempID = "cellRow" + i + "Col" + j;
+        menuArray.push(
+          <ContextMenu id={tempID}>
+            <MenuItem onClick={(e) => this.props.contextAddColumn(e, j)}>
+              Add Column to the Right
+            </MenuItem>
+            <MenuItem divider />
+            <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
+              Set as Search Cell
+            </MenuItem>
+            <MenuItem divider />
+            <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
+              Show Origin of Cell
+            </MenuItem>
+          </ContextMenu>
         );
       }
-      // Case 3.2: User has selected a table
-      // Make the second part into its own component
-      else {
-        let menuArray = [];
-        for (let i = 0; i < this.props.tableData.length; ++i) {
-          for (let j = 0; j < this.props.tableData[0].length; ++j) {
-            let tempID = "cellRow" + i + "Col" + j;
-            menuArray.push(
-              <ContextMenu id={tempID}>
-                <MenuItem onClick={(e) => this.props.contextAddColumn(e, j)}>
-                  Add Column to the Right
-                </MenuItem>
-                <MenuItem divider />
-                <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
-                  Set as Search Cell
-                </MenuItem>
-                <MenuItem divider />
-                <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
-                  Show Origin of Cell
-                </MenuItem>
-              </ContextMenu>
-            );
-          }
-        }
-        tableEle = (
-          // class table-fixed helps with sticky column headers
-          <div>
-            <table class border="1" className="table table-sm table-bordered">
-              {this.createSuperTable()}
-            </table>
-            {menuArray}
-          </div>
-        );
-      }
-    } else {
     }
+    tableEle = (
+      // class table-fixed helps with sticky column headers
+      <div>
+        <table class border="1" className="table table-sm table-bordered">
+          {this.createSuperTable()}
+        </table>
+        {menuArray}
+      </div>
+    );
     return <div>{tableEle}</div>;
   }
 }

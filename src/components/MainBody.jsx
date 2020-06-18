@@ -46,6 +46,7 @@ class MainBody extends Component {
       lastAction: "",      // string storing the last action that has modified the result table in the table panel
       prevState: "",       // objects storing the information needed to undo the last step. Information stored depends on lastAction
       showModal: false,    // boolean storing whether setting modal is shown or not. Default to false.
+      showTableSelection: false,    // boolean storing whether the list of tables from page is shown. Default to false.
 
       // states below are useful for startSubject
       keyColIndex: 0,   // number storing the index of the search column. initially the key column is the first column
@@ -60,7 +61,7 @@ class MainBody extends Component {
       optionsMap: optionsMap, // 2D array storing the options map
       keyColNeighbours: [], // 1D array storing the neighbours of the key column
 
-      // startes below are useful for exploreTable
+      // startes below are useful for startTable
       originTableArray: [], // 1D array storing all tables found on pasted URL
       tableOpenList: [], // 1D array storing whether each table in originTableArray has been toggled open or not
       selectedTableIndex: -1, // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
@@ -107,7 +108,7 @@ class MainBody extends Component {
     this.contextSetCell = this.contextSetCell.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
 
-    // functions below are useful for exploreTable
+    // functions below are useful for startTable
     this.toggleTable = this.toggleTable.bind(this);
     this.onSelectTable = this.onSelectTable.bind(this);
     this.togglePropertyNeighbours = this.togglePropertyNeighbours.bind(this);
@@ -127,12 +128,43 @@ class MainBody extends Component {
     this.handleTabSwitch = this.handleTabSwitch.bind(this);
     this.openModal = this.openModal.bind(this);
     this.closeModal = this.closeModal.bind(this);
+    this.toggleTableSelection = this.toggleTableSelection.bind(this);
   }
 
   handleURLPaste(urlPasted) {
-    this.setState({
-      urlPasted: urlPasted,
-      iframeURL: urlPasted,
+    // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
+    // We then update the originTableArray, which stores all the tables found on the pasted URL
+    // We also initialize tableOpenList to all false
+
+    // Lastly, we updated the urlPasted and iframeURL
+
+    let promiseArray = [];
+    promiseArray.push(fetchText(urlPasted));
+    allPromiseReady(promiseArray).then((values) => {
+      // We first parse the pasted URL and store the list of tables from the pasted URL
+      let htmlText = values[0];
+      let doc = new DOMParser().parseFromString(htmlText, "text/html");
+      let originTableArray = doc.getElementsByClassName("wikitable");
+      let tableOpenList = [];
+      for (let i = 0; i < originTableArray.length; ++i) {
+        tableOpenList.push(false);
+      }
+
+      // Adding support for undo:
+      // let lastAction = "handleSelectTask&startTable";
+      // let prevState = 
+      //   {
+      //     "usecaseSelected":this.state.usecaseSelected,
+      //     "originTableArray":this.state.originTableArray,
+      //     "tableOpenList":this.state.tableOpenList,
+      //   };
+
+      this.setState({
+        originTableArray: originTableArray,
+        tableOpenList: tableOpenList,
+        urlPasted: urlPasted,
+        iframeURL: urlPasted,
+      });
     });
   }
 
@@ -147,10 +179,10 @@ class MainBody extends Component {
   copyTable() {
     const textArea = document.createElement("textarea"); // this line allows the use of select() function
     let copiedText = "";
-    // // We handle the case for exploreTable and startSubject differently
+    // // We handle the case for startTable and startSubject differently
 
     // // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
-    // if (this.state.usecaseSelected === "exploreTable") {
+    // if (this.state.usecaseSelected === "startTable") {
     //   // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
     //   const rowNum = this.state.tableDataExplore.length;
     //   const colNum = this.state.tableDataExplore[0].length;
@@ -165,7 +197,7 @@ class MainBody extends Component {
     // }
 
     // This case handles the copy table for start subject
-    if (this.state.usecaseSelected === "startSubject" || this.state.usecaseSelected === "exploreTable") {
+    if (this.state.usecaseSelected === "startSubject" || this.state.usecaseSelected === "startTable") {
       // We first push on the text for column headers (using the labels)
       let tableHeader = this.state.tableHeader;
       for (let i = 0; i < tableHeader.length; ++i) {
@@ -242,8 +274,8 @@ class MainBody extends Component {
         prevState: prevState,
       });
     } 
-    else if (taskSelected === "exploreTable") {
-      // If user chooses "exploreTable", we want to update the originTableArray, which stores all the tables found on the pasted URL
+    else if (taskSelected === "startTable") {
+      // If user chooses "startTable", we want to update the originTableArray, which stores all the tables found on the pasted URL
       // We also initialize tableOpenList to all false
       let promiseArray = [];
       promiseArray.push(fetchText(this.state.urlPasted));
@@ -258,7 +290,7 @@ class MainBody extends Component {
           }
 
           // Adding support for undo:
-          let lastAction = "handleSelectTask&exploreTable";
+          let lastAction = "handleSelectTask&startTable";
           let prevState = 
             {
               "usecaseSelected":this.state.usecaseSelected,
@@ -822,8 +854,9 @@ class MainBody extends Component {
           // console.log(values[])
           let dbResult =
             values[i].results.bindings[requiredLength - 1].somevar.value;
+          dbResult = removePrefix(dbResult);
           // We first set the data of the cell
-          tableData[i][colIndex].data = removePrefix(dbResult);
+          tableData[i][colIndex].data = dbResult;
           // We then set the origin of the cell
           // This origin depends on whether type is "subject" or "object"
           let originToAdd;
@@ -1103,8 +1136,9 @@ class MainBody extends Component {
           // Think about what to do when there are duplicates
           let dbResult =
             values[i].results.bindings[requiredLength - 1].somevar.value;
+          dbResult = removePrefix(dbResult);
           // We first set the data of the cell
-          tableDataUpdated[i][curCol].data = removePrefix(dbResult);
+          tableDataUpdated[i][curCol].data = dbResult;
           // We then set the origin of the cell
           // This origin depends on whether type is "subject" or "object"
           let originToAdd;
@@ -1261,8 +1295,9 @@ class MainBody extends Component {
           if (values[i].results.bindings.length >= requiredLength) {
             let dbResult =
               values[i].results.bindings[requiredLength - 1].somevar.value;
+            dbResult = removePrefix(dbResult);
             tableData[i][colIndex].data =
-              tableData[i][colIndex].data + ";" + removePrefix(dbResult);
+              tableData[i][colIndex].data + ";" + dbResult;
             let updatedOrigin = tableData[i][colIndex].origin.slice();
             updatedOrigin[updatedOrigin.length - 1] =
               updatedOrigin[updatedOrigin.length - 1] + ";" + dbResult;
@@ -1554,6 +1589,7 @@ class MainBody extends Component {
     // We need to let table panel display the selected table
     // And we need to update the Action Panel to display the first degree properties of the origigitnal page
     // We do a fetch request here (Sixth Query). It gets the property neighbours of the original page that are links, as well as dct:subject
+    // Lastly, we need to set usecaseSelected to "startSubject"
 
     // First query gets the property neighbours
     let queryPromise = [];
@@ -1719,6 +1755,7 @@ class MainBody extends Component {
             tableData: stateInfo.tableData,
             tableHeader: stateInfo.tableHeader,
             optionsMap: stateInfo.optionsMap,
+            usecaseSelected: "startTable",
             // lastAction: lastAction,
             // prevState: prevState,
           });
@@ -2087,7 +2124,7 @@ class MainBody extends Component {
     });
   }
 
-  // This function hanles switching tabs, if starting task is exploreTable
+  // This function hanles switching tabs, if starting task is startTable
 
   handleTabSwitch(index) {
     // If we are switching to "Union Table" tab from "Wrangling Actions" tab, we want to toggle off all the property neighbours.
@@ -2105,13 +2142,13 @@ class MainBody extends Component {
   }
 
   // // This function handles the transition from the table union scenario to the table creation scenario
-  // // Fow now, this function should only work when the usecaseSelected is exploreTable
+  // // Fow now, this function should only work when the usecaseSelected is startTable
   
   // // It makes use of the helper function getTableStates 
    
   // goTableCreation() {
 
-  //   if (this.state.usecaseSelected === "exploreTable") {
+  //   if (this.state.usecaseSelected === "startTable") {
       
   //     let promiseArray = [getTableStates(this.state.tableDataExplore, this.state.selectedClassAnnotation)];
   //     allPromiseReady(promiseArray).then((values) => {
@@ -2191,23 +2228,23 @@ class MainBody extends Component {
     else if (lastAction === "unionTable" || lastAction === "unionPage" || lastAction === "unionProperty") {
       // In this case we need to restore tableDataExplore
       this.setState({
-        tableDataExplore: prevState.tableDataExplore,
+        tableData: prevState.tableData,
         lastAction: "",
       })
     }
     else if (lastAction === "goTableCreation") {
       // In this case we need to do two things:
-      // 1) go back to the tableUnion task by setting usecaseSelected to "exploreTable"
+      // 1) go back to the tableUnion task by setting usecaseSelected to "startTable"
       // 2) setting the curAction info to be "showPropertyNeighbours" so that ActionPanel can display the right thing
       let curActionInfo = { task: "showPropertyNeighbours" };
       this.setState({
-        usecaseSelected: "exploreTable",
+        usecaseSelected: "startTable",
         curActionInfo: curActionInfo,
         lastAction: "",
       })
     }
     else if (lastAction.includes("handleSelectTask")) {
-      // In this case we have two subcases, depends on whether the selected task was starSubject, or exploreTable
+      // In this case we have two subcases, depends on whether the selected task was starSubject, or startTable
       if (lastAction === "handleSelectTask&startSubject") {
         this.setState({
           usecaseSelected: prevState.usecaseSelected,
@@ -2216,7 +2253,7 @@ class MainBody extends Component {
           lastAction: "",
         })
       } 
-      else if (lastAction === "handleSelectTask&exploreTable") {
+      else if (lastAction === "handleSelectTask&startTable") {
         this.setState({
           usecaseSelected: prevState.usecaseSelected,
           originTableArray: prevState.originTableArray,
@@ -2256,6 +2293,15 @@ class MainBody extends Component {
   closeModal() {
     this.setState({
       showModal: false,
+    })
+  }
+
+  // The following function toggles this.state.showTableSelection.
+
+  toggleTableSelection() {
+    let showTableSelection = !this.state.showTableSelection;
+    this.setState({
+      showTableSelection: showTableSelection,
     })
   }
 
@@ -2304,12 +2350,12 @@ class MainBody extends Component {
                     contextAddColumn={this.contextAddColumn}
                     contextSetCell={this.contextSetCell}
                     contextCellOrigin={this.contextCellOrigin}
-                    // Folloiwng states are passed to "exploreTable"
-                    originTableArray={this.state.originTableArray}
-                    tableDataExplore={this.state.tableDataExplore}
-                    tableOpenList={this.state.tableOpenList}
-                    toggleTable={this.toggleTable}
-                    selectedTableIndex={this.state.selectedTableIndex}
+                    // Folloiwng states are passed to "startTable"
+                    // tableDataExplore={this.state.tableDataExplore}
+                    // originTableArray={this.state.originTableArray}
+                    // tableOpenList={this.state.tableOpenList}
+                    // toggleTable={this.toggleTable}
+                    // selectedTableIndex={this.state.selectedTableIndex}
                   />
                 </div>
                 <div className="col-md-5 small-padding action-panel">
@@ -2323,8 +2369,7 @@ class MainBody extends Component {
                     sameNeighbourDiffCol={this.sameNeighbourDiffCol}
                     sameNeighbourOneCol={this.sameNeighbourOneCol}
                     populateSameRange={this.populateSameRange}
-                    // Folloiwng states are passed to "exploreTable"
-                    selectedTableIndex={this.state.selectedTableIndex}
+                    // Folloiwng states are passed to "startTable"
                     onSelectTable={this.onSelectTable}
                     propertyNeighbours={this.state.propertyNeighbours}
                     togglePropertyNeighbours={this.togglePropertyNeighbours}
@@ -2333,12 +2378,15 @@ class MainBody extends Component {
                     unionTable={this.unionTable}
                     unionPage={this.unionPage}
                     unionProperty={this.unionProperty}
-                    // semanticEnabled={this.state.semanticEnabled}
-                    // toggleSemantic={this.toggleSemantic}
-                    // unionCutOff={this.state.unionCutOff}
-                    // unionCutOffChange={this.unionCutOffChange}
                     // Follow state handles tab switch
                     handleTabSwitch={this.handleTabSwitch}
+                    // Following states are passed during start up
+                    showTableSelection={this.state.showTableSelection}
+                    toggleTableSelection={this.toggleTableSelection}
+                    originTableArray={this.state.originTableArray}
+                    tableOpenList={this.state.tableOpenList}
+                    toggleTable={this.toggleTable}
+                    selectedTableIndex={this.state.selectedTableIndex}
                   />
                 </div>
               </div>

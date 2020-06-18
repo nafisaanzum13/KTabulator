@@ -172,3 +172,11 @@ a.logo:focus {
   overflow: auto;
   border-left: 1px solid lightgrey;
 }
+
+.wrangling-actions {
+  height: 30vh;
+}
+
+.table-list {
+  height: 25vh;
+}
