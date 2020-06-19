@@ -89,7 +89,8 @@ class MainBody extends Component {
     // functions below are useful during start up
     this.handleURLPaste = this.handleURLPaste.bind(this);
     this.handleTablePaste = this.handleTablePaste.bind(this);
-    this.handleSelectTask = this.handleSelectTask.bind(this);
+    this.handleStartSubject = this.handleStartSubject.bind(this);
+    this.handleStartTable = this.handleStartTable.bind(this);
 
     // functions below are useful for startSubject
     this.cellChange = this.cellChange.bind(this);
@@ -110,7 +111,6 @@ class MainBody extends Component {
 
     // functions below are useful for startTable
     this.toggleTable = this.toggleTable.bind(this);
-    this.onSelectTable = this.onSelectTable.bind(this);
     this.togglePropertyNeighbours = this.togglePropertyNeighbours.bind(this);
     this.toggleSibling = this.toggleSibling.bind(this);
     this.toggleOtherTable = this.toggleOtherTable.bind(this);
@@ -119,7 +119,6 @@ class MainBody extends Component {
     this.unionProperty = this.unionProperty.bind(this);
     this.toggleSemantic = this.toggleSemantic.bind(this);
     this.unionCutOffChange = this.unionCutOffChange.bind(this);
-    // this.goTableCreation = this.goTableCreation.bind(this);
 
     // functions below are generally usefull
     this.copyTable = this.copyTable.bind(this);
@@ -151,19 +150,23 @@ class MainBody extends Component {
       }
 
       // Adding support for undo:
-      // let lastAction = "handleSelectTask&startTable";
-      // let prevState = 
-      //   {
-      //     "usecaseSelected":this.state.usecaseSelected,
-      //     "originTableArray":this.state.originTableArray,
-      //     "tableOpenList":this.state.tableOpenList,
-      //   };
+
+      let lastAction = "handleURLPaste";
+      let prevState = 
+        {
+          "urlPasted":"",
+          "iframeURL":"",
+          "originTableArray":[],
+          "tableOpenList":[],
+        };
 
       this.setState({
         originTableArray: originTableArray,
         tableOpenList: tableOpenList,
         urlPasted: urlPasted,
         iframeURL: urlPasted,
+        lastAction: lastAction,
+        prevState: prevState,
       });
     });
   }
@@ -249,18 +252,18 @@ class MainBody extends Component {
     });
   }
 
-  // This function handles the selection of the starting task.
+  // This function handles the selection of the starting task "startSubject"
 
-  handleSelectTask(e, taskSelected) {
+  handleStartSubject(e, taskSelected) {
 
     if (taskSelected === "startSubject") {
-      // If user chooses "startSubject", we set the URL to be the first cell in the table
+      // Since the starting task is"startSubject", we set the URL to be the first cell in the table
       const subject = reverseReplace(this.state.urlPasted.slice(30)); // add a reverseReplace here
       let tableData = _.cloneDeep(this.state.tableData);
       tableData[0][0].data = subject;
 
       // Adding support for undo:
-      let lastAction = "handleSelectTask&startSubject";
+      let lastAction = "handleStartSubject";
       let prevState = 
         {
           "usecaseSelected":this.state.usecaseSelected,
@@ -274,41 +277,6 @@ class MainBody extends Component {
         prevState: prevState,
       });
     } 
-    else if (taskSelected === "startTable") {
-      // If user chooses "startTable", we want to update the originTableArray, which stores all the tables found on the pasted URL
-      // We also initialize tableOpenList to all false
-      let promiseArray = [];
-      promiseArray.push(fetchText(this.state.urlPasted));
-      allPromiseReady(promiseArray).then((values) => {
-          // We first parse the pasted URL and store the list of tables from the pasted URL
-          let htmlText = values[0];
-          let doc = new DOMParser().parseFromString(htmlText, "text/html");
-          let originTableArray = doc.getElementsByClassName("wikitable");
-          let tableOpenList = [];
-          for (let i = 0; i < originTableArray.length; ++i) {
-            tableOpenList.push(false);
-          }
-
-          // Adding support for undo:
-          let lastAction = "handleSelectTask&startTable";
-          let prevState = 
-            {
-              "usecaseSelected":this.state.usecaseSelected,
-              "originTableArray":this.state.originTableArray,
-              "tableOpenList":this.state.tableOpenList,
-            };
-
-          this.setState({
-            usecaseSelected: taskSelected,
-            originTableArray: originTableArray,
-            tableOpenList: tableOpenList,
-            lastAction: lastAction,
-            prevState: prevState,
-          });
-        });
-    } 
-    else {
-    }
   }
 
   // This function handles manually changing cell in a table
@@ -1585,7 +1553,7 @@ class MainBody extends Component {
 
   // The following function handles the selection of table.
 
-  onSelectTable(e, tableIndex) {
+  handleStartTable(e, tableIndex) {
     // We need to let table panel display the selected table
     // And we need to update the Action Panel to display the first degree properties of the origigitnal page
     // We do a fetch request here (Sixth Query). It gets the property neighbours of the original page that are links, as well as dct:subject
@@ -1724,8 +1692,8 @@ class MainBody extends Component {
         // setTableFromHTML is the function that prepares the data for tableDataExplore
         let tableDataExplore = setTableFromHTML(selectedTableHTML, urlOrigin);
 
-        // Modeless Change: Now we need to do something similar to what we did in goTableCreation.
-        // We have to process the tableDataExplore to get the right states for the Excel-style table.
+        // Modeless Change: We need to call the helper function getTableStates.
+        // By processing the tableDataExplore to get the right states for the Excel-style table.
 
         // To do this, we need to call getTableStates here. We just need to pass in tableDataExplore and selectedClassAnnotation 
         let statePromise = [getTableStates(tableDataExplore, selectedClassAnnotation)];
@@ -1734,21 +1702,25 @@ class MainBody extends Component {
           // console.log(stateInfo);
 
           // Support for undo: 
-          // let lastAction = "onSelectTable";
-          // let prevState = 
-          //     {
-          //       "selectedTableIndex": this.state.selectedTableIndex,
-          //       "propertyNeighbours": this.state.propertyNeighbours,
-          //       "curActionInfo": this.state.curActionInfo,
-          //       "tableDataExplore": this.state.tableDataExplore,
-          //       "selectedClassAnnotation": this.state.selectedClassAnnotation,
-          //     };
+          let lastAction = "handleStartTable";
+          let prevState = 
+              {
+                "selectedTableIndex": this.state.selectedTableIndex,
+                "propertyNeighbours": this.state.propertyNeighbours,
+                "curActionInfo": this.state.curActionInfo,
+                "selectedClassAnnotation": this.state.selectedClassAnnotation,
+                "keyColIndex": this.state.keyColIndex,
+                "keyColNeighbours": this.state.keyColNeighbours,
+                "tableData": this.state.tableData,
+                "tableHeader": this.state.tableHeader,
+                "optionsMap": this.state.optionsMap,
+                "usecaseSelected": this.state.usecaseSelected,
+              };
 
           this.setState({
             selectedTableIndex: tableIndex,
             propertyNeighbours: propertyNeighbours,
             curActionInfo: curActionInfo,
-            // tableDataExplore: tableDataExplore,
             selectedClassAnnotation: selectedClassAnnotation,
             keyColIndex: stateInfo.keyColIndex,
             keyColNeighbours: stateInfo.keyColNeighbours,
@@ -1756,8 +1728,8 @@ class MainBody extends Component {
             tableHeader: stateInfo.tableHeader,
             optionsMap: stateInfo.optionsMap,
             usecaseSelected: "startTable",
-            // lastAction: lastAction,
-            // prevState: prevState,
+            lastAction: lastAction,
+            prevState: prevState,
           });
         })
       });
@@ -2141,34 +2113,6 @@ class MainBody extends Component {
     }
   }
 
-  // // This function handles the transition from the table union scenario to the table creation scenario
-  // // Fow now, this function should only work when the usecaseSelected is startTable
-  
-  // // It makes use of the helper function getTableStates 
-   
-  // goTableCreation() {
-
-  //   if (this.state.usecaseSelected === "startTable") {
-      
-  //     let promiseArray = [getTableStates(this.state.tableDataExplore, this.state.selectedClassAnnotation)];
-  //     allPromiseReady(promiseArray).then((values) => {
-
-  //       let stateInfo = values[0];
-
-  //       this.setState({
-  //         keyColIndex: stateInfo.keyColIndex,
-  //         tableHeader: stateInfo.tableHeader,
-  //         tableData: stateInfo.tableData,
-  //         keyColNeighbours: stateInfo.keyColNeighbours,
-  //         optionsMap: stateInfo.optionsMap,
-  //         usecaseSelected: "startSubject", // We set usecaseSelected to be "startSubject"so that TablePanel can display the correct content
-  //         curActionInfo: null,
-  //         lastAction: "goTableCreation", // this adds support for undoPreviousStep
-  //       });
-  //     })
-  //   }
-  // }
-
   // This function undos the previous change that user has made to the result table in table panel
 
   undoPreviousStep() {
@@ -2176,10 +2120,56 @@ class MainBody extends Component {
     let lastAction = this.state.lastAction;
     // Then we fetch the previous state
     let prevState = this.state.prevState;
+    // console.log(lastAction);
+    // console.log(prevState);
+
     // Note, since we are allowing one step undo only, we set lastAction to "" everytime we run this function
 
-    if (lastAction === "populateKeyColumn") {
-      // In this case we need to restore keyColIndex, keyColNeighbours, curActionInfo, tableData, optionsMap
+    // Case 1: Undo the ULR Paste. 
+    // In this case we need to restore urlPasted, iframeURL, originTableArray, and tableOpenList
+    if (lastAction === "handleURLPaste") {
+      this.setState({
+        urlPasted: prevState.urlPasted,
+        iframeURL: prevState.iframeURL,
+        originTableArray: prevState.originTableArray,
+        tableOpenList: prevState.tableOpenList,
+      })
+    }
+
+    // Case 2: Undo the selection of the task: startSubject.
+    // In this case we need to restore usecaseSelected, and tableData
+
+    else if (lastAction === "handleStartSubject") {
+      this.setState({
+        usecaseSelected: prevState.usecaseSelected,
+        tableData: prevState.tableData,
+        curActionInfo: "",
+        lastAction: "",
+      })
+    }
+
+    // Case 3: Undo the selection of the task: startTable.
+    // In this case we need to restore many states. See code below.
+
+    else if (lastAction === "handleStartTable") {
+      this.setState({
+        selectedTableIndex: prevState.selectedTableIndex,
+        propertyNeighbours: prevState.propertyNeighbours,
+        curActionInfo: prevState.curActionInfo,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        keyColIndex: prevState.keyColIndex,
+        keyColNeighbours: prevState.keyColNeighbours,
+        tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        optionsMap: prevState.optionsMap,
+        usecaseSelected: prevState.usecaseSelected,
+        lastAction: "",
+      })
+    }
+
+    // Case 4: Undo the population of key column.
+    // In this case we need to restore keyColIndex, keyColNeighbours, curActionInfo, tableData, optionsMap
+    else if (lastAction === "populateKeyColumn") {
       this.setState({
         keyColIndex: prevState.keyColIndex,
         keyColNeighbours: prevState.keyColNeighbours,
@@ -2189,16 +2179,20 @@ class MainBody extends Component {
         lastAction: "",
       })
     }
+
+    // Case 5: Undo the population of a new column.
+    // In this case we need to restore curActionInfo, tableData.
     else if (lastAction === "populateOtherColumn") {
-      // In this case we need to restore curActionInfo, tableData
       this.setState({
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
         lastAction: "",
       })
     }
+
+    // Case 6: Undo the population of same neighbour in different columns.
+    // In this case we need to restore curActionInfo, tableData, tableHeader, optionsMap.
     else if (lastAction === "sameNeighbourDiffCol") {
-      // In this case we need to restore curActionInfo, tableData, tableHeader, optionsMap 
       this.setState({
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
@@ -2207,16 +2201,20 @@ class MainBody extends Component {
         lastAction: "",
       })
     }
+
+    // Case 7: Undo the population of same neighbour in the same column.
+    // In this case we need to restore the curActionInfo, tableData.
     else if (lastAction === "sameNeighbourOneCol") {
-      // In this case we need to restore the curActionInfo, tableData
       this.setState({
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
         lastAction: "",
       })
     }
+
+    // Case 8: Undo the population of neighbours from the same range.
+    // In this case we need to restore curActionInfo, tableData, tableHeader, optionsMap
     else if (lastAction === "populateSameRange") {
-      // In this case we need to restore curActionInfo, tableData, tableHeader, optionsMap
       this.setState({
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
@@ -2225,57 +2223,16 @@ class MainBody extends Component {
         lastAction: "",
       })
     }
+
+    // Case 9: Undo the union of tables.
+    // In this case we need to restore tableData
     else if (lastAction === "unionTable" || lastAction === "unionPage" || lastAction === "unionProperty") {
-      // In this case we need to restore tableDataExplore
       this.setState({
         tableData: prevState.tableData,
         lastAction: "",
       })
     }
-    else if (lastAction === "goTableCreation") {
-      // In this case we need to do two things:
-      // 1) go back to the tableUnion task by setting usecaseSelected to "startTable"
-      // 2) setting the curAction info to be "showPropertyNeighbours" so that ActionPanel can display the right thing
-      let curActionInfo = { task: "showPropertyNeighbours" };
-      this.setState({
-        usecaseSelected: "startTable",
-        curActionInfo: curActionInfo,
-        lastAction: "",
-      })
-    }
-    else if (lastAction.includes("handleSelectTask")) {
-      // In this case we have two subcases, depends on whether the selected task was starSubject, or startTable
-      if (lastAction === "handleSelectTask&startSubject") {
-        this.setState({
-          usecaseSelected: prevState.usecaseSelected,
-          tableData: prevState.tableData,
-          curActionInfo: "",
-          lastAction: "",
-        })
-      } 
-      else if (lastAction === "handleSelectTask&startTable") {
-        this.setState({
-          usecaseSelected: prevState.usecaseSelected,
-          originTableArray: prevState.originTableArray,
-          tableOpenList: prevState.tableOpenList,
-          curActionInfo: "",
-          lastAction: "",
-        })
-      }
-      else {
-      }
-    }
-    else if (lastAction === "onSelectTable") {
-      // in this case we need to restore selectedTableIndex, propertyNeighbours, curAcionInfo, tableDataExplore, and selectedClassAnnotation
-      this.setState({
-        selectedTableIndex: prevState.selectedTableIndex,
-        propertyNeighbours: prevState.propertyNeighbours,
-        curActionInfo: prevState.curActionInfo,
-        tableDataExplore: prevState.tableDataExplore,
-        selectedClassAnnotation: prevState.selectedClassAnnotation,
-        lastAction: "",
-      })
-    }
+
     // This is an empty else clause.
     else {
 
@@ -2315,7 +2272,10 @@ class MainBody extends Component {
     }
     // If user has not pasted the URL, we want to display the landing page
     if (this.state.urlPasted === "") {
-      bodyEle = <LandingPage handleURLPaste={this.handleURLPaste} />;
+      bodyEle = 
+        <LandingPage 
+          handleURLPaste={this.handleURLPaste} 
+        />;
     }
     // Else, we show the three panels: TablePanel, ActionPanel, and PagePanel
     else {
@@ -2326,7 +2286,6 @@ class MainBody extends Component {
               // Following states are passed for general purposes
               copyTable={this.copyTable}
               undoPreviousStep={this.undoPreviousStep}
-              // goTableCreation={this.goTableCreation}
               openModal = {this.openModal}
             />
           </div> 
@@ -2363,14 +2322,14 @@ class MainBody extends Component {
                     urlPasted={this.state.urlPasted}
                     usecaseSelected={this.state.usecaseSelected}
                     curActionInfo={this.state.curActionInfo}
-                    handleSelectTask={this.handleSelectTask}
+                    handleStartSubject={this.handleStartSubject}
                     populateKeyColumn={this.populateKeyColumn}
                     populateOtherColumn={this.populateOtherColumn}
                     sameNeighbourDiffCol={this.sameNeighbourDiffCol}
                     sameNeighbourOneCol={this.sameNeighbourOneCol}
                     populateSameRange={this.populateSameRange}
                     // Folloiwng states are passed to "startTable"
-                    onSelectTable={this.onSelectTable}
+                    handleStartTable={this.handleStartTable}
                     propertyNeighbours={this.state.propertyNeighbours}
                     togglePropertyNeighbours={this.togglePropertyNeighbours}
                     toggleSibling={this.toggleSibling}

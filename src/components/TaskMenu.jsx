@@ -17,7 +17,7 @@ class TaskMenu extends Component {
           <hr className="m-0"></hr>
           <li
             className="list-group-item"
-            onClick={(e) => this.props.handleSelectTask(e, "startSubject")}
+            onClick={(e) => this.props.handleStartSubject(e, "startSubject")}
           >
             Start with creating a table about {subject}
           </li>
@@ -39,7 +39,7 @@ class TaskMenu extends Component {
                       tableOpenList={this.props.tableOpenList}
                       toggleTable={this.props.toggleTable}
                       selectedTableIndex={this.props.selectedTableIndex}
-                      onSelectTable={this.props.onSelectTable}
+                      handleStartTable={this.props.handleStartTable}
                     />
                   </div>
                 </Card>

@@ -255,7 +255,7 @@ class ActionPanel extends Component {
     if (this.props.usecaseSelected === "") {
       wrapperEle = 
         <TaskMenu 
-          handleSelectTask={this.props.handleSelectTask} 
+          handleStartSubject={this.props.handleStartSubject} 
           urlPasted={this.props.urlPasted}
           showTableSelection={this.props.showTableSelection}
           toggleTableSelection={this.props.toggleTableSelection}
@@ -263,7 +263,7 @@ class ActionPanel extends Component {
           tableOpenList={this.props.tableOpenList}
           toggleTable={this.props.toggleTable}
           selectedTableIndex={this.props.selectedTableIndex}
-          onSelectTable={this.props.onSelectTable}
+          handleStartTable={this.props.handleStartTable}
         />;
     }
     // Case 2: Task has been selected. curActionInfo is not null, meaning we have to display some task in ActionPanel
@@ -402,21 +402,6 @@ class ActionPanel extends Component {
           </div>
         );
       } 
-      else if (actionInfo.task === "selectTableIndex") {
-        actionEle = (
-          <div>
-            {/* <p></p> */}
-            <button
-              className="btn btn-default btn-info"
-              onClick={(e) =>
-                this.props.onSelectTable(e, actionInfo.tableIndex)
-              }
-            >
-              <span>Select table {actionInfo.tableIndex}?</span>
-            </button>
-          </div>
-        );
-      } 
       else if (actionInfo.task === "showPropertyNeighbours") {
         // actionEle = (
         //   <div>
@@ -480,6 +465,7 @@ class ActionPanel extends Component {
     // One tab for startSubject. Two tabs for startTable.
     // console.log(this.props.usecaseSelected);
     // In the startSubject case, we will have one tab: wrangling actions
+
     if (this.props.usecaseSelected === "startSubject") {
       wrapperEle = (
         <div>
@@ -512,7 +498,7 @@ class ActionPanel extends Component {
                               tableOpenList={this.props.tableOpenList}
                               toggleTable={this.props.toggleTable}
                               selectedTableIndex={this.props.selectedTableIndex}
-                              onSelectTable={this.props.onSelectTable}
+                              handleStartTable={this.props.handleStartTable}
                             />
                           </div>
                         </Card>

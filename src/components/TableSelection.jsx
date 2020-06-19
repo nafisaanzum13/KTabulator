@@ -36,7 +36,7 @@ class TableSelection extends Component {
       if (this.props.tableOpenList[i] === true) {
         selectButton = 
           <button
-            onClick={(e) => this.props.onSelectTable(e, i)}
+            onClick={(e) => this.props.handleStartTable(e, i)}
           >
             Select
           </button>
