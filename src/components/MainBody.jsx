@@ -12,7 +12,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 50;
 const initialColNum = 4;
-const initialRowNum = 30;
+const initialRowNum = 100;
 
 class MainBody extends Component {
   constructor(props) {
@@ -504,19 +504,12 @@ class MainBody extends Component {
   // It also fetches the neighbours of the key column (based on the first cell in the table)
   // as well as setting the origins of cells in the key column
 
+  // Note: we need to do some modification here. Instead of having a fixed number of entries in the key column,
+  // Let's make it more flexible. (but also pose a limit, so we don't get way too many entries)
+
   populateKeyColumn(e, colIndex, neighbour) {
     // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
     // We also need to fetch the neighbours of this key column, both using the key column entries as subject and object
-
-    // We are populating "initialRowNum" number of entries. Let's calculate how many entries we need to fill.
-    let emptyEntryCount = this.state.tableData.length;
-    for (let i = 0; i < this.state.tableData.length; ++i) {
-      if (this.state.tableData[i][colIndex].data !== "") {
-        emptyEntryCount--;
-      } else {
-        break;
-      }
-    }
 
     // Since we need to make multiple (three) queries, we make a promise array
     let promiseArray = [];
@@ -531,9 +524,12 @@ class MainBody extends Component {
     //                     +".%0D%0A%7D%0D%0ALIMIT+"+emptyEntryCount;
     let prefixURLOne =
       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLOne =
+    //   "%0D%0A%7D+%0D%0Alimit+" +
+    //   emptyEntryCount +
+    //   "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let suffixURLOne =
-      "%0D%0A%7D+%0D%0Alimit+" +
-      emptyEntryCount +
+      "%0D%0A%7D+%0D%0A" +
       "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyOne = "select+%3Fsomevar%0D%0Awhere+%7B";
     // We are using a loop here because multi-select is possible
@@ -599,13 +595,38 @@ class MainBody extends Component {
     allPromiseReady(promiseArray).then((values) => {
       // let's first work with the first promise result: fill in table data with the entities we have fetched
 
-      // First part sets the data for each cell
+      // This part sets the data for each cell
       let tableData = _.cloneDeep(this.state.tableData);
+
+      // First we get the correct number of rows, which is equal to min(values[0].results.bindings.length, initialRowNum)
+      let updatedRowCount = Math.min(values[0].results.bindings.length, initialRowNum);
+      // console.log("Original length is "+values[0].results.bindings.length);
+      // console.log("Row Count is: "+updatedRowCount);
+
+      // If tableData has too many rows, we slice it. Else we keep it the same way.
+      if (tableData.length > updatedRowCount) {
+        tableData = tableData.slice(0,updatedRowCount);
+      }
       let rowNum = tableData.length;
-      for (let i = 0; i < values[0].results.bindings.length; ++i) {
-        tableData[i + rowNum - emptyEntryCount][
-          colIndex
-        ].data = values[0].results.bindings[i].somevar.value.slice(28);
+      // console.log("Number of rows is "+rowNum);
+
+      // We do not want to overwrite entries that users have filled in.
+      // Let's calculate how many entries we want to fill in.
+      let emptyEntryCount = rowNum;
+      for (let i = 0; i < rowNum; ++i) {
+        if (tableData[i][colIndex].data !== "") {
+          emptyEntryCount--;
+        } else {
+          break;
+        }
+      }
+      // console.log("number of empty entries is "+emptyEntryCount);
+
+      let startingIndex = rowNum - emptyEntryCount;
+
+      for (let i = 0; i < emptyEntryCount; ++i) {
+        tableData[i + startingIndex][colIndex].data = 
+          values[0].results.bindings[i].somevar.value.slice(28);
       }
 
       // second part sets the origin for each cell
