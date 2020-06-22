@@ -467,9 +467,13 @@ class ActionPanel extends Component {
     // In the startSubject case, we will have one tab: wrangling actions
 
     if (this.props.usecaseSelected === "startSubject") {
+      let curIndex = this.props.tabIndex;
       wrapperEle = (
         <div>
-          <Tabs>
+          <Tabs
+            selectedIndex={curIndex}
+            onSelect={(index) => this.props.handleTabSwitch(index)}
+          >
             <TabList>
               <Tab>Wrangling Actions</Tab>
             </TabList>
@@ -515,10 +519,11 @@ class ActionPanel extends Component {
     else if (this.props.usecaseSelected === "startTable") {
       // If we have not selected a table, we show both tabs, as we are fully ready.
       if (this.props.selectedTableIndex !== -1) {
+        let curIndex = this.props.tabIndex;
         wrapperEle = (
           <div>
             <Tabs 
-              defaultIndex={1}
+              selectedIndex={curIndex}
               onSelect={(index) => this.props.handleTabSwitch(index)}
             >
               <TabList>

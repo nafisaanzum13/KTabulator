@@ -47,6 +47,7 @@ class MainBody extends Component {
       prevState: "",       // objects storing the information needed to undo the last step. Information stored depends on lastAction
       showModal: false,    // boolean storing whether setting modal is shown or not. Default to false.
       showTableSelection: false,    // boolean storing whether the list of tables from page is shown. Default to false.
+      tabIndex: 1,         // integer storing the index of the tab currently displaying. Default to 1.
 
       // states below are useful for startSubject
       keyColIndex: 0,   // number storing the index of the search column. initially the key column is the first column
@@ -268,6 +269,7 @@ class MainBody extends Component {
         {
           "usecaseSelected":this.state.usecaseSelected,
           "tableData":this.state.tableData,
+          "tabIndex":this.state.tabIndex,
         };
 
       this.setState({
@@ -275,6 +277,7 @@ class MainBody extends Component {
         tableData: tableData,
         lastAction: lastAction,
         prevState: prevState,
+        tabIndex: 0,
       });
     } 
   }
@@ -1736,6 +1739,7 @@ class MainBody extends Component {
                 "tableHeader": this.state.tableHeader,
                 "optionsMap": this.state.optionsMap,
                 "usecaseSelected": this.state.usecaseSelected,
+                "tabIndex": this.state.tabIndex,
               };
 
           this.setState({
@@ -1749,9 +1753,11 @@ class MainBody extends Component {
             tableHeader: stateInfo.tableHeader,
             optionsMap: stateInfo.optionsMap,
             usecaseSelected: "startTable",
+            tabIndex: 1,
             lastAction: lastAction,
             prevState: prevState,
           });
+          // this.handleTabSwitch(1);
         })
       });
     });
@@ -2117,12 +2123,11 @@ class MainBody extends Component {
     });
   }
 
-  // This function hanles switching tabs, if starting task is startTable
+  // This function hanles switching tabs
 
   handleTabSwitch(index) {
     // If we are switching to "Union Table" tab from "Wrangling Actions" tab, we want to toggle off all the property neighbours.
     // Since we might have potentially changed the table in table panel, thus changed the search criteria as well
-    console.log(this.state.selectedClassAnnotation);
     if (index === 1) {
       let propertyNeighbours = this.state.propertyNeighbours.slice();
       for (let i = 0; i < propertyNeighbours.length; ++i) {
@@ -2130,7 +2135,13 @@ class MainBody extends Component {
       }
       this.setState({
         propertyNeighbours: propertyNeighbours,
+        tabIndex: index,
       });
+    }
+    else {
+      this.setState({
+        tabIndex: index,
+      })
     }
   }
 
@@ -2164,6 +2175,7 @@ class MainBody extends Component {
       this.setState({
         usecaseSelected: prevState.usecaseSelected,
         tableData: prevState.tableData,
+        tabIndex: prevState.tabIndex,
         curActionInfo: "",
         lastAction: "",
       })
@@ -2184,6 +2196,7 @@ class MainBody extends Component {
         tableHeader: prevState.tableHeader,
         optionsMap: prevState.optionsMap,
         usecaseSelected: prevState.usecaseSelected,
+        tabIndex: prevState.tabIndex,
         lastAction: "",
       })
     }
@@ -2359,6 +2372,7 @@ class MainBody extends Component {
                     unionPage={this.unionPage}
                     unionProperty={this.unionProperty}
                     // Follow state handles tab switch
+                    tabIndex={this.state.tabIndex}
                     handleTabSwitch={this.handleTabSwitch}
                     // Following states are passed during start up
                     showTableSelection={this.state.showTableSelection}
