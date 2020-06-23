@@ -12,7 +12,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 50;
 const initialColNum = 4;
-const initialRowNum = 100;
+const initialRowNum = 50;
 
 class MainBody extends Component {
   constructor(props) {
@@ -974,11 +974,13 @@ class MainBody extends Component {
   // 9) optionsMap:                  original optionsMap
   // 10) selectedClassAnnotation:    original selectedClassAnnotation
 
-  // and returns an object with four values:
+  // and returns an object with 5 values:
   // 1) tableHeader:                tableHeader after modification
   // 2) tableData:                  tableData after modification
   // 3) optionsMap:                 optionsMap after modification
   // 4) selectedClassAnnotation:    selectedClassAnnotation after modification
+  // 5) keyColIndex:                keyColIndex after modification
+
   addAllNeighbour(
     colIndex,
     neighbour,
@@ -989,7 +991,8 @@ class MainBody extends Component {
     tableHeader,
     tableData,
     optionsMap,
-    selectedClassAnnotation
+    selectedClassAnnotation,
+    keyColIndex,
   ) {
     // Let's first check if all the variables are as expected
 
@@ -1011,6 +1014,13 @@ class MainBody extends Component {
     // First thing should be to insert "numCols" number of empty columns right after column with index "colIndex"
     const rowNum = tableData.length;
     const colNum = tableData[0].length;
+
+    // Let's check if we need to modify keyColIndex:
+    // if colIndex < keyColIndex, we need to increase keyColIndex by numCols
+    let keyColIndexUpdated = keyColIndex;
+    if (colIndex < keyColIndex) {
+      keyColIndexUpdated+=numCols;
+    }
 
     // We first take care of table data's (empty) additions
     let tableDataUpdated = [];
@@ -1036,20 +1046,20 @@ class MainBody extends Component {
     }
     // some modification needs to be made here
     let labelText = "";
-    if (this.state.keyColIndex === 0) {
+    if (keyColIndex === 0) {
       for (
         let i = 0;
-        i < tableHeaderUpdated[this.state.keyColIndex].length;
+        i < tableHeader[0].length;
         ++i
       ) {
         if (i > 0) {
           labelText += "&";
         }
-        labelText += tableHeaderUpdated[this.state.keyColIndex][i].value;
+        labelText += tableHeader[0][i].value;
       }
     } else {
       // there's a bug somewhere here. Needs to fix it later.
-      labelText = tableHeaderUpdated[this.state.keyColIndex].label;
+      labelText = tableHeader[keyColIndex].label;
     }
     for (let j = 0; j < numCols; ++j) {
       let curLabel = "";
@@ -1115,11 +1125,7 @@ class MainBody extends Component {
         // Firt case: result is not found, or there is not enough results (in duplicate neighbour case)
         // console.log(values[i]);
         if (values[i].results.bindings.length < requiredLength) {
-          if (tableDataUpdated[i][this.state.keyColIndex].data === "") {
-            tableDataUpdated[i][curCol].data = "";
-          } else {
-            tableDataUpdated[i][curCol].data = "N/A";
-          }
+          tableDataUpdated[i][curCol].data = "N/A";
         }
         // Second case: result is found. We need to process them.
         else {
@@ -1142,7 +1148,7 @@ class MainBody extends Component {
           }
           // console.log(originToAdd);
           let keyOrigin = tableDataUpdated[i][
-            this.state.keyColIndex
+            keyColIndexUpdated
           ].origin.slice();
           // console.log(keyOrigin);
           keyOrigin.push(originToAdd);
@@ -1156,6 +1162,7 @@ class MainBody extends Component {
       tableData: tableDataUpdated,
       optionsMap: optionsMapUpdated,
       selectedClassAnnotation: selectedClassAnnotationUpdated,
+      keyColIndex: keyColIndexUpdated,
     };
   }
 
@@ -1195,7 +1202,8 @@ class MainBody extends Component {
                                         this.state.tableHeader,
                                         this.state.tableData,
                                         this.state.optionsMap,
-                                        this.state.selectedClassAnnotation);
+                                        this.state.selectedClassAnnotation,
+                                        this.state.keyColIndex);
       // Let's also create the object we need for populateSameRange
       // Note: the following code is identical to what we have in populateOtherColumn
       let tempObj = {};
@@ -1251,6 +1259,8 @@ class MainBody extends Component {
           "tableData":this.state.tableData,
           "tableHeader":this.state.tableHeader,
           "optionsMap":this.state.optionsMap,
+          "selectedClassAnnotation":this.state.selectedClassAnnotation,
+          "keyColIndex":this.state.keyColIndex,
         };
 
       this.setState({
@@ -1259,6 +1269,7 @@ class MainBody extends Component {
         tableHeader:newState.tableHeader,
         optionsMap:newState.optionsMap,
         selectedClassAnnotation:newState.selectedClassAnnotation,
+        keyColIndex:newState.keyColIndex,
         lastAction: lastAction,
         prevState: prevState,
       })
@@ -1346,6 +1357,7 @@ class MainBody extends Component {
       let tempData = this.state.tableData;
       let tempOptions = this.state.optionsMap;
       let tempAnnotation = this.state.selectedClassAnnotation;
+      let tempKeyColIndex = this.state.keyColIndex;
       let curColIndex = colIndex;
       for (let i=0;i<siblingNeighbour.length;++i) {
         let curValueArray = [];
@@ -1361,12 +1373,14 @@ class MainBody extends Component {
                                             tempHeader,
                                             tempData,
                                             tempOptions,
-                                            tempAnnotation);
+                                            tempAnnotation,
+                                            tempKeyColIndex);
         curColIndex+=siblingNeighbour[i].count;
         tempHeader = newState.tableHeader;
         tempData = newState.tableData;
         tempOptions = newState.optionsMap;
         tempAnnotation = newState.selectedClassAnnotation;
+        tempKeyColIndex = newState.keyColIndex;
       }
 
       // Support for undo: 
@@ -1377,6 +1391,8 @@ class MainBody extends Component {
           "tableData":this.state.tableData,
           "tableHeader":this.state.tableHeader,
           "optionsMap":this.state.optionsMap,
+          "selectedClassAnnotation":this.state.selectedClassAnnotation,
+          "keyColIndex":this.state.keyColIndex,
         };
 
       this.setState({
@@ -1385,6 +1401,7 @@ class MainBody extends Component {
         tableHeader:tempHeader,
         optionsMap:tempOptions,
         selectedClassAnnotation:tempAnnotation,
+        keyColIndex:tempKeyColIndex,
         lastAction:lastAction,
         prevState:prevState,
       })
@@ -2232,6 +2249,8 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
         optionsMap: prevState.optionsMap,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        keyColIndex: prevState.keyColIndex,
         lastAction: "",
       })
     }
@@ -2254,6 +2273,8 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
         optionsMap: prevState.optionsMap,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        keyColIndex: prevState.keyColIndex,
         lastAction: "",
       })
     }
