@@ -1408,7 +1408,8 @@ class MainBody extends Component {
     })
   }
 
-  // The follwing function adds a new column to the table, to the right of the context-menu clicked column.
+  // The following function adds a new column to the table, to the right of the context-menu clicked column.
+  // In here, let's also set tabIndex to 0.
 
   contextAddColumn(e, colIndex) {
     const rowNum = this.state.tableData.length;
@@ -1454,11 +1455,12 @@ class MainBody extends Component {
       selectedClassAnnotation.push(this.state.selectedClassAnnotation[k]);
     }
 
-    // Lastly, if colIndex is less than keyColIndex, we need to increase keyColIndex by 1
+    // If colIndex is less than keyColIndex, we need to increase keyColIndex by 1
     let keyColIndex = this.state.keyColIndex;
     if (colIndex < keyColIndex) {
       ++keyColIndex;
     }
+
     // console.log(this.state.selectedClassAnnotation);
     // console.log(tableHeader);
     this.setState({
@@ -1468,6 +1470,7 @@ class MainBody extends Component {
       optionsMap: optionsMap,
       keyColIndex: keyColIndex,
       selectedClassAnnotation: selectedClassAnnotation,
+      tabIndex: 0, // we want to set the currently active tab to be wrangling actions
     });
   }
 
@@ -2507,7 +2510,8 @@ function urlReplace(str) {
 // This function changes the copied text "%E2%80%93" to "-" when we copy a URL from google. 
 
 function reverseReplace(str) {
-  return str.replace(/%E2%80%93/, "–");
+  return str.replace(/%E2%80%93/, "–")
+            .replace(/%27/,"'");
 }
 
 // This function removes the prefix "http://dbpedia.org/resource/" from query results, if it includes one
