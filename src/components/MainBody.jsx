@@ -1540,6 +1540,7 @@ class MainBody extends Component {
         keyColNeighbours: keyColNeighbours,
         curActionInfo: null,
         optionsMap: optionsMap,
+        tabIndex: 0, // we want to set the currently active tab to be wrangling actions
       });
     });
   }
@@ -1569,6 +1570,7 @@ class MainBody extends Component {
     tempObj["origin"] = originElement;
     this.setState({
       curActionInfo: tempObj,
+      tabIndex: 0, // we want to set the currently active tab to be wrangling actions
     });
   }
 
