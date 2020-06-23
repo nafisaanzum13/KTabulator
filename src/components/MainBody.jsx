@@ -12,7 +12,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 50;
 const initialColNum = 4;
-const initialRowNum = 100;
+const initialRowNum = 50;
 
 class MainBody extends Component {
   constructor(props) {
@@ -47,6 +47,7 @@ class MainBody extends Component {
       prevState: "",       // objects storing the information needed to undo the last step. Information stored depends on lastAction
       showModal: false,    // boolean storing whether setting modal is shown or not. Default to false.
       showTableSelection: false,    // boolean storing whether the list of tables from page is shown. Default to false.
+      tabIndex: 1,         // integer storing the index of the tab currently displaying. Default to 1.
 
       // states below are useful for startSubject
       keyColIndex: 0,   // number storing the index of the search column. initially the key column is the first column
@@ -258,7 +259,7 @@ class MainBody extends Component {
 
     if (taskSelected === "startSubject") {
       // Since the starting task is"startSubject", we set the URL to be the first cell in the table
-      const subject = reverseReplace(this.state.urlPasted.slice(30)); // add a reverseReplace here
+      const subject = decodeURIComponent(this.state.urlPasted.slice(30)); // add a decodeURIComponent here
       let tableData = _.cloneDeep(this.state.tableData);
       tableData[0][0].data = subject;
 
@@ -268,6 +269,7 @@ class MainBody extends Component {
         {
           "usecaseSelected":this.state.usecaseSelected,
           "tableData":this.state.tableData,
+          "tabIndex":this.state.tabIndex,
         };
 
       this.setState({
@@ -275,6 +277,7 @@ class MainBody extends Component {
         tableData: tableData,
         lastAction: lastAction,
         prevState: prevState,
+        tabIndex: 0,
       });
     } 
   }
@@ -971,11 +974,13 @@ class MainBody extends Component {
   // 9) optionsMap:                  original optionsMap
   // 10) selectedClassAnnotation:    original selectedClassAnnotation
 
-  // and returns an object with four values:
+  // and returns an object with 5 values:
   // 1) tableHeader:                tableHeader after modification
   // 2) tableData:                  tableData after modification
   // 3) optionsMap:                 optionsMap after modification
   // 4) selectedClassAnnotation:    selectedClassAnnotation after modification
+  // 5) keyColIndex:                keyColIndex after modification
+
   addAllNeighbour(
     colIndex,
     neighbour,
@@ -986,7 +991,8 @@ class MainBody extends Component {
     tableHeader,
     tableData,
     optionsMap,
-    selectedClassAnnotation
+    selectedClassAnnotation,
+    keyColIndex,
   ) {
     // Let's first check if all the variables are as expected
 
@@ -1008,6 +1014,13 @@ class MainBody extends Component {
     // First thing should be to insert "numCols" number of empty columns right after column with index "colIndex"
     const rowNum = tableData.length;
     const colNum = tableData[0].length;
+
+    // Let's check if we need to modify keyColIndex:
+    // if colIndex < keyColIndex, we need to increase keyColIndex by numCols
+    let keyColIndexUpdated = keyColIndex;
+    if (colIndex < keyColIndex) {
+      keyColIndexUpdated+=numCols;
+    }
 
     // We first take care of table data's (empty) additions
     let tableDataUpdated = [];
@@ -1033,20 +1046,20 @@ class MainBody extends Component {
     }
     // some modification needs to be made here
     let labelText = "";
-    if (this.state.keyColIndex === 0) {
+    if (keyColIndex === 0) {
       for (
         let i = 0;
-        i < tableHeaderUpdated[this.state.keyColIndex].length;
+        i < tableHeader[0].length;
         ++i
       ) {
         if (i > 0) {
           labelText += "&";
         }
-        labelText += tableHeaderUpdated[this.state.keyColIndex][i].value;
+        labelText += tableHeader[0][i].value;
       }
     } else {
       // there's a bug somewhere here. Needs to fix it later.
-      labelText = tableHeaderUpdated[this.state.keyColIndex].label;
+      labelText = tableHeader[keyColIndex].label;
     }
     for (let j = 0; j < numCols; ++j) {
       let curLabel = "";
@@ -1112,11 +1125,7 @@ class MainBody extends Component {
         // Firt case: result is not found, or there is not enough results (in duplicate neighbour case)
         // console.log(values[i]);
         if (values[i].results.bindings.length < requiredLength) {
-          if (tableDataUpdated[i][this.state.keyColIndex].data === "") {
-            tableDataUpdated[i][curCol].data = "";
-          } else {
-            tableDataUpdated[i][curCol].data = "N/A";
-          }
+          tableDataUpdated[i][curCol].data = "N/A";
         }
         // Second case: result is found. We need to process them.
         else {
@@ -1139,7 +1148,7 @@ class MainBody extends Component {
           }
           // console.log(originToAdd);
           let keyOrigin = tableDataUpdated[i][
-            this.state.keyColIndex
+            keyColIndexUpdated
           ].origin.slice();
           // console.log(keyOrigin);
           keyOrigin.push(originToAdd);
@@ -1153,6 +1162,7 @@ class MainBody extends Component {
       tableData: tableDataUpdated,
       optionsMap: optionsMapUpdated,
       selectedClassAnnotation: selectedClassAnnotationUpdated,
+      keyColIndex: keyColIndexUpdated,
     };
   }
 
@@ -1192,7 +1202,8 @@ class MainBody extends Component {
                                         this.state.tableHeader,
                                         this.state.tableData,
                                         this.state.optionsMap,
-                                        this.state.selectedClassAnnotation);
+                                        this.state.selectedClassAnnotation,
+                                        this.state.keyColIndex);
       // Let's also create the object we need for populateSameRange
       // Note: the following code is identical to what we have in populateOtherColumn
       let tempObj = {};
@@ -1248,6 +1259,8 @@ class MainBody extends Component {
           "tableData":this.state.tableData,
           "tableHeader":this.state.tableHeader,
           "optionsMap":this.state.optionsMap,
+          "selectedClassAnnotation":this.state.selectedClassAnnotation,
+          "keyColIndex":this.state.keyColIndex,
         };
 
       this.setState({
@@ -1256,6 +1269,7 @@ class MainBody extends Component {
         tableHeader:newState.tableHeader,
         optionsMap:newState.optionsMap,
         selectedClassAnnotation:newState.selectedClassAnnotation,
+        keyColIndex:newState.keyColIndex,
         lastAction: lastAction,
         prevState: prevState,
       })
@@ -1343,6 +1357,7 @@ class MainBody extends Component {
       let tempData = this.state.tableData;
       let tempOptions = this.state.optionsMap;
       let tempAnnotation = this.state.selectedClassAnnotation;
+      let tempKeyColIndex = this.state.keyColIndex;
       let curColIndex = colIndex;
       for (let i=0;i<siblingNeighbour.length;++i) {
         let curValueArray = [];
@@ -1358,12 +1373,14 @@ class MainBody extends Component {
                                             tempHeader,
                                             tempData,
                                             tempOptions,
-                                            tempAnnotation);
+                                            tempAnnotation,
+                                            tempKeyColIndex);
         curColIndex+=siblingNeighbour[i].count;
         tempHeader = newState.tableHeader;
         tempData = newState.tableData;
         tempOptions = newState.optionsMap;
         tempAnnotation = newState.selectedClassAnnotation;
+        tempKeyColIndex = newState.keyColIndex;
       }
 
       // Support for undo: 
@@ -1374,6 +1391,8 @@ class MainBody extends Component {
           "tableData":this.state.tableData,
           "tableHeader":this.state.tableHeader,
           "optionsMap":this.state.optionsMap,
+          "selectedClassAnnotation":this.state.selectedClassAnnotation,
+          "keyColIndex":this.state.keyColIndex,
         };
 
       this.setState({
@@ -1382,13 +1401,15 @@ class MainBody extends Component {
         tableHeader:tempHeader,
         optionsMap:tempOptions,
         selectedClassAnnotation:tempAnnotation,
+        keyColIndex:tempKeyColIndex,
         lastAction:lastAction,
         prevState:prevState,
       })
     })
   }
 
-  // The follwing function adds a new column to the table, to the right of the context-menu clicked column.
+  // The following function adds a new column to the table, to the right of the context-menu clicked column.
+  // In here, let's also set tabIndex to 0.
 
   contextAddColumn(e, colIndex) {
     const rowNum = this.state.tableData.length;
@@ -1434,11 +1455,12 @@ class MainBody extends Component {
       selectedClassAnnotation.push(this.state.selectedClassAnnotation[k]);
     }
 
-    // Lastly, if colIndex is less than keyColIndex, we need to increase keyColIndex by 1
+    // If colIndex is less than keyColIndex, we need to increase keyColIndex by 1
     let keyColIndex = this.state.keyColIndex;
     if (colIndex < keyColIndex) {
       ++keyColIndex;
     }
+
     // console.log(this.state.selectedClassAnnotation);
     // console.log(tableHeader);
     this.setState({
@@ -1448,6 +1470,7 @@ class MainBody extends Component {
       optionsMap: optionsMap,
       keyColIndex: keyColIndex,
       selectedClassAnnotation: selectedClassAnnotation,
+      tabIndex: 0, // we want to set the currently active tab to be wrangling actions
     });
   }
 
@@ -1517,6 +1540,7 @@ class MainBody extends Component {
         keyColNeighbours: keyColNeighbours,
         curActionInfo: null,
         optionsMap: optionsMap,
+        tabIndex: 0, // we want to set the currently active tab to be wrangling actions
       });
     });
   }
@@ -1546,6 +1570,7 @@ class MainBody extends Component {
     tempObj["origin"] = originElement;
     this.setState({
       curActionInfo: tempObj,
+      tabIndex: 0, // we want to set the currently active tab to be wrangling actions
     });
   }
 
@@ -1678,7 +1703,7 @@ class MainBody extends Component {
 
       allPromiseReady(promiseArray).then((values) => {
         let propertyNeighbours = [];
-        let urlOrigin = reverseReplace(this.state.urlPasted.slice(30));
+        let urlOrigin = decodeURIComponent(this.state.urlPasted.slice(30));
         // console.log(urlOrigin);
         for (let i = 0; i < values.length; ++i) {
           let curSiblingArray = values[i].results.bindings;
@@ -1736,6 +1761,7 @@ class MainBody extends Component {
                 "tableHeader": this.state.tableHeader,
                 "optionsMap": this.state.optionsMap,
                 "usecaseSelected": this.state.usecaseSelected,
+                "tabIndex": this.state.tabIndex,
               };
 
           this.setState({
@@ -1749,9 +1775,11 @@ class MainBody extends Component {
             tableHeader: stateInfo.tableHeader,
             optionsMap: stateInfo.optionsMap,
             usecaseSelected: "startTable",
+            tabIndex: 1,
             lastAction: lastAction,
             prevState: prevState,
           });
+          // this.handleTabSwitch(1);
         })
       });
     });
@@ -1974,7 +2002,7 @@ class MainBody extends Component {
 
       // Let's do some checking here: we do not want to union the same table with itself
       let sameTable = false;
-      if (otherTableOrigin === reverseReplace(this.state.urlPasted.slice(30)) && headerRow.length === tableData[0].length) {
+      if (otherTableOrigin === decodeURIComponent(this.state.urlPasted.slice(30)) && headerRow.length === tableData[0].length) {
         let diffColFound = false;
         for (let m=0; m<headerRow.length; ++m) {
           if (headerRow[m].data !== this.state.tableHeader[m].value) {
@@ -2045,7 +2073,7 @@ class MainBody extends Component {
           otherTableData = setUnionData(otherTableData);
           // Let's do some checking here: we do not want to union the same table with itself
           let sameTable = false;
-          if (otherTableOrigin === reverseReplace(this.state.urlPasted.slice(30)) && headerRow.length === tableData[0].length) {
+          if (otherTableOrigin === decodeURIComponent(this.state.urlPasted.slice(30)) && headerRow.length === tableData[0].length) {
             let diffColFound = false;
             for (let m=0; m<headerRow.length; ++m) {
               if (headerRow[m].data !== this.state.tableHeader[m].value) {
@@ -2117,12 +2145,11 @@ class MainBody extends Component {
     });
   }
 
-  // This function hanles switching tabs, if starting task is startTable
+  // This function hanles switching tabs
 
   handleTabSwitch(index) {
     // If we are switching to "Union Table" tab from "Wrangling Actions" tab, we want to toggle off all the property neighbours.
     // Since we might have potentially changed the table in table panel, thus changed the search criteria as well
-    console.log(this.state.selectedClassAnnotation);
     if (index === 1) {
       let propertyNeighbours = this.state.propertyNeighbours.slice();
       for (let i = 0; i < propertyNeighbours.length; ++i) {
@@ -2130,7 +2157,13 @@ class MainBody extends Component {
       }
       this.setState({
         propertyNeighbours: propertyNeighbours,
+        tabIndex: index,
       });
+    }
+    else {
+      this.setState({
+        tabIndex: index,
+      })
     }
   }
 
@@ -2164,6 +2197,7 @@ class MainBody extends Component {
       this.setState({
         usecaseSelected: prevState.usecaseSelected,
         tableData: prevState.tableData,
+        tabIndex: prevState.tabIndex,
         curActionInfo: "",
         lastAction: "",
       })
@@ -2184,6 +2218,7 @@ class MainBody extends Component {
         tableHeader: prevState.tableHeader,
         optionsMap: prevState.optionsMap,
         usecaseSelected: prevState.usecaseSelected,
+        tabIndex: prevState.tabIndex,
         lastAction: "",
       })
     }
@@ -2219,6 +2254,8 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
         optionsMap: prevState.optionsMap,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        keyColIndex: prevState.keyColIndex,
         lastAction: "",
       })
     }
@@ -2241,6 +2278,8 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
         optionsMap: prevState.optionsMap,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        keyColIndex: prevState.keyColIndex,
         lastAction: "",
       })
     }
@@ -2359,6 +2398,7 @@ class MainBody extends Component {
                     unionPage={this.unionPage}
                     unionProperty={this.unionProperty}
                     // Follow state handles tab switch
+                    tabIndex={this.state.tabIndex}
                     handleTabSwitch={this.handleTabSwitch}
                     // Following states are passed during start up
                     showTableSelection={this.state.showTableSelection}
@@ -2467,12 +2507,6 @@ function urlReplace(str) {
     .replace(/\//g, "%5Cu002F")
     .replace(/,/g, "%5Cu002C")
     .replace(/\s/g, "_");
-}
-
-// This function changes the copied text "%E2%80%93" to "-" when we copy a URL from google. 
-
-function reverseReplace(str) {
-  return str.replace(/%E2%80%93/, "–");
 }
 
 // This function removes the prefix "http://dbpedia.org/resource/" from query results, if it includes one
@@ -3272,7 +3306,7 @@ function setTableFromHTML(selecteTableHTML, urlOrigin) {
             let hrefArray = anchorArray[k].href.split("/");
             // console.log("InnerText is "+anchorArray[k].innerText);
             // console.log("It exists in DBPedia as "+hrefArray[hrefArray.length-1]);
-            curCellText = reverseReplace(hrefArray[hrefArray.length - 1]);
+            curCellText = decodeURIComponent(hrefArray[hrefArray.length - 1]);
             // if (curCellText.includes("UEFA")) {
             // console.log(curCellText);
             // }
