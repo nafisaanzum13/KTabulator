@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "a0fe8e23e442ceffba0f06d1a849295a",
+    "revision": "93f51a674e5012ccfbe6679422bc3c4e",
     "url": "/KGWrangler/index.html"
   },
   {
