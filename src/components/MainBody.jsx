@@ -259,7 +259,7 @@ class MainBody extends Component {
 
     if (taskSelected === "startSubject") {
       // Since the starting task is"startSubject", we set the URL to be the first cell in the table
-      const subject = reverseReplace(this.state.urlPasted.slice(30)); // add a reverseReplace here
+      const subject = decodeURIComponent(this.state.urlPasted.slice(30)); // add a decodeURIComponent here
       let tableData = _.cloneDeep(this.state.tableData);
       tableData[0][0].data = subject;
 
@@ -1701,7 +1701,7 @@ class MainBody extends Component {
 
       allPromiseReady(promiseArray).then((values) => {
         let propertyNeighbours = [];
-        let urlOrigin = reverseReplace(this.state.urlPasted.slice(30));
+        let urlOrigin = decodeURIComponent(this.state.urlPasted.slice(30));
         // console.log(urlOrigin);
         for (let i = 0; i < values.length; ++i) {
           let curSiblingArray = values[i].results.bindings;
@@ -2000,7 +2000,7 @@ class MainBody extends Component {
 
       // Let's do some checking here: we do not want to union the same table with itself
       let sameTable = false;
-      if (otherTableOrigin === reverseReplace(this.state.urlPasted.slice(30)) && headerRow.length === tableData[0].length) {
+      if (otherTableOrigin === decodeURIComponent(this.state.urlPasted.slice(30)) && headerRow.length === tableData[0].length) {
         let diffColFound = false;
         for (let m=0; m<headerRow.length; ++m) {
           if (headerRow[m].data !== this.state.tableHeader[m].value) {
@@ -2071,7 +2071,7 @@ class MainBody extends Component {
           otherTableData = setUnionData(otherTableData);
           // Let's do some checking here: we do not want to union the same table with itself
           let sameTable = false;
-          if (otherTableOrigin === reverseReplace(this.state.urlPasted.slice(30)) && headerRow.length === tableData[0].length) {
+          if (otherTableOrigin === decodeURIComponent(this.state.urlPasted.slice(30)) && headerRow.length === tableData[0].length) {
             let diffColFound = false;
             for (let m=0; m<headerRow.length; ++m) {
               if (headerRow[m].data !== this.state.tableHeader[m].value) {
@@ -2505,13 +2505,6 @@ function urlReplace(str) {
     .replace(/\//g, "%5Cu002F")
     .replace(/,/g, "%5Cu002C")
     .replace(/\s/g, "_");
-}
-
-// This function changes the copied text "%E2%80%93" to "-" when we copy a URL from google. 
-
-function reverseReplace(str) {
-  return str.replace(/%E2%80%93/, "–")
-            .replace(/%27/,"'");
 }
 
 // This function removes the prefix "http://dbpedia.org/resource/" from query results, if it includes one
@@ -3311,7 +3304,7 @@ function setTableFromHTML(selecteTableHTML, urlOrigin) {
             let hrefArray = anchorArray[k].href.split("/");
             // console.log("InnerText is "+anchorArray[k].innerText);
             // console.log("It exists in DBPedia as "+hrefArray[hrefArray.length-1]);
-            curCellText = reverseReplace(hrefArray[hrefArray.length - 1]);
+            curCellText = decodeURIComponent(hrefArray[hrefArray.length - 1]);
             // if (curCellText.includes("UEFA")) {
             // console.log(curCellText);
             // }
