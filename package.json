@@ -1,6 +1,6 @@
 {
   "homepage": "https://nafisaanzum13.github.io/KGWrangler",
-  "name": "wiki-data-wrangler",
+  "name": "KGWrangler",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
