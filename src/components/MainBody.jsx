@@ -109,6 +109,7 @@ class MainBody extends Component {
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextSetCell = this.contextSetCell.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
+    this.contextOpenLink = this.contextOpenLink.bind(this);
 
     // functions below are useful for startTable
     this.toggleTable = this.toggleTable.bind(this);
@@ -1579,6 +1580,16 @@ class MainBody extends Component {
     });
   }
 
+  // The following function sets the bottom page URL to the Wikipage of selected cell.
+
+  contextOpenLink(e, rowIndex, colIndex) {
+    let iframeURL = "https://en.wikipedia.org/wiki/" + this.state.tableData[rowIndex][colIndex].data;
+    this.setState({
+      pageHidden: false,
+      iframeURL: iframeURL,
+    });
+  }
+
   toggleTable(e, index) {
     let tableOpenList = this.state.tableOpenList.slice();
     tableOpenList[index] = !tableOpenList[index];
@@ -2374,6 +2385,7 @@ class MainBody extends Component {
                     contextAddColumn={this.contextAddColumn}
                     contextSetCell={this.contextSetCell}
                     contextCellOrigin={this.contextCellOrigin}
+                    contextOpenLink={this.contextOpenLink}
                     // Folloiwng states are passed to "startTable"
                     // tableDataExplore={this.state.tableDataExplore}
                     // originTableArray={this.state.originTableArray}

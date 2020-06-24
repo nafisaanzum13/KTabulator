@@ -194,6 +194,9 @@ class TablePanel extends Component {
             <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
               Show Origin of Cell
             </MenuItem>
+            <MenuItem onClick={(e) => this.props.contextOpenLink(e, i, j)}>
+              Open Wikipage for Cell
+            </MenuItem>
           </ContextMenu>
         );
       }
