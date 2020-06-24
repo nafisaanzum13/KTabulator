@@ -138,38 +138,43 @@ class MainBody extends Component {
 
     // Lastly, we updated the urlPasted and iframeURL
 
-    let promiseArray = [];
-    promiseArray.push(fetchText(urlPasted));
-    allPromiseReady(promiseArray).then((values) => {
-      // We first parse the pasted URL and store the list of tables from the pasted URL
-      let htmlText = values[0];
-      let doc = new DOMParser().parseFromString(htmlText, "text/html");
-      let originTableArray = doc.getElementsByClassName("wikitable");
-      let tableOpenList = [];
-      for (let i = 0; i < originTableArray.length; ++i) {
-        tableOpenList.push(false);
-      }
+    if (!urlPasted.includes("https://en.wikipedia.org/wiki/")) {
+      alert("Please paste a valid Wikipedia link.");
+    }
+    else {
+      let promiseArray = [];
+      promiseArray.push(fetchText(urlPasted));
+      allPromiseReady(promiseArray).then((values) => {
+        // We first parse the pasted URL and store the list of tables from the pasted URL
+        let htmlText = values[0];
+        let doc = new DOMParser().parseFromString(htmlText, "text/html");
+        let originTableArray = doc.getElementsByClassName("wikitable");
+        let tableOpenList = [];
+        for (let i = 0; i < originTableArray.length; ++i) {
+          tableOpenList.push(false);
+        }
 
-      // Adding support for undo:
+        // Adding support for undo:
 
-      let lastAction = "handleURLPaste";
-      let prevState = 
-        {
-          "urlPasted":"",
-          "iframeURL":"",
-          "originTableArray":[],
-          "tableOpenList":[],
-        };
+        let lastAction = "handleURLPaste";
+        let prevState = 
+          {
+            "urlPasted":"",
+            "iframeURL":"",
+            "originTableArray":[],
+            "tableOpenList":[],
+          };
 
-      this.setState({
-        originTableArray: originTableArray,
-        tableOpenList: tableOpenList,
-        urlPasted: urlPasted,
-        iframeURL: urlPasted,
-        lastAction: lastAction,
-        prevState: prevState,
+        this.setState({
+          originTableArray: originTableArray,
+          tableOpenList: tableOpenList,
+          urlPasted: urlPasted,
+          iframeURL: urlPasted,
+          lastAction: lastAction,
+          prevState: prevState,
+        });
       });
-    });
+    }
   }
 
   handleTablePaste(tablePasted) {
