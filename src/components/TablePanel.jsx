@@ -112,9 +112,10 @@ class TablePanel extends Component {
               <input
                 className="twenty-vw"
                 type="text"
-                value={this.props.tableData[i][j].data}
+                value={niceRender(this.props.tableData[i][j].data)}
                 // onClick={() => {alert("hmm");}}
                 onChange={(e) => this.props.onCellChange(e, i, j)}
+                // onClick={() => alert("hmm")} something like this could work
               />
             </ContextMenuTrigger>
           </td>
@@ -175,93 +176,6 @@ class TablePanel extends Component {
   render() {
     let tableEle = null;
 
-    // // Case one: user hasn't selected any task yet
-    // if (this.props.usecaseSelected === "") {
-    //   tableEle = <h4 className="text-center">Welcome!</h4>;
-    // }
-    // // Case two: user has chosen task "startSubject"
-    // else if (this.props.usecaseSelected === "startSubject") {
-    //   let menuArray = [];
-    //   for (let i = 0; i < this.props.tableData.length; ++i) {
-    //     for (let j = 0; j < this.props.tableData[0].length; ++j) {
-    //       let tempID = "cellRow" + i + "Col" + j;
-    //       menuArray.push(
-    //         <ContextMenu id={tempID}>
-    //           <MenuItem onClick={(e) => this.props.contextAddColumn(e, j)}>
-    //             Add Column to the Right
-    //           </MenuItem>
-    //           <MenuItem divider />
-    //           <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
-    //             Set as Search Cell
-    //           </MenuItem>
-    //           <MenuItem divider />
-    //           <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
-    //             Show Origin of Cell
-    //           </MenuItem>
-    //         </ContextMenu>
-    //       );
-    //     }
-    //   }
-    //   tableEle = (
-    //     // class table-fixed helps with sticky column headers
-    //     <div>
-    //       <table class border="1" className="table table-sm table-bordered">
-    //         {this.createSuperTable()}
-    //       </table>
-    //       {menuArray}
-    //     </div>
-    //   );
-    // }
-    // // Case three: user has chosen task "startTable"
-    // else if (this.props.usecaseSelected === "startTable") {
-    //   // Case 3.1: User has not selected a table yet
-    //   if (this.props.selectedTableIndex === -1) {
-    //     tableEle = (
-    //       <TableSelection
-    //         originTableArray={this.props.originTableArray}
-    //         tableOpenList={this.props.tableOpenList}
-    //         toggleTable={this.props.toggleTable}
-    //         selectedTableIndex={this.props.selectedTableIndex}
-    //       />
-    //     );
-    //   }
-    //   // Case 3.2: User has selected a table
-    //   // Make the second part into its own component
-    //   else {
-    //     let menuArray = [];
-    //     for (let i = 0; i < this.props.tableData.length; ++i) {
-    //       for (let j = 0; j < this.props.tableData[0].length; ++j) {
-    //         let tempID = "cellRow" + i + "Col" + j;
-    //         menuArray.push(
-    //           <ContextMenu id={tempID}>
-    //             <MenuItem onClick={(e) => this.props.contextAddColumn(e, j)}>
-    //               Add Column to the Right
-    //             </MenuItem>
-    //             <MenuItem divider />
-    //             <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
-    //               Set as Search Cell
-    //             </MenuItem>
-    //             <MenuItem divider />
-    //             <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
-    //               Show Origin of Cell
-    //             </MenuItem>
-    //           </ContextMenu>
-    //         );
-    //       }
-    //     }
-    //     tableEle = (
-    //       // class table-fixed helps with sticky column headers
-    //       <div>
-    //         <table class border="1" className="table table-sm table-bordered">
-    //           {this.createSuperTable()}
-    //         </table>
-    //         {menuArray}
-    //       </div>
-    //     );
-    //   }
-    // } else {
-    // }
-
     // In all cases, once we have pasted the URL. We want to display the super table in the table panel.
     let menuArray = [];
     for (let i = 0; i < this.props.tableData.length; ++i) {
@@ -298,3 +212,18 @@ class TablePanel extends Component {
 }
 
 export default TablePanel;
+
+// This function renders this.props.tableData[i][j].data in a nicer way. 
+// It changes"_" to " ", and removes everything after the first occurence of (
+
+function niceRender(str) {
+  let resultStr = str;
+  let bracketIndex = str.indexOf("(");
+  // If ( is present in a string, we want to remove it
+  // We include the -1 because usually ( is preceeded by _
+  if (bracketIndex !== -1) {
+    resultStr = resultStr.slice(0, bracketIndex-1);
+  }
+  // now we turn all "_" into " "
+  return resultStr.replace(/_/g, " ");
+}
