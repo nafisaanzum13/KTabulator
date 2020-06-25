@@ -10,7 +10,7 @@ class TaskMenu extends Component {
   }
 
   render() {
-    const subject = reverseReplace(this.props.urlPasted.slice(30));
+    const subject = niceRender(reverseReplace(this.props.urlPasted.slice(30)));
     return (
       <div>
         <ul class="list-group list-css list-group-flush">
@@ -19,7 +19,7 @@ class TaskMenu extends Component {
             className="list-group-item"
             onClick={(e) => this.props.handleStartSubject(e, "startSubject")}
           >
-            Start with creating a table about {subject}
+            Start creating a table about {subject}
           </li>
           <li
             className="list-group-item"
@@ -60,3 +60,18 @@ export default TaskMenu;
 function reverseReplace(str) {
   return str.replace(/%E2%80%93/, "–");
 }
+
+// This function renders this.props.tableData[i][j].data in a nicer way. 
+// It changes"_" to " ", and removes everything after the first occurence of (
+
+  function niceRender(str) {
+    let resultStr = str;
+    let bracketIndex = str.indexOf("(");
+    // If ( is present in a string, we want to remove it
+    // We include the -1 because usually ( is preceeded by _
+    if (bracketIndex !== -1) {
+      resultStr = resultStr.slice(0, bracketIndex-1);
+    }
+    // now we turn all "_" into " "
+    return resultStr.replace(/_/g, " ");
+  }

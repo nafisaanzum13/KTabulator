@@ -269,6 +269,17 @@ class ActionPanel extends Component {
     // Case 2: Task has been selected. curActionInfo is not null, meaning we have to display some task in ActionPanel
     else if (this.props.curActionInfo !== null) {
       const actionInfo = this.props.curActionInfo;
+      // In this case we ask users to select a column header for the first column
+      if (actionInfo.task === "afterStartSubject") {
+        actionEle = (
+          <div>
+            <p className="suggestion-text">
+              Fill the <b>first column header</b> by choosing from its <b>dropdown menu</b>
+            </p>
+          </div>
+        )
+      }
+      // In this case we give user a button to allow the population of first column
       if (actionInfo.task === "populateKeyColumn") {
         let neighbourArrayText = "";
         for (let i = 0; i < actionInfo.neighbourArray.length; ++i) {
@@ -277,25 +288,36 @@ class ActionPanel extends Component {
           }
           neighbourArrayText += actionInfo.neighbourArray[i];
         }
-        actionEle = (
-          <div>
-            <p>Populate this column with column header:</p>
-            <p>{neighbourArrayText}</p>
-            <p>?</p>
-            <button
-              onClick={(e) =>
-                this.props.populateKeyColumn(
-                  e,
-                  actionInfo.colIndex,
-                  actionInfo.neighbourArray
-                )
-              }
-            >
-              OK
-            </button>
-          </div>
-        );
+        if (neighbourArrayText !== "") {
+          actionEle = (
+            <div>
+              <p>Fill this column with:</p>
+              <p><b>{neighbourArrayText}</b> ?</p>
+              <button
+                onClick={(e) =>
+                  this.props.populateKeyColumn(
+                    e,
+                    actionInfo.colIndex,
+                    actionInfo.neighbourArray
+                  )
+                }
+              >
+                OK
+              </button>
+            </div>
+          );
+        }
+        else {
+          actionEle = (
+            <div>
+              <p className="suggestion-text">
+                Fill the <b>first column header</b> by choosing from its <b>dropdown menu</b>
+              </p>
+            </div>
+          );
+        }
       } 
+      // In this case we give user a button to allow the population of a new column
       else if (actionInfo.task === "populateOtherColumn") {
         let neighbourText =
           actionInfo.type === "subject"
@@ -303,8 +325,8 @@ class ActionPanel extends Component {
             : "is " + actionInfo.neighbour + " of";
         actionEle = (
           <div>
-            <p>Populate this column with column header:</p>
-            <p>{neighbourText} ?</p>
+            <p>Fill this column with:</p>
+            <p><b>{neighbourText}</b> ?</p>
             <button
               onClick={(e) =>
                 this.props.populateOtherColumn(
@@ -322,6 +344,7 @@ class ActionPanel extends Component {
           </div>
         );
       } 
+      // In this case we give user a button to allow the population of same neighbour
       else if (actionInfo.task === "populateSameNeighbour") {
         let neighbourText =
           actionInfo.type === "subject"
@@ -367,18 +390,21 @@ class ActionPanel extends Component {
           </div>
         );
       } 
+      // In this case we give user a button to allow the population of all neighbours from the same range
       else if (actionInfo.task === "populateSameRange") {
         let siblingText = "";
+        let plural = "";
         for (let i = 0; i < actionInfo.siblingNeighbour.length; ++i) {
           if (i > 0) {
             siblingText += ", ";
+            plural = "s";
           }
           siblingText += actionInfo.siblingNeighbour[i].name;
         }
         actionEle = (
           <div>
-            <p>Populate attribute: {siblingText} </p>
-            <p>that are also of type: {actionInfo.range} ?</p>
+            <p>Add column{plural}: <b>{siblingText}</b></p>
+            <p>that also has type: {actionInfo.range} ?</p>
             <button
               onClick={(e) =>
                 this.props.populateSameRange(
@@ -394,6 +420,7 @@ class ActionPanel extends Component {
           </div>
         );
       } 
+      // In this case we display the origin of selected cell
       else if (actionInfo.task === "contextCellOrigin") {
         actionEle = (
           <div>
@@ -402,60 +429,6 @@ class ActionPanel extends Component {
           </div>
         );
       } 
-      else if (actionInfo.task === "showPropertyNeighbours") {
-        // actionEle = (
-        //   <div>
-        //     <Tabs>
-        //       <TabList>
-        //         <Tab>Results</Tab>
-        //         <Tab>Setting</Tab>
-        //       </TabList>
-        //       <TabPanel>
-        //         <small>
-        //           Explore relations below to look for other pages with similar
-        //           tables:
-        //         </small>{" "}
-        //         <br></br>
-        //         {this.createPropertyArray()}
-        //       </TabPanel>
-        //       <TabPanel>
-        //         <div className="row">
-        //           <div className="col-md-4">Semantic Mapping:</div>
-        //           <div className="col-md-6">
-        //             <div onChange={(e) => this.props.toggleSemantic(e)}>
-        //               <input
-        //                 type="radio"
-        //                 value="enabled"
-        //                 checked={this.props.semanticEnabled === "enabled"}
-        //               />{" "}
-        //               Enabled
-        //               <input
-        //                 type="radio"
-        //                 value="disabled"
-        //                 checked={this.props.semanticEnabled === "disabled"}
-        //               />{" "}
-        //               Disabled
-        //             </div>
-        //           </div>
-        //         </div>
-        //         <br />
-        //         <div className="row">
-        //           <div className="col-md-4">Union Cutoff Percentage:</div>
-        //           <div className="col-md-6">
-        //             <RangeSlider
-        //               value={this.props.unionCutOff}
-        //               onChange={(e) => this.props.unionCutOffChange(e)}
-        //               min={0}
-        //               max={1}
-        //               step={0.05}
-        //             />
-        //           </div>
-        //         </div>
-        //       </TabPanel>
-        //     </Tabs>
-        //   </div>
-        // );
-      }
     } 
     // This is an empty else clause
     else {

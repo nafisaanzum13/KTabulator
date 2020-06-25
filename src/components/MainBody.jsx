@@ -276,6 +276,7 @@ class MainBody extends Component {
           "usecaseSelected":this.state.usecaseSelected,
           "tableData":this.state.tableData,
           "tabIndex":this.state.tabIndex,
+          "curActionInfo":this.state.curActionInfo,
         };
 
       this.setState({
@@ -283,6 +284,7 @@ class MainBody extends Component {
         tableData: tableData,
         lastAction: lastAction,
         prevState: prevState,
+        curActionInfo: {"task":"afterStartSubject"},
         tabIndex: 0,
       });
     } 
@@ -2214,7 +2216,7 @@ class MainBody extends Component {
         usecaseSelected: prevState.usecaseSelected,
         tableData: prevState.tableData,
         tabIndex: prevState.tabIndex,
-        curActionInfo: "",
+        curActionInfo: prevState.curActionInfo,
         lastAction: "",
       })
     }

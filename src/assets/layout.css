@@ -106,7 +106,7 @@ a.logo:focus {
 }
 
 .top-content {
-  height: 55vh;
+  height: 40vh;
   margin-left: 15px;
 }
 
@@ -116,7 +116,7 @@ a.logo:focus {
 }
 
 .bottom-content {
-  height: 35vh;
+  height: 50vh;
   width: 100%;
   border: 0px;
 }
@@ -140,7 +140,7 @@ a.logo:focus {
 }
 
 .wiki-page {
-  height: 35vh;
+  height: 50vh;
   width: 100%;
   border: 0px;
 }
