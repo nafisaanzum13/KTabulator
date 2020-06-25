@@ -357,6 +357,8 @@ class MainBody extends Component {
   // based on cells already filled in this column, and the cells in the key column
   // aka: Michelle Obama is Barack Obama' wife
 
+  // If no cells is filled in this column, this function doesn't do anything.
+
   getOtherOptions(e, colIndex) {
     if (colIndex !== this.state.keyColIndex) {
       // first we want to check if this column is all-empty
@@ -489,12 +491,18 @@ class MainBody extends Component {
       tempObj["neighbour"] = e.value;
       tempObj["type"] = e.type;
       // We want to deal with duplicate neighbour names since we are selecting column headers for non-key columns
-      let arr = elabel.split("-");
-      if (arr.length > 1 && !isNaN(Number(arr[1]) - 1)) {
-        // arr[1] stores the index of the neighbour with duplicate names
-        tempObj["neighbourIndex"] = Number(arr[1]) - 1;
-      } else {
-        // If neighbourIndex is equal to -1, that means this property has no duplicate names
+      // let arr = elabel.split("-");
+      // if (arr.length > 1 && !isNaN(Number(arr[1]) - 1)) {
+      //   // arr[1] stores the index of the neighbour with duplicate names
+      //   tempObj["neighbourIndex"] = Number(arr[1]) - 1;
+      // } else {
+      //   // If neighbourIndex is equal to -1, that means this property has no duplicate names
+      //   tempObj["neighbourIndex"] = -1;
+      // }
+      if (elabel.includes("(*)")) {
+        tempObj["neighbourIndex"] = 0;
+      }
+      else {
         tempObj["neighbourIndex"] = -1;
       }
 
@@ -657,6 +665,7 @@ class MainBody extends Component {
       // let's now work with the second and third promise result: update the selection options for non-key columns
 
       let keyColNeighbours = [];
+
       keyColNeighbours = updateKeyColNeighbours(
         keyColNeighbours,
         values[1].results.bindings,
@@ -667,7 +676,7 @@ class MainBody extends Component {
         values[2].results.bindings,
         "object"
       );
-      // console.log(keyColNeighbours);
+      console.log(keyColNeighbours);
 
       let optionsMap = this.state.optionsMap.slice();
       for (let i = 0; i < optionsMap.length; ++i) {
@@ -800,6 +809,8 @@ class MainBody extends Component {
 
   populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type, range) {
 
+    console.log(neighbourIndex);
+
     // Support for "populateSameRange":
 
     // When the range is not equal to undefined, we want to ask user if they want to populate all other attributes from this range
@@ -903,7 +914,7 @@ class MainBody extends Component {
           tempObj["range"] = range;
         }
       }
-      // In this case, users. are not populating a column with duplicate names, but it has a range, 
+      // In this case, users are not populating a column with duplicate names, but it has a range, 
       // we may need to ask user if they want to populate other columns from the same range
       else if (range !== undefined) {
         let siblingNeighbour = [];
@@ -914,23 +925,23 @@ class MainBody extends Component {
             this.state.keyColNeighbours[i].range === range &&
             this.state.keyColNeighbours[i].value !== neighbour
           ) {
-            siblingNeighbour.push(this.state.keyColNeighbours[i].value);
+            siblingNeighbour.push(this.state.keyColNeighbours[i]);
           }
         }
         // If we have found columns from the same range (other than the current neighbour),
         // we give user the option to populate other columns from the same range.
         if (siblingNeighbour.length > 0) {
-          // First, we want to keep track of the number of occurences for each sibling attribute
-          let siblingUnique = [...new Set(siblingNeighbour)];
-          let siblingCount = [];
-          for (let i = 0; i < siblingUnique.length; ++i) {
-            // console.log(siblingNeighbour);
-            siblingCount.push({
-              name: siblingUnique[i],
-              count: siblingNeighbour.filter((x) => x === siblingUnique[i])
-                .length,
-            });
-          }
+          // // First, we want to keep track of the number of occurences for each sibling attribute
+          // let siblingUnique = [...new Set(siblingNeighbour)];
+          // let siblingCount = [];
+          // for (let i = 0; i < siblingUnique.length; ++i) {
+          //   // console.log(siblingNeighbour);
+          //   siblingCount.push({
+          //     name: siblingUnique[i],
+          //     count: siblingNeighbour.filter((x) => x === siblingUnique[i])
+          //       .length,
+          //   });
+          // }
           // console.log(siblingCount);
           // Let's do some string processing to improve UI clarity
           let rangeLiteral = "";
@@ -944,7 +955,8 @@ class MainBody extends Component {
           tempObj["task"] = "populateSameRange";
           tempObj["colIndex"] = colIndex;
           tempObj["range"] = rangeLiteral;
-          tempObj["siblingNeighbour"] = siblingCount;
+          console.log(siblingNeighbour);
+          tempObj["siblingNeighbour"] = siblingNeighbour;
         }
         // If we have NOT found columns from the same range, we tell user that they can populate more columns
         else {
@@ -1231,7 +1243,7 @@ class MainBody extends Component {
         if (range !== undefined
             &&this.state.keyColNeighbours[i].range === range 
             && this.state.keyColNeighbours[i].value !== neighbour) {
-          siblingNeighbour.push(this.state.keyColNeighbours[i].value);
+          siblingNeighbour.push(this.state.keyColNeighbours[i]);
         }
       }
       
@@ -1240,34 +1252,32 @@ class MainBody extends Component {
       // If we have found columns from the same range (other than the current neighbour), 
       // we give user the option to populate other columns from the same range.
       if (siblingNeighbour.length > 0) {
-        // This needs some additional checking to prevent bugs
-        // console.log("We may have a bug here");
-        // console.log("Range is: "+range);
-        // console.log("SiblingNeighbour is "+siblingNeighbour);
-        // console.log("Is undefined equal to undefined? "+(undefined === undefined));
-        // First, we want to keep track of the number of occurences for each sibling attribute
-        let siblingUnique = [...new Set(siblingNeighbour)];
-        let siblingCount = [];
-        for (let i=0;i<siblingUnique.length;++i) {
-          // console.log(siblingNeighbour);
-          siblingCount.push({"name":siblingUnique[i],"count":siblingNeighbour.filter(x => x === siblingUnique[i]).length})
-        }
+        // // First, we want to keep track of the number of occurences for each sibling attribute
+        // let siblingUnique = [...new Set(siblingNeighbour)];
+        // let siblingCount = [];
+        // for (let i = 0; i < siblingUnique.length; ++i) {
+        //   // console.log(siblingNeighbour);
+        //   siblingCount.push({
+        //     name: siblingUnique[i],
+        //     count: siblingNeighbour.filter((x) => x === siblingUnique[i])
+        //       .length,
+        //   });
+        // }
         // console.log(siblingCount);
         // Let's do some string processing to improve UI clarity
         let rangeLiteral = "";
         if (range.includes("http://dbpedia.org/ontology/")) {
           rangeLiteral = range.slice(28);
-        } 
-        else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
+        } else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
           rangeLiteral = range.slice(33);
-        } 
-        else {
+        } else {
           rangeLiteral = range;
         }
         tempObj["task"] = "populateSameRange";
         tempObj["colIndex"] = colIndex+numCols;  // Small change here: we need to adjust the position of the column index
         tempObj["range"] = rangeLiteral;
-        tempObj["siblingNeighbour"] = siblingCount;
+        console.log(siblingNeighbour);
+        tempObj["siblingNeighbour"] = siblingNeighbour;
       }
       // In this case, we tell user that they can populate more columns
       else {
@@ -1364,7 +1374,7 @@ class MainBody extends Component {
     // }
     let promiseArrayTwoD = [];
     for (let i=0;i<siblingNeighbour.length;++i) {
-      let curPromiseArray = this.getOtherColPromise(siblingNeighbour[i].name,"subject");
+      let curPromiseArray = this.getOtherColPromise(siblingNeighbour[i].value,"subject");
       for (let j=0;j<curPromiseArray.length;++j) {
         promiseArrayTwoD.push(curPromiseArray[j]);
       }
@@ -1389,7 +1399,7 @@ class MainBody extends Component {
           curValueArray.push(values[tempData.length*i+j]) // since working with 2D promise array is not figured out yet, we need to manipulate index
         }
         let newState = this.addAllNeighbour(curColIndex,
-                                            siblingNeighbour[i].name,    // this is name of the neighbour
+                                            siblingNeighbour[i].value,    // this is name of the neighbour
                                             -1,                          // this is neighbour index. -1 indicates that we have not populated any neighbour of this name
                                             "subject",                   // for now, type can only be subject
                                             siblingNeighbour[i].count,   // we need to populate this number of columns for this neighbour
@@ -2565,84 +2575,200 @@ function removePrefix(str) {
 //  3) string "type", either "subject" or "object"
 
 // It returns the updates keyColNeighbours
+// function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
+//   // Let's take a look at the resultsBinding
+//   // console.log("Current type is "+type);
+//   // console.log(resultsBinding);
+//   // console.log(resultsBinding);
+
+//   // we first sort the resultsBinding by p.value.slice(28)
+//   resultsBinding.sort((a, b) =>
+//     a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
+//   );
+
+//   // Then we give each option in the resultBinding the correct labels
+//   let neighbourCount = 1;
+//   for (let i = 0; i < resultsBinding.length; ++i) {
+//     let tempObj = {};
+//     let curNeighbourLiteral = resultsBinding[i].p.value.slice(28);
+//     // Let's see if the current result has a "range"
+//     // Note: if the result does not have the "range" variable, resultsBinding[i].range would be undefined
+//     // if (type === "subject") {
+//     //   console.log(resultsBinding[i].range);
+//     // }
+//     // We do not want to deal with any neighbours that's only one character long: we don't know what it means
+//     if (curNeighbourLiteral.length > 1) {
+//       // Let's deal with duplicate neighbour names here
+//       let curNeighbourValue = curNeighbourLiteral;
+//       let curNeighbourLabel;
+//       if (type === "subject") {
+//         curNeighbourLabel = curNeighbourLiteral;
+//       } else {
+//         curNeighbourLabel = "is " + curNeighbourLiteral + " of";
+//       }
+//       let nextNeighbourValue = "";
+//       if (i < resultsBinding.length - 1) {
+//         nextNeighbourValue = resultsBinding[i + 1].p.value.slice(28);
+//       }
+
+//       // if (curNeighbourValue === nextNeighbourValue) {
+//       //   neighbourCount++;
+//       // }
+//       // else {
+
+//       // }
+//       // Previously, we are listing all duplicate neighbours. Now, we only want to list one of them.
+//       // And use (*) to indicate duplicates.
+//       if (curNeighbourValue === nextNeighbourValue) {
+//         if (type === "subject") {
+//           curNeighbourLabel = curNeighbourLiteral + "-" + neighbourCount;
+//         } else {
+//           curNeighbourLabel =
+//             "is " + curNeighbourLiteral + " of-" + neighbourCount;
+//         }
+//         if (neighbourCount <= maxNeighbourCount) {
+//           tempObj["label"] = curNeighbourLabel;
+//           tempObj["value"] = curNeighbourValue;
+//           tempObj["type"] = type;
+//           // If the current type is "subject", we want to see if the current result has a range
+//           if (type === "subject" && resultsBinding[i].range !== undefined) {
+//             tempObj["range"] = resultsBinding[i].range.value;
+//           }
+//           keyColNeighbours.push(tempObj);
+//         }
+//         neighbourCount++;
+//       } 
+//       else {
+//         if (neighbourCount > 1) {
+//           if (type === "subject") {
+//             curNeighbourLabel = curNeighbourLiteral + "-" + neighbourCount;
+//           } else {
+//             curNeighbourLabel =
+//               "is " + curNeighbourLiteral + " of-" + neighbourCount;
+//           }
+//         }
+//         if (neighbourCount <= maxNeighbourCount) {
+//           tempObj["label"] = curNeighbourLabel;
+//           tempObj["value"] = curNeighbourValue;
+//           tempObj["type"] = type;
+//           // If the current type is "subject", we want to see if the current result has a range
+//           if (type === "subject" && resultsBinding[i].range !== undefined) {
+//             tempObj["range"] = resultsBinding[i].range.value;
+//           }
+//           keyColNeighbours.push(tempObj);
+//         }
+//         neighbourCount = 1;
+//       }
+//     }
+//   }
+//   // console.log(keyColNeighbours);
+//   return keyColNeighbours;
+// }
+
+// This function updates the key column's neighbours.
+
+// It taks three parameters:
+//  1) array "keyColNeighbour" storing list of neighbours for the key column
+//  2) array "resultsBinding", storing the returned result of queryURL from Virtuoso
+//  3) string "type", either "subject" or "object"
+
+// It returns the updated keyColNeighbours
 function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
-  // Let's take a look at the resultsBinding
-  // console.log("Current type is "+type);
-  // console.log(resultsBinding);
-  // console.log(resultsBinding);
 
   // we first sort the resultsBinding by p.value.slice(28)
-  resultsBinding.sort((a, b) =>
-    a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
-  );
+  let processedBinding = 
+    resultsBinding.sort((a, b) =>
+      a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
+    );
 
-  // Then we give each option in the resultBinding the correct labels
-  let neighbourCount = 1;
-  for (let i = 0; i < resultsBinding.length; ++i) {
-    let tempObj = {};
-    let curNeighbourLiteral = resultsBinding[i].p.value.slice(28);
-    // Let's see if the current result has a "range"
-    // Note: if the result does not have the "range" variable, resultsBinding[i].range would be undefined
-    // if (type === "subject") {
-    //   console.log(resultsBinding[i].range);
-    // }
-    // We do not want to deal with any neighbours that's only one character long: we don't know what it means
-    if (curNeighbourLiteral.length > 1) {
-      // Let's deal with duplicate neighbour names here
-      let curNeighbourValue = curNeighbourLiteral;
-      let curNeighbourLabel;
-      if (type === "subject") {
-        curNeighbourLabel = curNeighbourLiteral;
-      } else {
-        curNeighbourLabel = "is " + curNeighbourLiteral + " of";
+  // we then filter out those in resultsBinding with p.value.slice(28).length equal to 1
+  processedBinding = processedBinding.filter(a => a.p.value.slice(28).length > 1);
+
+  // Let's only start the loop is processedBinding is non-empty
+  if (processedBinding.length > 0) {
+    // We set count of neighbour ready to be added
+    let neighbourCount = 1;  
+    // We set literal of neighbour ready to be added.
+    // Initialized with the first neighbour.
+    let neighbourToAdd = processedBinding[0].p.value.slice(28); 
+    // we set range of neighbour ready to be added. "" if doesn't exist.
+    let neighbourRange = "";
+    if (processedBinding[0].range !== undefined) {
+      neighbourRange = processedBinding[0].range.value;
+    } 
+    
+    // We loop over processedBinding
+    for (let i = 1; i < processedBinding.length; ++i) {
+      let curNeighbour = processedBinding[i].p.value.slice(28);
+      // If the current neighbour is equal to neighbourToAdd, we just increment the count
+      if (curNeighbour === neighbourToAdd) {
+        ++neighbourCount;
       }
-      let nextNeighbourValue = "";
-      if (i < resultsBinding.length - 1) {
-        nextNeighbourValue = resultsBinding[i + 1].p.value.slice(28);
-      }
-      if (curNeighbourValue === nextNeighbourValue) {
-        if (type === "subject") {
-          curNeighbourLabel = curNeighbourLiteral + "-" + neighbourCount;
-        } else {
-          curNeighbourLabel =
-            "is " + curNeighbourLiteral + " of-" + neighbourCount;
-        }
+      // else, we decide if we want to push neighbourToAdd to keyColNeighbours. 
+      // We push if neighbourCount is <= maxNeighbourCount
+      else {
+        // First determine if we wnat to push
         if (neighbourCount <= maxNeighbourCount) {
-          tempObj["label"] = curNeighbourLabel;
-          tempObj["value"] = curNeighbourValue;
-          tempObj["type"] = type;
-          // If the current type is "subject", we want to see if the current result has a range
-          if (type === "subject" && resultsBinding[i].range !== undefined) {
-            tempObj["range"] = resultsBinding[i].range.value;
+          // set value.
+          let objValue = neighbourToAdd;
+          // set label. We want to change the neighbour label if type === "object".
+          let objLabel = neighbourToAdd;
+          if (type === "object") {
+            objLabel = "is " + objLabel + " of";
           }
-          keyColNeighbours.push(tempObj);
-        }
-        neighbourCount++;
-      } else {
-        if (neighbourCount > 1) {
-          if (type === "subject") {
-            curNeighbourLabel = curNeighbourLiteral + "-" + neighbourCount;
-          } else {
-            curNeighbourLabel =
-              "is " + curNeighbourLiteral + " of-" + neighbourCount;
+          if (neighbourCount > 1) {
+            objLabel+=" (*)";
           }
-        }
-        if (neighbourCount <= maxNeighbourCount) {
-          tempObj["label"] = curNeighbourLabel;
-          tempObj["value"] = curNeighbourValue;
-          tempObj["type"] = type;
-          // If the current type is "subject", we want to see if the current result has a range
-          if (type === "subject" && resultsBinding[i].range !== undefined) {
-            tempObj["range"] = resultsBinding[i].range.value;
+          // set type
+          let objType = type;
+          // set count
+          let objCount = neighbourCount;
+          let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount};
+          // Lastly, if the current type is "subject", we want to see if this neighbour has a range
+          if (type === "subject" && neighbourRange !== "") {
+            tempObj["range"] = neighbourRange;
           }
-          keyColNeighbours.push(tempObj);
+          // we push this tempObj onto keyColNeighbours
+          keyColNeighbours.push(tempObj)
         }
+        // Regardless of pushing or not, we now need to reset neighbourCount, neighbourToAdd, and neighbourRange
         neighbourCount = 1;
+        neighbourToAdd = curNeighbour;
+        neighbourRange = "";
+        if (processedBinding[i].range !== undefined) {
+          neighbourRange = processedBinding[i].range.value;
+        }
       }
     }
+    // Now, after the loop is done, we need to do one more iteration to determine whether we want to add the last neighbour.
+    if (neighbourCount <= maxNeighbourCount) {
+      // set value.
+      let objValue = neighbourToAdd;
+      // set label. We want to change the neighbour label if type === "object".
+      let objLabel = neighbourToAdd;
+      if (type === "object") {
+        objLabel = "is " + objLabel + " of";
+      }
+      if (neighbourCount > 1) {
+        objLabel+=" (*)";
+      }
+      // set type
+      let objType = type;
+      // set count
+      let objCount = neighbourCount;
+      let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount};
+      // Lastly, if the current type is "subject", we want to see if this neighbour has a range
+      if (type === "subject" && neighbourRange !== "") {
+        tempObj["range"] = neighbourRange;
+      }
+      // we push this tempObj onto keyColNeighbours
+      keyColNeighbours.push(tempObj)
+    }
   }
-  // console.log(keyColNeighbours);
   return keyColNeighbours;
+  
+  // console.log(keyColNeighbours);
+  // console.log(processedBinding);
 }
 
 // This function takes in the clean data for the first table, clean data for the second table, and colMapping between these two tables

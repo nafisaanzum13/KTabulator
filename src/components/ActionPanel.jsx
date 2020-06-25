@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import TaskMenu from "../components/TaskMenu";
 import { Collapse, Button, CardBody, Card } from "reactstrap";
 import { FaList, FaTable } from "react-icons/fa";
-import TableSelection from "../components/TableSelection";
+// import TableSelection from "../components/TableSelection";
 // The two following lines are for tabs
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
@@ -362,7 +362,7 @@ class ActionPanel extends Component {
         actionEle = (
           <div>
             <p>Add all other properties with name:</p>
-            <p>{neighbourText} ?</p>
+            <p><b>{neighbourText}</b> ?</p>
             <div className="row">
               <button
                 className="col-md-4"
@@ -408,7 +408,7 @@ class ActionPanel extends Component {
             siblingText += ", ";
             plural = "s";
           }
-          siblingText += actionInfo.siblingNeighbour[i].name;
+          siblingText += actionInfo.siblingNeighbour[i].value;
         }
         actionEle = (
           <div>
@@ -463,7 +463,7 @@ class ActionPanel extends Component {
               <div className="wrangling-actions">
                 {actionEle}
               </div>
-              <div className="table-list">
+              {/* <div className="table-list">
                 <ul class="list-group list-css list-group-flush">
                   <hr className="m-0"></hr>
                   <li
@@ -492,7 +492,7 @@ class ActionPanel extends Component {
                     </Collapse>
                   </li>
                 </ul>
-              </div>
+              </div> */}
             </TabPanel>
           </Tabs>
         </div>
