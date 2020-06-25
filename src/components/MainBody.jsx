@@ -692,7 +692,7 @@ class MainBody extends Component {
       this.setState({
         keyColIndex: colIndex,
         keyColNeighbours: keyColNeighbours,
-        curActionInfo: null,
+        curActionInfo: {"task":"afterPopulateColumn"},
         tableData: tableData,
         optionsMap: optionsMap,
         lastAction: lastAction,
@@ -887,6 +887,10 @@ class MainBody extends Component {
       let remainNeighbourCount = maxCount - neighbourIndex - 1;
       // console.log("remain neighbour count is "+remainNeighbourCount);
       let tempObj = {};
+      
+      // Now we need to determine what we want to show in the Action Panel.
+
+      // In this case, we give users option to populate duplicate neighbours
       if (neighbourIndex !== -1 && remainNeighbourCount > 0) {
         tempObj["task"] = "populateSameNeighbour";
         tempObj["colIndex"] = colIndex;
@@ -898,9 +902,9 @@ class MainBody extends Component {
         if (range !== undefined) {
           tempObj["range"] = range;
         }
-      } 
-      // If we are not populating a column with duplicate names, but it has a range, we ask user if they want to populate
-      // other columns from the same range
+      }
+      // In this case, users. are not populating a column with duplicate names, but it has a range, 
+      // we may need to ask user if they want to populate other columns from the same range
       else if (range !== undefined) {
         let siblingNeighbour = [];
         // console.log("Range is "+range);
@@ -942,9 +946,14 @@ class MainBody extends Component {
           tempObj["range"] = rangeLiteral;
           tempObj["siblingNeighbour"] = siblingCount;
         }
+        // If we have NOT found columns from the same range, we tell user that they can populate more columns
+        else {
+          tempObj["task"] = "afterPopulateColumn";
+        }
       }
-      // This is an empty else clause
+      // In this case, we tell user that they can populate more columns
       else {
+        tempObj["task"] = "afterPopulateColumn";
       }
       // console.log(tempObj);
 
@@ -1225,6 +1234,9 @@ class MainBody extends Component {
           siblingNeighbour.push(this.state.keyColNeighbours[i].value);
         }
       }
+      
+      // Now we need to determine what goes in the Action Panel
+
       // If we have found columns from the same range (other than the current neighbour), 
       // we give user the option to populate other columns from the same range.
       if (siblingNeighbour.length > 0) {
@@ -1256,6 +1268,10 @@ class MainBody extends Component {
         tempObj["colIndex"] = colIndex+numCols;  // Small change here: we need to adjust the position of the column index
         tempObj["range"] = rangeLiteral;
         tempObj["siblingNeighbour"] = siblingCount;
+      }
+      // In this case, we tell user that they can populate more columns
+      else {
+        tempObj["task"] = "afterPopulateColumn";
       }
 
       // Support for undo: 
@@ -1326,7 +1342,7 @@ class MainBody extends Component {
         };
 
       this.setState({
-        curActionInfo: null,
+        curActionInfo: {"task":"afterPopulateColumn"},
         tableData: tableData,
         lastAction: lastAction,
         prevState: prevState,
@@ -1404,7 +1420,7 @@ class MainBody extends Component {
         };
 
       this.setState({
-        curActionInfo:null,
+        curActionInfo:{"task":"afterPopulateColumn"},
         tableData:tempData,
         tableHeader:tempHeader,
         optionsMap:tempOptions,
@@ -1474,7 +1490,7 @@ class MainBody extends Component {
     this.setState({
       tableData: tableData,
       tableHeader: tableHeader,
-      curActionInfo: null,
+      curActionInfo: {"task":"afterPopulateColumn"},
       optionsMap: optionsMap,
       keyColIndex: keyColIndex,
       selectedClassAnnotation: selectedClassAnnotation,
@@ -1546,7 +1562,7 @@ class MainBody extends Component {
         keyEntryIndex: rowIndex,
         keyColIndex: colIndex,
         keyColNeighbours: keyColNeighbours,
-        curActionInfo: null,
+        curActionInfo: {"task":"afterPopulateColumn"},
         optionsMap: optionsMap,
         tabIndex: 0, // we want to set the currently active tab to be wrangling actions
       });
@@ -1589,6 +1605,7 @@ class MainBody extends Component {
     this.setState({
       pageHidden: false,
       iframeURL: iframeURL,
+      curActionInfo: {"task":"afterPopulateColumn"},
     });
   }
 

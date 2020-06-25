@@ -113,6 +113,7 @@ class TablePanel extends Component {
                 className="twenty-vw"
                 type="text"
                 value={niceRender(this.props.tableData[i][j].data)}
+                title={niceRender(this.props.tableData[i][j].data)}
                 // onClick={() => {alert("hmm");}}
                 onChange={(e) => this.props.onCellChange(e, i, j)}
                 // onClick={() => alert("hmm")} something like this could work

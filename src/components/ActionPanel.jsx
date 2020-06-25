@@ -279,8 +279,17 @@ class ActionPanel extends Component {
           </div>
         )
       }
+      // In this case, we tell users they can keep wrangling by selecting column header for empty columns
+      else if (actionInfo.task === "afterPopulateColumn") {
+        // start here
+        actionEle = (
+          <div>
+            Fill an <b>empty column header</b> by choosing from its <b>dropdown menu</b>
+          </div>
+        )
+      }
       // In this case we give user a button to allow the population of first column
-      if (actionInfo.task === "populateKeyColumn") {
+      else if (actionInfo.task === "populateKeyColumn") {
         let neighbourArrayText = "";
         for (let i = 0; i < actionInfo.neighbourArray.length; ++i) {
           if (i > 0) {
@@ -352,7 +361,7 @@ class ActionPanel extends Component {
             : "is " + actionInfo.neighbour + " of";
         actionEle = (
           <div>
-            <p>Populate all other properties with name:</p>
+            <p>Add all other properties with name:</p>
             <p>{neighbourText} ?</p>
             <div className="row">
               <button
