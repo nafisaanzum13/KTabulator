@@ -499,7 +499,7 @@ class MainBody extends Component {
       //   // If neighbourIndex is equal to -1, that means this property has no duplicate names
       //   tempObj["neighbourIndex"] = -1;
       // }
-      if (elabel.includes("(*)")) {
+      if (elabel.includes("*")) {
         tempObj["neighbourIndex"] = 0;
       }
       else {
@@ -676,7 +676,7 @@ class MainBody extends Component {
         values[2].results.bindings,
         "object"
       );
-      console.log(keyColNeighbours);
+      // console.log(keyColNeighbours);
 
       let optionsMap = this.state.optionsMap.slice();
       for (let i = 0; i < optionsMap.length; ++i) {
@@ -809,7 +809,7 @@ class MainBody extends Component {
 
   populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type, range) {
 
-    console.log(neighbourIndex);
+    // console.log(neighbourIndex);
 
     // Support for "populateSameRange":
 
@@ -931,18 +931,6 @@ class MainBody extends Component {
         // If we have found columns from the same range (other than the current neighbour),
         // we give user the option to populate other columns from the same range.
         if (siblingNeighbour.length > 0) {
-          // // First, we want to keep track of the number of occurences for each sibling attribute
-          // let siblingUnique = [...new Set(siblingNeighbour)];
-          // let siblingCount = [];
-          // for (let i = 0; i < siblingUnique.length; ++i) {
-          //   // console.log(siblingNeighbour);
-          //   siblingCount.push({
-          //     name: siblingUnique[i],
-          //     count: siblingNeighbour.filter((x) => x === siblingUnique[i])
-          //       .length,
-          //   });
-          // }
-          // console.log(siblingCount);
           // Let's do some string processing to improve UI clarity
           let rangeLiteral = "";
           if (range.includes("http://dbpedia.org/ontology/")) {
@@ -955,7 +943,7 @@ class MainBody extends Component {
           tempObj["task"] = "populateSameRange";
           tempObj["colIndex"] = colIndex;
           tempObj["range"] = rangeLiteral;
-          console.log(siblingNeighbour);
+          // console.log(siblingNeighbour);
           tempObj["siblingNeighbour"] = siblingNeighbour;
         }
         // If we have NOT found columns from the same range, we tell user that they can populate more columns
@@ -1252,18 +1240,6 @@ class MainBody extends Component {
       // If we have found columns from the same range (other than the current neighbour), 
       // we give user the option to populate other columns from the same range.
       if (siblingNeighbour.length > 0) {
-        // // First, we want to keep track of the number of occurences for each sibling attribute
-        // let siblingUnique = [...new Set(siblingNeighbour)];
-        // let siblingCount = [];
-        // for (let i = 0; i < siblingUnique.length; ++i) {
-        //   // console.log(siblingNeighbour);
-        //   siblingCount.push({
-        //     name: siblingUnique[i],
-        //     count: siblingNeighbour.filter((x) => x === siblingUnique[i])
-        //       .length,
-        //   });
-        // }
-        // console.log(siblingCount);
         // Let's do some string processing to improve UI clarity
         let rangeLiteral = "";
         if (range.includes("http://dbpedia.org/ontology/")) {
@@ -2566,105 +2542,6 @@ function removePrefix(str) {
   return str;
 }
 
-
-// This function updates the key column's neighbours.
-
-// It taks three parameters:
-//  1) array "keyColNeighbour" storing list of neighbours for the key column
-//  2) array "resultsBinding", storing the returned result of queryURL from Virtuoso
-//  3) string "type", either "subject" or "object"
-
-// It returns the updates keyColNeighbours
-// function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
-//   // Let's take a look at the resultsBinding
-//   // console.log("Current type is "+type);
-//   // console.log(resultsBinding);
-//   // console.log(resultsBinding);
-
-//   // we first sort the resultsBinding by p.value.slice(28)
-//   resultsBinding.sort((a, b) =>
-//     a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
-//   );
-
-//   // Then we give each option in the resultBinding the correct labels
-//   let neighbourCount = 1;
-//   for (let i = 0; i < resultsBinding.length; ++i) {
-//     let tempObj = {};
-//     let curNeighbourLiteral = resultsBinding[i].p.value.slice(28);
-//     // Let's see if the current result has a "range"
-//     // Note: if the result does not have the "range" variable, resultsBinding[i].range would be undefined
-//     // if (type === "subject") {
-//     //   console.log(resultsBinding[i].range);
-//     // }
-//     // We do not want to deal with any neighbours that's only one character long: we don't know what it means
-//     if (curNeighbourLiteral.length > 1) {
-//       // Let's deal with duplicate neighbour names here
-//       let curNeighbourValue = curNeighbourLiteral;
-//       let curNeighbourLabel;
-//       if (type === "subject") {
-//         curNeighbourLabel = curNeighbourLiteral;
-//       } else {
-//         curNeighbourLabel = "is " + curNeighbourLiteral + " of";
-//       }
-//       let nextNeighbourValue = "";
-//       if (i < resultsBinding.length - 1) {
-//         nextNeighbourValue = resultsBinding[i + 1].p.value.slice(28);
-//       }
-
-//       // if (curNeighbourValue === nextNeighbourValue) {
-//       //   neighbourCount++;
-//       // }
-//       // else {
-
-//       // }
-//       // Previously, we are listing all duplicate neighbours. Now, we only want to list one of them.
-//       // And use (*) to indicate duplicates.
-//       if (curNeighbourValue === nextNeighbourValue) {
-//         if (type === "subject") {
-//           curNeighbourLabel = curNeighbourLiteral + "-" + neighbourCount;
-//         } else {
-//           curNeighbourLabel =
-//             "is " + curNeighbourLiteral + " of-" + neighbourCount;
-//         }
-//         if (neighbourCount <= maxNeighbourCount) {
-//           tempObj["label"] = curNeighbourLabel;
-//           tempObj["value"] = curNeighbourValue;
-//           tempObj["type"] = type;
-//           // If the current type is "subject", we want to see if the current result has a range
-//           if (type === "subject" && resultsBinding[i].range !== undefined) {
-//             tempObj["range"] = resultsBinding[i].range.value;
-//           }
-//           keyColNeighbours.push(tempObj);
-//         }
-//         neighbourCount++;
-//       } 
-//       else {
-//         if (neighbourCount > 1) {
-//           if (type === "subject") {
-//             curNeighbourLabel = curNeighbourLiteral + "-" + neighbourCount;
-//           } else {
-//             curNeighbourLabel =
-//               "is " + curNeighbourLiteral + " of-" + neighbourCount;
-//           }
-//         }
-//         if (neighbourCount <= maxNeighbourCount) {
-//           tempObj["label"] = curNeighbourLabel;
-//           tempObj["value"] = curNeighbourValue;
-//           tempObj["type"] = type;
-//           // If the current type is "subject", we want to see if the current result has a range
-//           if (type === "subject" && resultsBinding[i].range !== undefined) {
-//             tempObj["range"] = resultsBinding[i].range.value;
-//           }
-//           keyColNeighbours.push(tempObj);
-//         }
-//         neighbourCount = 1;
-//       }
-//     }
-//   }
-//   // console.log(keyColNeighbours);
-//   return keyColNeighbours;
-// }
-
 // This function updates the key column's neighbours.
 
 // It taks three parameters:
@@ -2717,7 +2594,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
             objLabel = "is " + objLabel + " of";
           }
           if (neighbourCount > 1) {
-            objLabel+=" (*)";
+            objLabel+=" *";
           }
           // set type
           let objType = type;
@@ -2750,7 +2627,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
         objLabel = "is " + objLabel + " of";
       }
       if (neighbourCount > 1) {
-        objLabel+=" (*)";
+        objLabel+=" *";
       }
       // set type
       let objType = type;
