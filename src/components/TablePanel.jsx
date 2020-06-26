@@ -55,6 +55,8 @@ class TablePanel extends Component {
       }
       // This part deals with the non-key column headers
       else {
+        // console.log("Current column index is "+colIndex);
+        // console.log(this.props.optionsMap);
         tempHeader = (
           <th className="table-head">
             <div

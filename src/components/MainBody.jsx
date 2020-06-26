@@ -1474,6 +1474,20 @@ class MainBody extends Component {
 
     // console.log(this.state.selectedClassAnnotation);
     // console.log(tableHeader);
+
+    // Support for undo: 
+    let lastAction = "contextAddColumn";
+    let prevState = 
+        {
+          "tableData": this.state.tableData,
+          "tableHeader": this.state.tableHeader,
+          "curActionInfo": this.state.curActionInfo,
+          "optionsMap": this.state.optionsMap,
+          "keyColIndex": this.state.keyColIndex,
+          "selectedClassAnnotation": this.state.selectedClassAnnotation,
+          "tabIndex": this.state.tabIndex,
+        };
+
     this.setState({
       tableData: tableData,
       tableHeader: tableHeader,
@@ -1482,6 +1496,8 @@ class MainBody extends Component {
       keyColIndex: keyColIndex,
       selectedClassAnnotation: selectedClassAnnotation,
       tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+      lastAction: lastAction,
+      prevState: prevState,
     });
   }
 
@@ -1545,6 +1561,19 @@ class MainBody extends Component {
         }
       }
       // console.log(keyColNeighbours);
+
+      // Support for undo: 
+      let lastAction = "contextSetCell";
+      let prevState = 
+          {
+            "keyEntryIndex": this.state.keyEntryIndex,
+            "keyColIndex": this.state.keyColIndex,
+            "keyColNeighbours": this.state.keyColNeighbours,
+            "curActionInfo": this.state.curActionInfo,
+            "optionsMap": this.state.optionsMap,
+            "tabIndex": this.state.tabIndex,
+          };
+
       this.setState({
         keyEntryIndex: rowIndex,
         keyColIndex: colIndex,
@@ -1552,6 +1581,8 @@ class MainBody extends Component {
         curActionInfo: {"task":"afterPopulateColumn"},
         optionsMap: optionsMap,
         tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+        lastAction: lastAction,
+        prevState: prevState,
       });
     });
   }
@@ -1579,9 +1610,20 @@ class MainBody extends Component {
     let tempObj = {};
     tempObj["task"] = "contextCellOrigin";
     tempObj["origin"] = originElement;
+
+    // Support for undo: 
+    let lastAction = "contextCellOrigin";
+    let prevState = 
+        {
+          "curActionInfo": this.state.curActionInfo,
+          "tabIndex": this.state.tabIndex,
+        };
+    
     this.setState({
       curActionInfo: tempObj,
       tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+      lastAction: lastAction,
+      prevState: prevState,
     });
   }
 
@@ -2201,6 +2243,9 @@ class MainBody extends Component {
 
     // Note, since we are allowing one step undo only, we set lastAction to "" everytime we run this function
 
+    // First we take a look at prevSate
+    console.log(prevState);
+
     // Case 1: Undo the ULR Paste. 
     // In this case we need to restore urlPasted, iframeURL, originTableArray, and tableOpenList
     if (lastAction === "handleURLPaste") {
@@ -2311,6 +2356,42 @@ class MainBody extends Component {
     else if (lastAction === "unionTable" || lastAction === "unionPage" || lastAction === "unionProperty") {
       this.setState({
         tableData: prevState.tableData,
+        lastAction: "",
+      })
+    }
+
+    // Case 10: Undo the addition of a new column
+    else if (lastAction === "contextAddColumn") {
+      this.setState({
+        tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        curActionInfo: prevState.curActionInfo,
+        optionsMap: prevState.optionsMap,
+        keyColIndex: prevState.keyColIndex,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        tabIndex: prevState.tabIndex,
+        lastAction: "",
+      })
+    }
+
+    // Case 11: Undo the set of search cell.
+    else if (lastAction === "contextSetCell") {
+      this.setState({
+        keyEntryIndex: prevState.keyEntryIndex,
+        keyColIndex: prevState.keyColIndex,
+        keyColNeighbours: prevState.keyColNeighbours,
+        curActionInfo: prevState.curActionInfo,
+        optionsMap: prevState.optionsMap,
+        tabIndex: prevState.tabIndex,
+        lastAction: "",
+      })
+    }
+
+    // Case 12: Undo the showing of cell origin.
+    else if (lastAction === "contextCellOrigin") {
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tabIndex: prevState.tabIndex,
         lastAction: "",
       })
     }
