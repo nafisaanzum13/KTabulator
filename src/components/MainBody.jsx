@@ -12,7 +12,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 50;
 const initialColNum = 4;
-const initialRowNum = 50;
+const initialRowNum = 30;
 
 class MainBody extends Component {
   constructor(props) {
@@ -110,6 +110,7 @@ class MainBody extends Component {
     this.contextSetCell = this.contextSetCell.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
     this.contextOpenLink = this.contextOpenLink.bind(this);
+    // this.contextSortColumn = this.contextSortColumn.bind(this);
 
     // functions below are useful for startTable
     this.toggleTable = this.toggleTable.bind(this);
@@ -233,7 +234,7 @@ class MainBody extends Component {
       const colNum = tableData[0].length;
       for (let i = 0; i < rowNum; ++i) {
         for (let j = 0; j < colNum; ++j) {
-          let curText = tableData[i][j].data;
+          let curText = niceRender(tableData[i][j].data);
           if (curText !== undefined && curText !== "") {
             copiedText = copiedText + curText + "\t";
           }
@@ -2391,6 +2392,7 @@ class MainBody extends Component {
                     contextSetCell={this.contextSetCell}
                     contextCellOrigin={this.contextCellOrigin}
                     contextOpenLink={this.contextOpenLink}
+                    // contextSortColumn={this.contextSortColumn}
                     // Folloiwng states are passed to "startTable"
                     // tableDataExplore={this.state.tableDataExplore}
                     // originTableArray={this.state.originTableArray}
@@ -3374,7 +3376,7 @@ function setTableFromHTML(selecteTableHTML, urlOrigin) {
           tempTable[i].splice(j + 1, 0, {
             data: curCellText,
             origin: urlOrigin,
-            rowSpan: 1,
+            rowSpan: tempTable[i][j].rowSpan,
             colSpan: 1,
           });
         }
@@ -3615,6 +3617,21 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
     )
   })
 }
+
+// This function renders this.props.tableData[i][j].data in a nicer way. 
+// It changes"_" to " ", and removes everything after the first occurence of (
+
+  function niceRender(str) {
+    let resultStr = str;
+    let bracketIndex = str.indexOf("(");
+    // If ( is present in a string, we want to remove it
+    // We include the -1 because usually ( is preceeded by _
+    if (bracketIndex !== -1) {
+      resultStr = resultStr.slice(0, bracketIndex-1);
+    }
+    // now we turn all "_" into " "
+    return resultStr.replace(/_/g, " ");
+  }
 
 // Testing repo change
 

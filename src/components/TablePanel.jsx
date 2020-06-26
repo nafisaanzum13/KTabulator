@@ -106,6 +106,7 @@ class TablePanel extends Component {
         } else {
           cellColor = { backgroundColor: "White" };
         }
+        // console.log("Current data is "+this.props.tableData[i][j]);
         tempRow.push(
           <td style={cellColor}>
             <ContextMenuTrigger id={tempID}>
