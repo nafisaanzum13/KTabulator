@@ -111,7 +111,7 @@ class MainBody extends Component {
     this.contextSetCell = this.contextSetCell.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
     this.contextOpenLink = this.contextOpenLink.bind(this);
-    // this.contextSortColumn = this.contextSortColumn.bind(this);
+    this.contextSortColumn = this.contextSortColumn.bind(this);
 
     // functions below are useful for startTable
     this.toggleTable = this.toggleTable.bind(this);
@@ -1578,6 +1578,109 @@ class MainBody extends Component {
     }
   }
 
+  // The following function handles the sorting of a column from context menu.
+  // It is a prototype. Needs to be refined in the future.
+
+  contextSortColumn(e, colIndex) {
+    // console.log("The column we are sorting is "+colIndex);
+    let tableData = _.cloneDeep(this.state.tableData);
+
+    // We first loop through this column to determine if it's a numeric column or a string column
+    let numericCol = true;
+    for (let i = 0; i < tableData.length; ++i) {
+      // We only care about entries that are not N/A
+      if (tableData[i][colIndex].data !== "N/A") {
+        if (isNaN(Number(tableData[i][colIndex].data))) {
+          numericCol = false;
+          break;
+        }
+      }
+    }
+
+    // Let's also make a copy of the entry (row) containing the current search cell
+    let searchEntry = tableData[this.state.keyEntryIndex].slice();
+
+    // In this case we are sorting a numerical column
+    if (numericCol) {
+      tableData.sort(function (a, b) {
+        let aValue = a[colIndex].data;
+        let bValue = b[colIndex].data;
+        // We want to put all N/A's at the bottom
+        if (aValue === "N/A") {
+          return 1;
+        }
+        else if (bValue === "N/A") {
+          return -1;
+        } 
+        // Else, we sort in ascending order.
+        else {
+          return Number(aValue) - Number(bValue);
+        }
+      });
+    }
+    // In this case we are sorting a string-based column
+    else {
+      tableData.sort(function (a, b) {
+        let aValue = a[colIndex].data;
+        let bValue = b[colIndex].data;
+        // We want to put all N/A's at the bottom
+        if (aValue === "N/A") {
+          return 1;
+        }
+        else if (bValue === "N/A") {
+          return -1;
+        } 
+        // Else, we sort in ascending order.
+        else {
+          return aValue < bValue ? -1 : 1;
+        }
+      });
+    }
+    // console.log("Table Data is: ");
+    // console.log(tableData);
+    // console.log("Search entry is ");
+    // console.log(searchEntry);
+
+    // Note: keyColIndex does not change with a sort. But keyEntryIndex may. 
+    // Let's figure out what the updated keyEntryIndex should be.
+    let keyEntryIndex;
+    for (let i = 0; i < tableData.length; ++i) {
+      let matchFound = true;
+      for (let j = 0; j < searchEntry.length; ++j) {
+        if (searchEntry[j].data !== tableData[i][j].data) {
+          matchFound = false;
+          break;
+        }
+      }
+      if (matchFound === true) {
+        keyEntryIndex = i;
+        break;
+      }
+    }
+    // console.log("Table Data is: ");
+    // console.log(tableData);
+    // console.log("Search entry is ");
+    // console.log(searchEntry);
+    // console.log("New key entry index is "+keyEntryIndex);
+
+    // Support for undo: 
+    let lastAction = "contextSortColumn";
+    let prevState = 
+        {
+          "tableData": this.state.tableData,
+          "keyEntryIndex": this.state.keyEntryIndex,
+          "curActionInfo": this.state.curActionInfo,
+        };
+
+    this.setState({
+      tableData: tableData,
+      keyEntryIndex: keyEntryIndex,
+      curActionInfo: {"task":"afterPopulateColumn"},
+      lastAction: lastAction,
+      prevState: prevState,
+    });
+  }
+
   // The following functions sets the selected cell to be the search cell.
   // As a result, the column of the cell needs to be set as the search column as well.
   contextSetCell(e, rowIndex, colIndex) {
@@ -2082,7 +2185,7 @@ class MainBody extends Component {
   unionTable(firstIndex, secondIndex, otherTableHTML, colMapping) {
     // First we create a copy of the current tableData
     let tableData = _.cloneDeep(this.state.tableData);
-    console.log(tableData);
+    // console.log(tableData);
 
     // Then we get the clean data and set the origin for the other table.
     // We do so by calling setTableFromHTML, and setUnionData.
@@ -2090,10 +2193,10 @@ class MainBody extends Component {
       .siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML, otherTableOrigin);
     otherTableData = setUnionData(otherTableData);
-    console.log(otherTableData);
+    // console.log(otherTableData);
 
     // Start from here. We just need to modify function tableConcat
-    console.log(colMapping);
+    // console.log(colMapping);
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
     let tempMapping = colMapping.slice();
@@ -2484,6 +2587,16 @@ class MainBody extends Component {
       })
     }
 
+    // Case 14: Undo the sorting of a column.
+    else if (lastAction === "contextSortColumn") {
+      this.setState({
+        tableData: prevState.tableData,
+        keyEntryIndex: prevState.keyEntryIndex,
+        curActionInfo: prevState.curActionInfo,
+        lastAction: "",
+      })
+    }
+
     // This is an empty else clause.
     else {
 
@@ -2562,7 +2675,7 @@ class MainBody extends Component {
                     contextSetCell={this.contextSetCell}
                     contextCellOrigin={this.contextCellOrigin}
                     contextOpenLink={this.contextOpenLink}
-                    // contextSortColumn={this.contextSortColumn}
+                    contextSortColumn={this.contextSortColumn}
                     // Folloiwng states are passed to "startTable"
                     // tableDataExplore={this.state.tableDataExplore}
                     // originTableArray={this.state.originTableArray}

@@ -195,6 +195,10 @@ class TablePanel extends Component {
               Delete this column
             </MenuItem>
             <MenuItem divider />
+            <MenuItem onClick={(e) => this.props.contextSortColumn(e, j)}>
+              Sort this column
+            </MenuItem>
+            <MenuItem divider />
             <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
               Set as Search Cell
             </MenuItem>
