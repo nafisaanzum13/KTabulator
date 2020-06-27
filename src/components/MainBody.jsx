@@ -107,6 +107,7 @@ class MainBody extends Component {
     this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
     this.populateSameRange = this.populateSameRange.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
+    this.contextDeleteColumn = this.contextDeleteColumn.bind(this);
     this.contextSetCell = this.contextSetCell.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
     this.contextOpenLink = this.contextOpenLink.bind(this);
@@ -1500,6 +1501,82 @@ class MainBody extends Component {
       prevState: prevState,
     });
   }
+  
+  // The following function handles the deletion of a column from context menu.
+  // This function should be largely similar to contextAddColumn
+
+  contextDeleteColumn(e, colIndex) {
+    // console.log("This is the column we are trying to delete "+colIndex);
+
+    // We disable the deletion of the search column
+    if (colIndex === this.state.keyColIndex) {
+      alert("The current column is the search column.\n\nPlease set another search column before deleting the current column.");
+    }
+
+    // We also disable the deletion of the first column
+    else if (colIndex === 0) {
+      alert("Deleting the first column causes unexpected behavior.\n\nPlease do not delete the first column.");
+    }
+
+    // Else, we can proceed to deletion.
+    else {
+      // We handle tableData, tableHeader, optionsMap, and selectedClassAnnotation's deletion
+      let tableData = _.cloneDeep(this.state.tableData);
+      let tableHeader = this.state.tableHeader.slice();
+      let optionsMap = this.state.optionsMap.slice();
+      let selectedClassAnnotation = this.state.selectedClassAnnotation.slice();
+
+      // tableData
+      for (let i = 0; i < tableData.length; ++i) {
+        tableData[i].splice(colIndex, 1);
+      }
+      // tableHeader, optionsMap, and selectedClassAnnotation
+      tableHeader.splice(colIndex, 1);
+      optionsMap.splice(colIndex, 1);
+      if (colIndex > 0) {
+        selectedClassAnnotation.splice(colIndex-1, 1);
+      }
+      // If colIndex is less than keyColIndex, we need to decrease keyColIndex by 1, if keyColIndex > 0
+      let keyColIndex = this.state.keyColIndex;
+      if (colIndex < keyColIndex) {
+        --keyColIndex;
+      }
+
+      // When we are deleting a column, we do not necessarily want to go to tab 0.
+      // However, if we are in tab 1, we want to toggle off all property neighbours
+      let propertyNeighbours = _.cloneDeep(this.state.propertyNeighbours);
+      if (this.state.tabIndex === 1) {
+        for (let i = 0; i < propertyNeighbours.length; ++i) {
+          propertyNeighbours[i].isOpen = false;
+        }
+      }
+
+      // Support for undo: 
+      let lastAction = "contextDeleteColumn";
+      let prevState = 
+          {
+            "tableData": this.state.tableData,
+            "tableHeader": this.state.tableHeader,
+            "optionsMap": this.state.optionsMap,
+            "selectedClassAnnotation": this.state.selectedClassAnnotation,
+            "keyColIndex": this.state.keyColIndex,
+            "propertyNeighbours": this.state.propertyNeighbours,
+            "curActionInfo": this.state.curActionInfo,
+          };
+
+      this.setState({
+        tableData: tableData,
+        tableHeader: tableHeader,
+        optionsMap: optionsMap,
+        selectedClassAnnotation: selectedClassAnnotation,
+        keyColIndex: keyColIndex,
+        propertyNeighbours: propertyNeighbours,
+        curActionInfo: {"task":"afterPopulateColumn"},
+        lastAction: lastAction,
+        prevState: prevState,
+      });
+    }
+  }
 
   // The following functions sets the selected cell to be the search cell.
   // As a result, the column of the cell needs to be set as the search column as well.
@@ -2005,7 +2082,7 @@ class MainBody extends Component {
   unionTable(firstIndex, secondIndex, otherTableHTML, colMapping) {
     // First we create a copy of the current tableData
     let tableData = _.cloneDeep(this.state.tableData);
-    // console.log(tableData);
+    console.log(tableData);
 
     // Then we get the clean data and set the origin for the other table.
     // We do so by calling setTableFromHTML, and setUnionData.
@@ -2013,10 +2090,10 @@ class MainBody extends Component {
       .siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML, otherTableOrigin);
     otherTableData = setUnionData(otherTableData);
-    // console.log(otherTableData);
+    console.log(otherTableData);
 
     // Start from here. We just need to modify function tableConcat
-    // console.log(colMapping);
+    console.log(colMapping);
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
     let tempMapping = colMapping.slice();
@@ -2243,9 +2320,6 @@ class MainBody extends Component {
 
     // Note, since we are allowing one step undo only, we set lastAction to "" everytime we run this function
 
-    // First we take a look at prevSate
-    console.log(prevState);
-
     // Case 1: Undo the ULR Paste. 
     // In this case we need to restore urlPasted, iframeURL, originTableArray, and tableOpenList
     if (lastAction === "handleURLPaste") {
@@ -2396,6 +2470,20 @@ class MainBody extends Component {
       })
     }
 
+    // Case 13: Undo the deletion of column.
+    else if (lastAction === "contextDeleteColumn") {
+      this.setState({
+        tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        optionsMap: prevState.optionsMap,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        keyColIndex: prevState.keyColIndex,
+        propertyNeighbours: prevState.propertyNeighbours,
+        curActionInfo: prevState.curActionInfo,
+        lastAction: "",
+      })
+    }
+
     // This is an empty else clause.
     else {
 
@@ -2470,6 +2558,7 @@ class MainBody extends Component {
                     getOtherOptions={this.getOtherOptions}
                     optionsMap={this.state.optionsMap}
                     contextAddColumn={this.contextAddColumn}
+                    contextDeleteColumn={this.contextDeleteColumn}
                     contextSetCell={this.contextSetCell}
                     contextCellOrigin={this.contextCellOrigin}
                     contextOpenLink={this.contextOpenLink}

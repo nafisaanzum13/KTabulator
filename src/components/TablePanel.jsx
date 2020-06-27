@@ -191,6 +191,10 @@ class TablePanel extends Component {
               Add Column to the Right
             </MenuItem>
             <MenuItem divider />
+            <MenuItem onClick={(e) => this.props.contextDeleteColumn(e, j)}>
+              Delete this column
+            </MenuItem>
+            <MenuItem divider />
             <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
               Set as Search Cell
             </MenuItem>
