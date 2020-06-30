@@ -1,27 +1,27 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "ed6fed45b173746f62352776f046eb22",
+    "revision": "6846b84615dc3c803ba2a1a3257eb7f8",
     "url": "/KGWrangler/index.html"
   },
   {
-    "revision": "29c8c3686ba9942b9a99",
-    "url": "/KGWrangler/static/css/2.e130d61b.chunk.css"
+    "revision": "4f8e4b85e7aafcbf9e08",
+    "url": "/KGWrangler/static/css/2.0cd81731.chunk.css"
   },
   {
-    "revision": "b15cca448466be3a49f0",
-    "url": "/KGWrangler/static/css/main.4b5c1f6e.chunk.css"
+    "revision": "3b92ebab9dd5d26a3828",
+    "url": "/KGWrangler/static/css/main.9da1be88.chunk.css"
   },
   {
-    "revision": "29c8c3686ba9942b9a99",
-    "url": "/KGWrangler/static/js/2.0655ddf7.chunk.js"
+    "revision": "4f8e4b85e7aafcbf9e08",
+    "url": "/KGWrangler/static/js/2.72a05298.chunk.js"
   },
   {
     "revision": "43e209752a747a553b43a16ddd54e68d",
-    "url": "/KGWrangler/static/js/2.0655ddf7.chunk.js.LICENSE.txt"
+    "url": "/KGWrangler/static/js/2.72a05298.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "b15cca448466be3a49f0",
-    "url": "/KGWrangler/static/js/main.49b37912.chunk.js"
+    "revision": "3b92ebab9dd5d26a3828",
+    "url": "/KGWrangler/static/js/main.4c01dae6.chunk.js"
   },
   {
     "revision": "4351dd5687c5b3f515f2",

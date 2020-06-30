@@ -1,26 +1,26 @@
 {
   "files": {
-    "main.css": "/KGWrangler/static/css/main.4b5c1f6e.chunk.css",
-    "main.js": "/KGWrangler/static/js/main.49b37912.chunk.js",
-    "main.js.map": "/KGWrangler/static/js/main.49b37912.chunk.js.map",
+    "main.css": "/KGWrangler/static/css/main.9da1be88.chunk.css",
+    "main.js": "/KGWrangler/static/js/main.4c01dae6.chunk.js",
+    "main.js.map": "/KGWrangler/static/js/main.4c01dae6.chunk.js.map",
     "runtime-main.js": "/KGWrangler/static/js/runtime-main.8cd9a1b9.js",
     "runtime-main.js.map": "/KGWrangler/static/js/runtime-main.8cd9a1b9.js.map",
-    "static/css/2.e130d61b.chunk.css": "/KGWrangler/static/css/2.e130d61b.chunk.css",
-    "static/js/2.0655ddf7.chunk.js": "/KGWrangler/static/js/2.0655ddf7.chunk.js",
-    "static/js/2.0655ddf7.chunk.js.map": "/KGWrangler/static/js/2.0655ddf7.chunk.js.map",
+    "static/css/2.0cd81731.chunk.css": "/KGWrangler/static/css/2.0cd81731.chunk.css",
+    "static/js/2.72a05298.chunk.js": "/KGWrangler/static/js/2.72a05298.chunk.js",
+    "static/js/2.72a05298.chunk.js.map": "/KGWrangler/static/js/2.72a05298.chunk.js.map",
     "index.html": "/KGWrangler/index.html",
-    "precache-manifest.fb48234687547b48d02c2d18a06a9504.js": "/KGWrangler/precache-manifest.fb48234687547b48d02c2d18a06a9504.js",
+    "precache-manifest.639bb5b045a670c4d0c7ca7488df7b5c.js": "/KGWrangler/precache-manifest.639bb5b045a670c4d0c7ca7488df7b5c.js",
     "service-worker.js": "/KGWrangler/service-worker.js",
-    "static/css/2.e130d61b.chunk.css.map": "/KGWrangler/static/css/2.e130d61b.chunk.css.map",
-    "static/css/main.4b5c1f6e.chunk.css.map": "/KGWrangler/static/css/main.4b5c1f6e.chunk.css.map",
-    "static/js/2.0655ddf7.chunk.js.LICENSE.txt": "/KGWrangler/static/js/2.0655ddf7.chunk.js.LICENSE.txt",
+    "static/css/2.0cd81731.chunk.css.map": "/KGWrangler/static/css/2.0cd81731.chunk.css.map",
+    "static/css/main.9da1be88.chunk.css.map": "/KGWrangler/static/css/main.9da1be88.chunk.css.map",
+    "static/js/2.72a05298.chunk.js.LICENSE.txt": "/KGWrangler/static/js/2.72a05298.chunk.js.LICENSE.txt",
     "static/media/layout.css": "/KGWrangler/static/media/6.f29b5f23.woff2"
   },
   "entrypoints": [
     "static/js/runtime-main.8cd9a1b9.js",
-    "static/css/2.e130d61b.chunk.css",
-    "static/js/2.0655ddf7.chunk.js",
-    "static/css/main.4b5c1f6e.chunk.css",
-    "static/js/main.49b37912.chunk.js"
+    "static/css/2.0cd81731.chunk.css",
+    "static/js/2.72a05298.chunk.js",
+    "static/css/main.9da1be88.chunk.css",
+    "static/js/main.4c01dae6.chunk.js"
   ]
 }
