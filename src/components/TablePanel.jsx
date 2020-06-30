@@ -229,16 +229,9 @@ class TablePanel extends Component {
 export default TablePanel;
 
 // This function renders this.props.tableData[i][j].data in a nicer way. 
-// It changes"_" to " ", and removes everything after the first occurence of (
+// It removes all occurence of (...), and changes all "_" to " ".
 
 function niceRender(str) {
-  let resultStr = str;
-  let bracketIndex = str.indexOf("(");
-  // If ( is present in a string, we want to remove it
-  // We include the -1 because usually ( is preceeded by _
-  if (bracketIndex !== -1) {
-    resultStr = resultStr.slice(0, bracketIndex-1);
-  }
-  // now we turn all "_" into " "
-  return resultStr.replace(/_/g, " ");
+  return str.replace(/_\(.*?\)/g, "")
+            .replace(/_/g, " ");
 }
