@@ -19,7 +19,7 @@ class TaskMenu extends Component {
             className="list-group-item"
             onClick={(e) => this.props.handleStartSubject(e, "startSubject")}
           >
-            Start creating a table about {subject}
+            Start creating a table about {decodeURIComponent(subject)}
           </li>
           <li
             className="list-group-item"

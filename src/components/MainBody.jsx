@@ -1781,7 +1781,7 @@ class MainBody extends Component {
       if (i === 0) {
         originElement.push(<p>{cellSelected.origin[i]}</p>);
       } else {
-        originElement.push(<p>--> {cellSelected.origin[i]}</p>);
+        originElement.push(<p>{cellSelected.origin[i]}</p>);
       }
     }
 
