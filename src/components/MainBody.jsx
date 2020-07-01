@@ -1589,7 +1589,7 @@ class MainBody extends Component {
   // The following function handles the sorting of a column from context menu.
   // It is a prototype. Needs to be refined in the future.
 
-  contextSortColumn(e, colIndex) {
+  contextSortColumn(e, colIndex, order) {
     // console.log("The column we are sorting is "+colIndex);
     let tableData = _.cloneDeep(this.state.tableData);
 
@@ -1620,9 +1620,14 @@ class MainBody extends Component {
         else if (bValue === "N/A") {
           return -1;
         } 
-        // Else, we sort in ascending order.
+        // Else, we sort by the given order.
         else {
-          return Number(aValue) - Number(bValue);
+          if (order === "ascending") {
+            return Number(aValue) - Number(bValue);
+          }
+          else {
+            return Number(bValue) - Number(aValue);
+          }
         }
       });
     }
@@ -1638,9 +1643,14 @@ class MainBody extends Component {
         else if (bValue === "N/A") {
           return -1;
         } 
-        // Else, we sort in ascending order.
+        // Else, we sort by the given order.
         else {
-          return aValue < bValue ? -1 : 1;
+          if (order === "ascending") {
+            return aValue < bValue ? -1 : 1;
+          }
+          else {
+            return aValue < bValue ? 1 : -1;
+          }
         }
       });
     }
