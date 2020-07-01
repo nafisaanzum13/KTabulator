@@ -360,21 +360,29 @@ class MainBody extends Component {
   // aka: Michelle Obama is Barack Obama' wife
 
   // If no cells is filled in this column, this function doesn't do anything.
+  // If this column is completely filled, this function doesn't do anything either.
 
   getOtherOptions(e, colIndex) {
+
     if (colIndex !== this.state.keyColIndex) {
-      // first we want to check if this column is all-empty
+      // first we want to check if this column is all-empty, or all filled
       let colEmpty = true;
+      let colFilled = true;
       let nonEmptyInfo = [];
       for (let i = 0; i < this.state.tableData.length; ++i) {
+        // If some data is not "", that means this column is not empty
         if (this.state.tableData[i][colIndex].data !== "") {
           colEmpty = false;
           nonEmptyInfo.push([i, this.state.tableData[i][colIndex].data]);
         }
+        // If some data is "", that means this column is not filled
+        else {
+          colFilled = false;
+        }
       }
-      // We only want to update the options if the column is non-empty
+      // We only want to update the options if the column is non-empty, and not completely filled.
       // Make sure to modify this relation here to include only dbo and dbp
-      if (colEmpty === false) {
+      if (colEmpty === false && colFilled === false) {
         let prefixURL =
           "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
         let suffixURL =
@@ -416,7 +424,7 @@ class MainBody extends Component {
           });
         });
       } 
-      // If this non-key column is empty, we just use keyColNeighbours for the list of options
+      // If this non-key column is empty or filled completely, we just use keyColNeighbours for the list of options
       else {
         let optionsMap = this.state.optionsMap.slice();
         optionsMap[colIndex] = this.state.keyColNeighbours;
