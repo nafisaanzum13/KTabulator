@@ -276,6 +276,11 @@ class ActionPanel extends Component {
             <p className="suggestion-text">
               Fill the <b>first column header</b> by choosing from its <b>dropdown menu</b>
             </p>
+            <br />
+            <p>
+              (If multiple categories are selected from the dropdown menu, <br />
+              the first column will be filled by entities belonging to the <b>intersection</b> of all categories.)  
+            </p>
           </div>
         )
       }

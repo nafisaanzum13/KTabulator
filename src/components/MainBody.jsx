@@ -632,10 +632,22 @@ class MainBody extends Component {
       // console.log("Original length is "+values[0].results.bindings.length);
       // console.log("Row Count is: "+updatedRowCount);
 
-      // If tableData has too many rows, we slice it. Else we keep it the same way.
+      // If tableData currently has too many rows, we slice it.
       if (tableData.length > updatedRowCount) {
         tableData = tableData.slice(0,updatedRowCount);
       }
+      // Else, if tableData currently has too few rows, we need to add some empty rows.
+      else if (tableData.length < updatedRowCount) {
+        let rowsToAdd = updatedRowCount - tableData.length;
+        for (let i = 0; i < rowsToAdd; ++i) {
+          let tempRow = [];
+          for (let j = 0; j < initialColNum; ++j) {
+            tempRow.push({ data: "", origin: [] });
+          }
+          tableData.push(tempRow);
+        }
+      }
+
       let rowNum = tableData.length;
       // console.log("Number of rows is "+rowNum);
 
