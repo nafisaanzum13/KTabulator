@@ -1683,88 +1683,96 @@ class MainBody extends Component {
 
   // The following functions sets the selected cell to be the search cell.
   // As a result, the column of the cell needs to be set as the search column as well.
+
   contextSetCell(e, rowIndex, colIndex) {
     // console.log("Row index of search cell is "+rowIndex);
     // console.log("Col index of search cell is "+colIndex);
 
-    // This is the function that we need to fill out
-    let promiseArray = [];
-    // Below is the first query we will make.
-    // This query fetches the neighbours for tableData[rowIndex][colIndex]. So the search cell in the search column.
-    // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+    // Let's first do a check. We don't want users to set N/A's as search cells.
+    if (this.state.tableData[rowIndex][colIndex].data === "N/A") {
+      alert("N/A should not be set as search cell.");
+    }
 
-    // Note: we need to modify this query so it looks for ranges of certain attributes as well
-    let prefixURLOne =
-      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    let suffixURLOne =
-      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyOne =
-      "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
-      regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-      "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
-    let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
-    let otherColPromiseSubject = fetchJSON(queryURLOne);
-    promiseArray.push(otherColPromiseSubject);
+    else {
+      // This is the function that we need to fill out
+      let promiseArray = [];
+      // Below is the first query we will make.
+      // This query fetches the neighbours for tableData[rowIndex][colIndex]. So the search cell in the search column.
+      // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
 
-    // Below is the second query we will make.
-    // Difference with the previous query is that we are using tableData[rowIndex][colIndex] as OBJECT
-    let prefixURLTwo =
-      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    let suffixURLTwo =
-      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyTwo =
-      "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
-      regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-      ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
-    let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
-    let otherColPromiseObject = fetchJSON(queryURLTwo);
-    promiseArray.push(otherColPromiseObject);
+      // Note: we need to modify this query so it looks for ranges of certain attributes as well
+      let prefixURLOne =
+        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURLOne =
+        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBodyOne =
+        "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
+        regexReplace(this.state.tableData[rowIndex][colIndex].data) +
+        "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+      let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
+      let otherColPromiseSubject = fetchJSON(queryURLOne);
+      promiseArray.push(otherColPromiseSubject);
 
-    // continue from here
-    allPromiseReady(promiseArray).then((values) => {
-      let keyColNeighbours = [];
-      keyColNeighbours = updateKeyColNeighbours(
-        keyColNeighbours,
-        values[0].results.bindings,
-        "subject"
-      );
-      keyColNeighbours = updateKeyColNeighbours(
-        keyColNeighbours,
-        values[1].results.bindings,
-        "object"
-      );
-      // console.log(keyColNeighbours);
-      let optionsMap = this.state.optionsMap.slice();
-      for (let i = 0; i < optionsMap.length; ++i) {
-        if (i !== colIndex) {
-          optionsMap[i] = keyColNeighbours;
+      // Below is the second query we will make.
+      // Difference with the previous query is that we are using tableData[rowIndex][colIndex] as OBJECT
+      let prefixURLTwo =
+        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURLTwo =
+        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBodyTwo =
+        "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
+        regexReplace(this.state.tableData[rowIndex][colIndex].data) +
+        ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+      let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
+      let otherColPromiseObject = fetchJSON(queryURLTwo);
+      promiseArray.push(otherColPromiseObject);
+
+      // continue from here
+      allPromiseReady(promiseArray).then((values) => {
+        let keyColNeighbours = [];
+        keyColNeighbours = updateKeyColNeighbours(
+          keyColNeighbours,
+          values[0].results.bindings,
+          "subject"
+        );
+        keyColNeighbours = updateKeyColNeighbours(
+          keyColNeighbours,
+          values[1].results.bindings,
+          "object"
+        );
+        // console.log(keyColNeighbours);
+        let optionsMap = this.state.optionsMap.slice();
+        for (let i = 0; i < optionsMap.length; ++i) {
+          if (i !== colIndex) {
+            optionsMap[i] = keyColNeighbours;
+          }
         }
-      }
-      // console.log(keyColNeighbours);
+        // console.log(keyColNeighbours);
 
-      // Support for undo: 
-      let lastAction = "contextSetCell";
-      let prevState = 
-          {
-            "keyEntryIndex": this.state.keyEntryIndex,
-            "keyColIndex": this.state.keyColIndex,
-            "keyColNeighbours": this.state.keyColNeighbours,
-            "curActionInfo": this.state.curActionInfo,
-            "optionsMap": this.state.optionsMap,
-            "tabIndex": this.state.tabIndex,
-          };
+        // Support for undo: 
+        let lastAction = "contextSetCell";
+        let prevState = 
+            {
+              "keyEntryIndex": this.state.keyEntryIndex,
+              "keyColIndex": this.state.keyColIndex,
+              "keyColNeighbours": this.state.keyColNeighbours,
+              "curActionInfo": this.state.curActionInfo,
+              "optionsMap": this.state.optionsMap,
+              "tabIndex": this.state.tabIndex,
+            };
 
-      this.setState({
-        keyEntryIndex: rowIndex,
-        keyColIndex: colIndex,
-        keyColNeighbours: keyColNeighbours,
-        curActionInfo: {"task":"afterPopulateColumn"},
-        optionsMap: optionsMap,
-        tabIndex: 0, // we want to set the currently active tab to be wrangling actions
-        lastAction: lastAction,
-        prevState: prevState,
+        this.setState({
+          keyEntryIndex: rowIndex,
+          keyColIndex: colIndex,
+          keyColNeighbours: keyColNeighbours,
+          curActionInfo: {"task":"afterPopulateColumn"},
+          optionsMap: optionsMap,
+          tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+          lastAction: lastAction,
+          prevState: prevState,
+        });
       });
-    });
+    }
   }
 
   // The following function displays the origin of a cell in the Action Panel.
