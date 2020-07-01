@@ -12,7 +12,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 50;
 const initialColNum = 4;
-const initialRowNum = 30;
+const initialRowNum = 31;
 
 class MainBody extends Component {
   constructor(props) {
@@ -671,6 +671,9 @@ class MainBody extends Component {
         let tempOrigin = labelText + ":" + tableData[i][colIndex].data;
         tableData[i][colIndex].origin.push(tempOrigin);
       }
+
+      // Now we dedup by tableData by tableData[i][0].data
+      tableData = _.uniqBy(tableData, function(x) {return x[0].data;});
 
       // let's now work with the second and third promise result: update the selection options for non-key columns
 
