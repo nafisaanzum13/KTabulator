@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/KGWrangler/static/css/main.9da1be88.chunk.css",
-    "main.js": "/KGWrangler/static/js/main.1bd88261.chunk.js",
-    "main.js.map": "/KGWrangler/static/js/main.1bd88261.chunk.js.map",
+    "main.js": "/KGWrangler/static/js/main.5c7a104e.chunk.js",
+    "main.js.map": "/KGWrangler/static/js/main.5c7a104e.chunk.js.map",
     "runtime-main.js": "/KGWrangler/static/js/runtime-main.8cd9a1b9.js",
     "runtime-main.js.map": "/KGWrangler/static/js/runtime-main.8cd9a1b9.js.map",
     "static/css/2.0cd81731.chunk.css": "/KGWrangler/static/css/2.0cd81731.chunk.css",
     "static/js/2.72a05298.chunk.js": "/KGWrangler/static/js/2.72a05298.chunk.js",
     "static/js/2.72a05298.chunk.js.map": "/KGWrangler/static/js/2.72a05298.chunk.js.map",
     "index.html": "/KGWrangler/index.html",
-    "precache-manifest.09cb90b43026e8db2a2b524826789d15.js": "/KGWrangler/precache-manifest.09cb90b43026e8db2a2b524826789d15.js",
+    "precache-manifest.67d7b16822972e26c90ba5aff8917805.js": "/KGWrangler/precache-manifest.67d7b16822972e26c90ba5aff8917805.js",
     "service-worker.js": "/KGWrangler/service-worker.js",
     "static/css/2.0cd81731.chunk.css.map": "/KGWrangler/static/css/2.0cd81731.chunk.css.map",
     "static/css/main.9da1be88.chunk.css.map": "/KGWrangler/static/css/main.9da1be88.chunk.css.map",
@@ -21,6 +21,6 @@
     "static/css/2.0cd81731.chunk.css",
     "static/js/2.72a05298.chunk.js",
     "static/css/main.9da1be88.chunk.css",
-    "static/js/main.1bd88261.chunk.js"
+    "static/js/main.5c7a104e.chunk.js"
   ]
 }
