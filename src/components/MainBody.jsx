@@ -322,12 +322,14 @@ class MainBody extends Component {
       // In here we fetch the options for first column's selection
       // It uses the common dct:subject of all cells entered in the key column
 
+      // Modification: let's also find the common rdf:type dbo:xxx of cells filled.
+
       let prefixURL =
         "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
       let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B";
       for (let i = 0; i < allSubject.length; ++i) {
         queryBody +=
-          "%0D%0A++++++++dbr%3A" + allSubject[i] + "+dct%3Asubject+%3Fsomevar.";
+          "%0D%0A++++++++dbr%3A" + allSubject[i] + "+%28dct%3Asubject%7Crdf%3Atype%29+%3Fsomevar.";
       }
       let suffixURL =
         "%0D%0A%7D%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
@@ -337,13 +339,31 @@ class MainBody extends Component {
       allPromiseReady(promiseArray).then((values) => {
         let myJson = values[0];
         let keyColOptions = [];
+        // We loop through the result bindings. 
+        // If it's from dct:subject, or rdf:type dbo:xxxx, we push it onto keyColOptions
         for (let i = 0; i < myJson.results.bindings.length; ++i) {
-          let tempObj = {};
-          let neighbour = myJson.results.bindings[i].somevar.value.slice(37);
-          tempObj["label"] = neighbour;
-          tempObj["value"] = neighbour;
-          keyColOptions.push(tempObj);
+          let curValue = myJson.results.bindings[i].somevar.value;
+          // This clause deals with dct:subject
+          if (curValue.includes("dbpedia.org/resource/Category:")) {
+            let tempObj = {};
+            let neighbour = curValue.slice(37);
+            tempObj["label"] = neighbour;
+            tempObj["value"] = neighbour;
+            tempObj["dataset"] = "dct";
+            keyColOptions.push(tempObj);
+          }
+          // This clause deals with rdf:type dbo:xxxx
+          else if (curValue.includes("dbpedia.org/ontology/")) {
+            let tempObj = {};
+            let neighbour = curValue.slice(28);
+            tempObj["label"] = neighbour;
+            tempObj["value"] = neighbour;
+            tempObj["dataset"] = "rdf";
+            keyColOptions.push(tempObj);
+          }
         }
+        // Take a look at keyColOptions
+        // console.log(keyColOptions);
         // We create a copy of the optionsMap.
         // Then change the entry in the optionsMap corresponding to the key column to what we have just fetched: keyColOptions.
         let optionsMap = this.state.optionsMap.slice();
@@ -455,9 +475,12 @@ class MainBody extends Component {
         tempObj["task"] = "populateKeyColumn";
         tempObj["colIndex"] = colIndex;
         tempObj["neighbourArray"] = [];
+        // Modification here: instead of simplying passing the value, we want to pass the selectedOptions as a whole
+        // Because we need its "dataset" attribute
         for (let i = 0; i < selectedOptions.length; ++i) {
-          tempObj.neighbourArray.push(selectedOptions[i].value);
+          tempObj.neighbourArray.push(selectedOptions[i]);
         }
+        // console.log(tempObj);
         this.setState({
           tableHeader: tableHeader,
           curActionInfo: tempObj,
@@ -537,6 +560,8 @@ class MainBody extends Component {
   // Let's make it more flexible. (but also pose a limit, so we don't get way too many entries)
 
   populateKeyColumn(e, colIndex, neighbour) {
+    // Let's first take a look at neighbour passed in
+    // console.log(neighbour);
     // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
     // We also need to fetch the neighbours of this key column, both using the key column entries as subject and object
 
@@ -563,11 +588,21 @@ class MainBody extends Component {
     let queryBodyOne = "select+%3Fsomevar%0D%0Awhere+%7B";
     // We are using a loop here because multi-select is possible
     for (let i = 0; i < neighbour.length; ++i) {
-      queryBodyOne =
-        queryBodyOne +
-        "%0D%0A+++++++%3Fsomevar+dct%3Asubject+dbc%3A" +
-        regexReplace(neighbour[i]) +
-        ".";
+      // We need to adjust the appending text, based on whether we are adding a dct neighbour or rdf neighbour
+      if (neighbour[i].dataset === "dct") {
+        queryBodyOne =
+          queryBodyOne +
+          "%0D%0A+++++++%3Fsomevar+dct%3Asubject+dbc%3A" +
+          regexReplace(neighbour[i].value) +
+          ".";
+      }
+      else if (neighbour[i].dataset === "rdf") {
+        queryBodyOne =
+          queryBodyOne +
+          "%0D%0A+++++++%3Fsomevar+rdf%3Atype+dbo%3A" +
+          regexReplace(neighbour[i].value) +
+          ".";
+      }
     }
     let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
     let keyColPromise = fetchJSON(queryURLOne);
@@ -664,6 +699,7 @@ class MainBody extends Component {
       // console.log("number of empty entries is "+emptyEntryCount);
 
       let startingIndex = rowNum - emptyEntryCount;
+      // console.log("Starting index is"+startingIndex);
 
       for (let i = 0; i < emptyEntryCount; ++i) {
         tableData[i + startingIndex][colIndex].data = 

@@ -300,7 +300,7 @@ class ActionPanel extends Component {
           if (i > 0) {
             neighbourArrayText += " & ";
           }
-          neighbourArrayText += actionInfo.neighbourArray[i];
+          neighbourArrayText += actionInfo.neighbourArray[i].label;
         }
         if (neighbourArrayText !== "") {
           actionEle = (
