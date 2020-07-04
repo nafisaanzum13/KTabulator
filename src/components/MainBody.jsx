@@ -1765,6 +1765,7 @@ class MainBody extends Component {
   // As a result, the column of the cell needs to be set as the search column as well.
 
   contextSetCell(e, rowIndex, colIndex) {
+    document.body.classList.add('waiting');
     // console.log("Row index of search cell is "+rowIndex);
     // console.log("Col index of search cell is "+colIndex);
 
@@ -1831,6 +1832,7 @@ class MainBody extends Component {
         }
         // console.log(keyColNeighbours);
 
+        document.body.classList.remove('waiting');
         // Support for undo: 
         let lastAction = "contextSetCell";
         let prevState = 
@@ -1901,6 +1903,7 @@ class MainBody extends Component {
   // Note: currently it will not have any N/A's
 
   contextCellPreview(e, rowIndex, colIndex) {
+    document.body.classList.add('waiting');
     // console.log("Row index is "+rowIndex);
     // console.log("Col index is "+colIndex);
 
@@ -1983,6 +1986,7 @@ class MainBody extends Component {
       tempObj["preview"] = previewInfoArray;
 
       // Support for undo: 
+      document.body.classList.remove('waiting');
       let lastAction = "contextCellPreview";
       let prevState = 
           {
@@ -2036,6 +2040,8 @@ class MainBody extends Component {
   // The following function handles the selection of table.
 
   handleStartTable(e, tableIndex) {
+    document.body.classList.add('waiting');
+    
     // We need to let table panel display the selected table
     // And we need to update the Action Panel to display the first degree properties of the origigitnal page
     // We do a fetch request here (Sixth Query). It gets the property neighbours of the original page that are links, as well as dct:subject
@@ -2183,6 +2189,7 @@ class MainBody extends Component {
           let stateInfo = values[0];
           // console.log(stateInfo);
 
+          document.body.classList.remove('waiting');
           // Support for undo: 
           let lastAction = "handleStartTable";
           let prevState = 
@@ -2222,6 +2229,8 @@ class MainBody extends Component {
   }
 
   togglePropertyNeighbours(e, index) {
+    document.body.classList.add('waiting');
+    
     // First let's do the toggling task
     let propertyNeighbours = this.state.propertyNeighbours.slice();
     propertyNeighbours[index].isOpen = !propertyNeighbours[index].isOpen;
@@ -2286,12 +2295,14 @@ class MainBody extends Component {
             }
           });
           propertyNeighbours[index].siblingArray = siblingArray;
+          document.body.classList.remove('waiting');
           this.setState({
             propertyNeighbours: propertyNeighbours,
           });
         });
       });
     } else {
+      document.body.classList.remove('waiting');
       this.setState({
         propertyNeighbours: propertyNeighbours,
       });
