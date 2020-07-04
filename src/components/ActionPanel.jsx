@@ -442,7 +442,18 @@ class ActionPanel extends Component {
             <div>{actionInfo.origin}</div>
           </div>
         );
-      } 
+      }
+      // In this case we display the origin of selected cell
+      else if (actionInfo.task === "contextCellPreview") {
+      actionEle = (
+        <div>
+          <p>Preview of selected cell is:</p>
+          <div>
+            {renderPreview(actionInfo.preview)}
+          </div>
+        </div>
+        );
+      }  
     } 
     // This is an empty else clause
     else {
@@ -547,3 +558,22 @@ class ActionPanel extends Component {
 }
 
 export default ActionPanel;
+
+// The following helper function creates HTML elements from previewInfoArray, 
+// an array of key-val pairs containing the info for a cell's preview.
+
+function renderPreview(previewInfoArray) {
+  // console.log(previewInfoArray);
+  let infoEle = [];
+  for (let i = 0; i < previewInfoArray.length; ++i) {
+    let keyLiteral = previewInfoArray[i].key;
+    let valLiteral = previewInfoArray[i].value[0];
+    for (let j = 1; j < previewInfoArray[i].value.length; ++j) {
+      valLiteral = valLiteral + "; "+previewInfoArray[i].value[j];
+    }
+    infoEle.push(
+      <p><b>{keyLiteral}</b>{":"}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{valLiteral}</p>
+    )
+  }
+  return infoEle;
+}

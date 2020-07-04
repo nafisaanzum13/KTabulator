@@ -12,7 +12,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 50;
 const initialColNum = 4;
-const initialRowNum = 31;
+const initialRowNum = 30;
 
 class MainBody extends Component {
   constructor(props) {
@@ -110,6 +110,7 @@ class MainBody extends Component {
     this.contextDeleteColumn = this.contextDeleteColumn.bind(this);
     this.contextSetCell = this.contextSetCell.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
+    this.contextCellPreview = this.contextCellPreview.bind(this);
     this.contextOpenLink = this.contextOpenLink.bind(this);
     this.contextSortColumn = this.contextSortColumn.bind(this);
 
@@ -353,7 +354,7 @@ class MainBody extends Component {
             keyColOptions.push(tempObj);
           }
           // This clause deals with rdf:type dbo:xxxx
-          else if (curValue.includes("dbpedia.org/ontology/")) {
+          else if (curValue.includes("dbpedia.org/ontology/") && !curValue.includes("Wikidata")) {
             let tempObj = {};
             let neighbour = curValue.slice(28);
             tempObj["label"] = neighbour;
@@ -637,7 +638,7 @@ class MainBody extends Component {
     let queryBodyTwo =
       "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
       regexReplace(this.state.tableData[0][colIndex].data) +
-      "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+      "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
     let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
     let otherColPromiseSubject = fetchJSON(queryURLTwo);
     promiseArray.push(otherColPromiseSubject);
@@ -651,7 +652,7 @@ class MainBody extends Component {
     let queryBodyThree =
       "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
       regexReplace(this.state.tableData[0][colIndex].data) +
-      ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+      ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
     let queryURLThree = prefixURLThree + queryBodyThree + suffixURLThree;
     let otherColPromiseObject = fetchJSON(queryURLThree);
     promiseArray.push(otherColPromiseObject);
@@ -1777,7 +1778,7 @@ class MainBody extends Component {
       let queryBodyOne =
         "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
         regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-        "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+        "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
       let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
       let otherColPromiseSubject = fetchJSON(queryURLOne);
       promiseArray.push(otherColPromiseSubject);
@@ -1791,13 +1792,15 @@ class MainBody extends Component {
       let queryBodyTwo =
         "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
         regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-        ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+        ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
       let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
       let otherColPromiseObject = fetchJSON(queryURLTwo);
       promiseArray.push(otherColPromiseObject);
 
       // continue from here
       allPromiseReady(promiseArray).then((values) => {
+        console.log(values[0]);
+        console.log(values[1]);
         let keyColNeighbours = [];
         keyColNeighbours = updateKeyColNeighbours(
           keyColNeighbours,
@@ -1881,6 +1884,108 @@ class MainBody extends Component {
       tabIndex: 0, // we want to set the currently active tab to be wrangling actions
       lastAction: lastAction,
       prevState: prevState,
+    });
+  }
+
+  // The following function displays the preview of a cell in the Action Panel.
+  // Note: currently it will not have any N/A's
+
+  contextCellPreview(e, rowIndex, colIndex) {
+    // console.log("Row index is "+rowIndex);
+    // console.log("Col index is "+colIndex);
+
+    // Let's first run queries to fetch the dbp neighbours and dbo neighbours for the selected cell (withe some filtering)
+    // In here, we need both the ?p and ?o. This is different from before.
+
+    let promiseArray = [];
+
+    // Below is the first query we will make. In here we are using the tableCell as SUBJECT
+
+    // SELECT ?p ?value
+    // WHERE {
+    //       dbr:Barack_Obama ?p ?value.
+    //       BIND(STR(?p) AS ?pString ).
+    //       FILTER(
+    //               !(regex(?pString,"wikiPage|align|caption|image|width|thumbnail|blank","i"))
+    //               && regex(?pString, "ontology|property", "i")
+    //       )
+    // }
+
+    let prefixURLOne = 
+      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURLOne = 
+      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyOne = 
+      "SELECT+%3Fp+%3Fvalue%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" + 
+      regexReplace(this.state.tableData[rowIndex][colIndex].data) +
+      "+%3Fp+%3Fvalue.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++%29%0D%0A%7D&";
+    let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
+    let otherColPromiseSubject = fetchJSON(queryURLOne);
+    promiseArray.push(otherColPromiseSubject);
+
+    // Below is the second query we will make. In here we are using the tableCell as OBJECT.
+
+    // SELECT ?p ?value
+    // WHERE {
+    //       ?value ?p dbr:Barack_Obama.
+    //       BIND(STR(?p) AS ?pString ).
+    //       FILTER(
+    //               !(regex(?pString,"wikiPage|align|caption|image|width|thumbnail|blank","i"))
+    //               && regex(?pString, "ontology|property", "i")
+    //       )
+    // } 
+
+    let prefixURLTwo = 
+      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURLTwo = 
+      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    let queryBodyTwo =
+      "SELECT+%3Fp+%3Fvalue%0D%0AWHERE+%7B%0D%0A+++++++%3Fvalue+%3Fp+dbr%3A" +
+      regexReplace(this.state.tableData[rowIndex][colIndex].data) +
+      ".%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++%29%0D%0A%7D&";
+    let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
+    let otherColPromiseObject = fetchJSON(queryURLTwo);
+    promiseArray.push(otherColPromiseObject);
+
+    allPromiseReady(promiseArray).then((values) => {
+      // console.log(values[0]);
+      // console.log(values[1]);
+      // let previewInfoArray = [];
+      let subjectInfoArray = 
+        updatePreviewInfo(
+          values[0].results.bindings,
+          "subject"
+        );
+      let objectInfoArray = 
+        updatePreviewInfo(
+          values[1].results.bindings,
+          "object"
+        );
+      // console.log(subjectInfoArray);
+      // console.log(objectInfoArray);
+      // Pick up from here tomorrow.
+      let previewInfoArray = subjectInfoArray.concat(objectInfoArray);
+
+      // previewInfoArray correctly contains the cell preview we want to display
+      // Now we just need to show it in the ActionPanel
+      let tempObj = {};
+      tempObj["task"] = "contextCellPreview";
+      tempObj["preview"] = previewInfoArray;
+
+      // Support for undo: 
+      let lastAction = "contextCellPreview";
+      let prevState = 
+          {
+            "curActionInfo": this.state.curActionInfo,
+            "tabIndex": this.state.tabIndex,
+          };
+      
+      this.setState({
+        curActionInfo: tempObj,
+        tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+        lastAction: lastAction,
+        prevState: prevState,
+      });
     });
   }
 
@@ -2650,6 +2755,15 @@ class MainBody extends Component {
       })
     }
 
+    // Case 12: Undo the showing of cell preview.
+    else if (lastAction === "contextCellPreview") {
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tabIndex: prevState.tabIndex,
+        lastAction: "",
+      })
+    }
+
     // Case 13: Undo the deletion of column.
     else if (lastAction === "contextDeleteColumn") {
       this.setState({
@@ -2751,6 +2865,7 @@ class MainBody extends Component {
                     contextDeleteColumn={this.contextDeleteColumn}
                     contextSetCell={this.contextSetCell}
                     contextCellOrigin={this.contextCellOrigin}
+                    contextCellPreview={this.contextCellPreview}
                     contextOpenLink={this.contextOpenLink}
                     contextSortColumn={this.contextSortColumn}
                     // Folloiwng states are passed to "startTable"
@@ -3008,6 +3123,78 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
   
   // console.log(keyColNeighbours);
   // console.log(processedBinding);
+}
+
+// This helper function is designed to process the result bindings passed from contextCellPreview.
+// It should share some similarity with updateKeyColNeighbours
+
+// It taks two parameters:
+//  2) array "resultsBinding", storing the returned result of queryURL from Virtuoso
+//  3) string "type", either "subject" or "object"
+
+// It returns previewInfoArray, a list of objects used to display a cell's preview info
+// This object has two properties:
+// 1) key: a string
+// 2) value: an array of strings
+function updatePreviewInfo(resultsBinding, type) {
+  // console.log(previewInfoArray);
+  // console.log(resultsBinding);
+  // console.log(type);
+
+  // Let's do some preprocessing of resultsBinding. We want to do sorting, deduping, and some filtering.
+
+  // We first sort the resultsBinding by p.value.slice(28)
+  let processedBinding = 
+    resultsBinding.sort((a, b) =>
+      a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
+    );
+
+  // We then filter out those in resultsBinding with p.value.slice(28).length equal to 1
+  processedBinding = processedBinding.filter(a => a.p.value.slice(28).length > 1);
+
+  // Now let's create the previewInfoArray based on processedBinding
+  // console.log(processedBinding);
+
+  let previewInfoArray = [];
+
+  if (processedBinding.length > 1) {
+    // We first push on the first element from processedBinding
+
+    previewInfoArray.push(
+      {
+        "key": type === "subject" ? processedBinding[0].p.value.slice(28) : "is "+processedBinding[0].p.value.slice(28)+" of",
+        "value": [removePrefix(processedBinding[0].value.value)],
+      }
+    )
+    let curIndex = 0;
+    for (let i = 1; i < processedBinding.length; ++i) {
+      let curNeighbour = processedBinding[i].p.value.slice(28);
+      let prevNeighbour = processedBinding[i-1].p.value.slice(28);
+      // console.log(curNeighbour);
+      // console.log(prevNeighbour);
+
+      // If this neighbour is the same as the previous one, we want to append this neighbour's value
+      // to the element's value array in previewInfoArray at curIndex
+      if (curNeighbour === prevNeighbour) {
+        // Note, we dont want each element in previewInfoArray to contain too many elements (5), so we do a check here.
+        if (previewInfoArray[curIndex].value.length < 5) {
+          previewInfoArray[curIndex].value.push(removePrefix(processedBinding[i].value.value));
+        }
+      }
+      // Else, we push a fresh element onto previewInforArray, and update curIndex
+      else {
+        previewInfoArray.push(
+          {
+            "key": type === "subject" ? processedBinding[i].p.value.slice(28) : "is "+processedBinding[i].p.value.slice(28)+" of",
+            "value":[removePrefix(processedBinding[i].value.value)],
+          }
+        )
+        ++curIndex;
+      }
+    }
+    // console.log(previewInfoArray);
+  }
+  return previewInfoArray;
 }
 
 // This function takes in the clean data for the first table, clean data for the second table, and colMapping between these two tables
@@ -3921,7 +4108,7 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
   let queryBodyOne =
     "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
     regexReplace(tableData[0][keyColIndex].data) +
-    "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+    "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
   let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
   let otherColPromiseSubject = fetchJSON(queryURLOne);
   promiseArray.push(otherColPromiseSubject);
@@ -3935,7 +4122,7 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
   let queryBodyTwo =
     "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
     regexReplace(tableData[0][keyColIndex].data) +
-    ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+    ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
   let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
   let otherColPromiseObject = fetchJSON(queryURLTwo);
   promiseArray.push(otherColPromiseObject);
