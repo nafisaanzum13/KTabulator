@@ -105,3 +105,6 @@
   width: 50vw;
   background-color: #fff;
 }
+
+
+body.waiting * { cursor: wait; }

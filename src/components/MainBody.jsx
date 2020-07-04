@@ -136,6 +136,7 @@ class MainBody extends Component {
   }
 
   handleURLPaste(urlPasted) {
+    document.body.classList.add('waiting');
     // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
     // We then update the originTableArray, which stores all the tables found on the pasted URL
     // We also initialize tableOpenList to all false
@@ -160,6 +161,7 @@ class MainBody extends Component {
 
         // Adding support for undo:
 
+        document.body.classList.remove('waiting');
         let lastAction = "handleURLPaste";
         let prevState = 
           {
@@ -561,6 +563,7 @@ class MainBody extends Component {
   // Let's make it more flexible. (but also pose a limit, so we don't get way too many entries)
 
   populateKeyColumn(e, colIndex, neighbour) {
+    document.body.classList.add('waiting');
     // Let's first take a look at neighbour passed in
     // console.log(neighbour);
     // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
@@ -747,6 +750,8 @@ class MainBody extends Component {
         }
       }
 
+      document.body.classList.remove('waiting');
+
       // Support for undo: 
       // Let's save the previous state in an object
       let lastAction = "populateKeyColumn";
@@ -870,6 +875,7 @@ class MainBody extends Component {
   }
 
   populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type, range) {
+    document.body.classList.add('waiting');
 
     // console.log(neighbourIndex);
 
@@ -1019,6 +1025,7 @@ class MainBody extends Component {
       }
       // console.log(tempObj);
 
+      document.body.classList.remove('waiting');
       // Support for undo: 
       // Let's save the previous state in an object
       let lastAction = "populateOtherColumn";
@@ -1401,6 +1408,7 @@ class MainBody extends Component {
   // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
   // This function should use addAllNeighbour as a helper function
   populateSameRange(e, colIndex, range, siblingNeighbour) {
+    document.body.classList.add('waiting');
 
     // console.log("Column index is "+colIndex);
     // console.log("Range is "+range);
@@ -1454,6 +1462,8 @@ class MainBody extends Component {
         tempAnnotation = newState.selectedClassAnnotation;
         tempKeyColIndex = newState.keyColIndex;
       }
+
+      document.body.classList.remove('waiting');
 
       // Support for undo: 
       let lastAction = "populateSameRange";
