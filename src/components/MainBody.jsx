@@ -1983,6 +1983,7 @@ class MainBody extends Component {
       // Now we just need to show it in the ActionPanel
       let tempObj = {};
       tempObj["task"] = "contextCellPreview";
+      tempObj["cellValue"] = this.state.tableData[rowIndex][colIndex].data;
       tempObj["preview"] = previewInfoArray;
 
       // Support for undo: 
@@ -2010,7 +2011,7 @@ class MainBody extends Component {
     this.setState({
       pageHidden: false,
       iframeURL: iframeURL,
-      curActionInfo: {"task":"afterPopulateColumn"},
+      // curActionInfo: {"task":"afterPopulateColumn"},
     });
   }
 

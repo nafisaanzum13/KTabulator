@@ -447,7 +447,7 @@ class ActionPanel extends Component {
       else if (actionInfo.task === "contextCellPreview") {
       actionEle = (
         <div>
-          <p>Preview of selected cell is:</p>
+          <p>Preview of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
           <div>
             {renderPreview(actionInfo.preview)}
           </div>
@@ -562,18 +562,30 @@ export default ActionPanel;
 // The following helper function creates HTML elements from previewInfoArray, 
 // an array of key-val pairs containing the info for a cell's preview.
 
+// It also makes use of niceRender, so that preview looks clean.
+
 function renderPreview(previewInfoArray) {
-  // console.log(previewInfoArray);
+  console.log(previewInfoArray);
   let infoEle = [];
   for (let i = 0; i < previewInfoArray.length; ++i) {
     let keyLiteral = previewInfoArray[i].key;
-    let valLiteral = previewInfoArray[i].value[0];
+    // We get the first element from value Array
+    let valLiteral = niceRender(previewInfoArray[i].value[0]);
+    // Since we have already included thte first element, we start the index from 1
     for (let j = 1; j < previewInfoArray[i].value.length; ++j) {
-      valLiteral = valLiteral + "; "+previewInfoArray[i].value[j];
+      valLiteral = valLiteral + "; "+niceRender(previewInfoArray[i].value[j]);
     }
     infoEle.push(
       <p><b>{keyLiteral}</b>{":"}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{valLiteral}</p>
     )
   }
   return infoEle;
+}
+
+// This function renders this.props.tableData[i][j].data in a nicer way. 
+// It removes all occurence of (...), and changes all "_" to " ".
+
+function niceRender(str) {
+  return str.replace(/_\(.*?\)/g, "")
+            .replace(/_/g, " ");
 }
