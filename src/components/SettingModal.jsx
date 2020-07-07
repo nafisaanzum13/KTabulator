@@ -10,7 +10,7 @@ class SettingModal extends Component {
     return (
       <div>
         <Modal 
-          isOpen={this.props.showModal}
+          isOpen={this.props.showSetting}
           className="setting-modal"
         >
           <div className="container">

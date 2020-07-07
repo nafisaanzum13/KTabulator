@@ -45,7 +45,7 @@ class MainBody extends Component {
       curActionInfo: null, // object storing the current action that should be displayed in ActionPanel. Initially null.
       lastAction: "",      // string storing the last action that has modified the result table in the table panel
       prevState: "",       // objects storing the information needed to undo the last step. Information stored depends on lastAction
-      showModal: false,    // boolean storing whether setting modal is shown or not. Default to false.
+      showSetting: false,    // boolean storing whether setting modal is shown or not. Default to false.
       showTableSelection: false,    // boolean storing whether the list of tables from page is shown. Default to false.
       tabIndex: 1,         // integer storing the index of the tab currently displaying. Default to 1.
 
@@ -85,6 +85,11 @@ class MainBody extends Component {
       propertyNeighbours: [],
       semanticEnabled: "disabled", // boolean value indicating whether semantic mapping is enabled or not. Default to true
       unionCutOff: 0.75, // number representing the union percentage a table must have to be considered unionable (>=)
+
+      // states below are for column filter
+      showFilter: false,        // boolean storing whether we want to show column filter or not. Initially false.
+      curFilterIndex: -1,       // number storing the column index on which we apply the filter. Initially -1 (means no filter)
+      dataAndChecked: [],       // array of [data, checked] pairs storing which data are in the filter column, and whether we should keep them.
     };
 
     // functions below are useful during start up
@@ -2820,13 +2825,13 @@ class MainBody extends Component {
 
   openModal() {
     this.setState({
-      showModal: true,
+      showSetting: true,
     })
   }
 
   closeModal() {
     this.setState({
-      showModal: false,
+      showSetting: false,
     })
   }
 
@@ -2942,7 +2947,7 @@ class MainBody extends Component {
               </div>
               <div>
                 <SettingModal 
-                  showModal={this.state.showModal}
+                  showSetting={this.state.showSetting}
                   closeModal={this.closeModal}
                   semanticEnabled={this.state.semanticEnabled}
                   toggleSemantic={this.toggleSemantic}

@@ -3,7 +3,7 @@ import React, { Component } from "react";
 // import Tooltip from '@atlaskit/tooltip';
 import Select from "react-select";
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
-import { FaSearch } from "react-icons/fa";
+import { FaFilter } from "react-icons/fa";
 
 class TablePanel extends Component {
   constructor(props) {
@@ -44,7 +44,7 @@ class TablePanel extends Component {
                 options={this.props.optionsMap[this.props.keyColIndex]}
                 isMulti={multiAllowed}
               />
-              <FaSearch
+              <FaFilter
                 className="search-icon"
                 title={"Set as key column"}
                 onClick={(e) => this.props.contextSetCell(e, 0, colIndex)}
@@ -71,7 +71,7 @@ class TablePanel extends Component {
                 options={this.props.optionsMap[colIndex]}
                 isMulti={false}
               />
-              <FaSearch
+              <FaFilter
                 className="search-icon"
                 title={"Set as key column"}
                 onClick={(e) => this.props.contextSetCell(e, 0, colIndex)}
@@ -222,7 +222,7 @@ class TablePanel extends Component {
     tableEle = (
       // class table-fixed helps with sticky column headers
       <div>
-        <table class border="1" className="table table-sm table-bordered">
+        <table class border="1" className="table table-sm table-bordered low-table">
           {this.createSuperTable()}
         </table>
         {menuArray}
