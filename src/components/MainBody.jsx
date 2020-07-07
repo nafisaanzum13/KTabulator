@@ -4,6 +4,7 @@ import { combinations } from "mathjs";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import SettingModal from "../components/SettingModal";
+import FilterModal from "../components/FilterModal";
 import LandingPage from "../components/LandingPage";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
@@ -88,7 +89,7 @@ class MainBody extends Component {
 
       // states below are for column filter
       showFilter: false,        // boolean storing whether we want to show column filter or not. Initially false.
-      curFilterIndex: -1,       // number storing the column index on which we apply the filter. Initially -1 (means no filter)
+      curFilterIndex: -1,       // number storing the index of the column on which we apply the filter. Initially -1 (no filter.)
       dataAndChecked: [],       // array of [data, checked] pairs storing which data are in the filter column, and whether we should keep them.
     };
 
@@ -138,6 +139,12 @@ class MainBody extends Component {
     this.openModal = this.openModal.bind(this);
     this.closeModal = this.closeModal.bind(this);
     this.toggleTableSelection = this.toggleTableSelection.bind(this);
+
+    // functions below are for column filter
+    this.openFilter = this.openFilter.bind(this);
+    this.cancelFilter = this.cancelFilter.bind(this);
+    this.toggleChecked = this.toggleChecked.bind(this);
+    this.applyFilter = this.applyFilter.bind(this);
   }
 
   handleURLPaste(urlPasted) {
@@ -2598,6 +2605,100 @@ class MainBody extends Component {
     });
   }
 
+  // This function handles opening the filter for a particular column
+
+  openFilter(e, colIndex) {
+    // In this function, we want to set showFilter to true, and update dataAndChecked based on colIndex
+
+    let dataArray = [];
+    for (let i = 0; i < this.state.tableData.length; ++i) {
+      dataArray.push(this.state.tableData[i][colIndex].data);
+    }
+    dataArray = [...new Set(dataArray)];
+    // Let's sort this dataArray a bit: we put N/A at the beginning of the array
+    dataArray.sort(
+      function(a,b) { 
+        return a === "N/A" ? -1 : b === "N/A" ? 1 : 0; 
+      }
+    );
+
+    let dataAndChecked = [];
+    for (let i=0;i<dataArray.length;++i) {
+      dataAndChecked.push(
+        {
+          "data":dataArray[i],
+          "checked":true
+        }
+      )
+    }
+    // console.log(dataAndChecked);
+
+    this.setState({
+      dataAndChecked: dataAndChecked,
+      showFilter: true,
+      curFilterIndex: colIndex,
+    })
+  }
+
+  // This function handles cancelling the filter (so we close it).
+
+  cancelFilter(e) {
+    this.setState({
+      dataAndChecked: [],
+      showFilter: false,
+      curFilterIndex: -1,
+    })
+  }
+
+  // This function handles toggling the data checkboxes in filter modal.
+
+  toggleChecked(e, checkIndex) {
+    let dataAndChecked = this.state.dataAndChecked;
+    dataAndChecked[checkIndex].checked = !dataAndChecked[checkIndex].checked;
+    this.setState({
+      dataAndChecked:dataAndChecked,
+    })
+  }
+
+  // This function handles applying the filter to tableData, based on dataAndChecked
+
+  applyFilter(e) {
+    // console.log(this.state.dataAndChecked);
+    // console.log(this.state.curFilterIndex);
+
+    let valuesToKeep = [];
+    for (let i=0;i<this.state.dataAndChecked.length;++i) {
+      if (this.state.dataAndChecked[i].checked === true) {
+        valuesToKeep.push(this.state.dataAndChecked[i].data);
+      }
+    }
+    let tableData = _.cloneDeep(this.state.tableData);
+    for (let i=0;i<tableData.length;++i) {
+      if (!valuesToKeep.includes(tableData[i][this.state.curFilterIndex].data)) {
+        tableData.splice(i,1);
+        --i;
+      }
+    }
+    // console.log(tableData);
+
+    // Before we use tableData to update this.state.tableData, we need to add suppport for undo.
+    let lastAction = "applyFilter";
+    let prevState = 
+        {
+          "tableData":this.state.tableData,
+          "curActionInfo":this.state.curActionInfo,
+        };
+    
+    this.setState({
+      dataAndChecked: [],
+      showFilter: false,
+      curFilterIndex: -1,
+      tableData: tableData,
+      lastAction: lastAction,
+      prevState: prevState,
+    })
+  }
+
   // This function hanles switching tabs
 
   handleTabSwitch(index) {
@@ -2815,6 +2916,15 @@ class MainBody extends Component {
       })
     }
 
+    // Case 15: Undo the row filtering based on column filters.
+    else if (lastAction === "applyFilter") {
+      this.setState({
+        tableData: prevState.tableData,
+        curActionInfo: prevState.curActionInfo,
+        lastAction: "",
+      })
+    }
+
     // This is an empty else clause.
     else {
 
@@ -2895,12 +3005,8 @@ class MainBody extends Component {
                     contextCellPreview={this.contextCellPreview}
                     contextOpenLink={this.contextOpenLink}
                     contextSortColumn={this.contextSortColumn}
-                    // Folloiwng states are passed to "startTable"
-                    // tableDataExplore={this.state.tableDataExplore}
-                    // originTableArray={this.state.originTableArray}
-                    // tableOpenList={this.state.tableOpenList}
-                    // toggleTable={this.toggleTable}
-                    // selectedTableIndex={this.state.selectedTableIndex}
+                    // Folloiwng states are useful for column filter
+                    openFilter={this.openFilter}
                   />
                 </div>
                 <div className="col-md-5 small-padding action-panel">
@@ -2953,6 +3059,15 @@ class MainBody extends Component {
                   toggleSemantic={this.toggleSemantic}
                   unionCutOff={this.state.unionCutOff}
                   unionCutOffChange={this.unionCutOffChange}
+                />
+              </div>
+              <div>
+                <FilterModal
+                  showFilter={this.state.showFilter}
+                  dataAndChecked={this.state.dataAndChecked}
+                  applyFilter={this.applyFilter}
+                  cancelFilter={this.cancelFilter}
+                  toggleChecked={this.toggleChecked}
                 />
               </div>
             </div>

@@ -47,7 +47,7 @@ class TablePanel extends Component {
               <FaFilter
                 className="search-icon"
                 title={"Set as key column"}
-                onClick={(e) => this.props.contextSetCell(e, 0, colIndex)}
+                onClick={(e) => this.props.openFilter(e, colIndex)}
               />
             </div>
           </th>
@@ -74,7 +74,7 @@ class TablePanel extends Component {
               <FaFilter
                 className="search-icon"
                 title={"Set as key column"}
-                onClick={(e) => this.props.contextSetCell(e, 0, colIndex)}
+                onClick={(e) => this.props.openFilter(e, colIndex)}
               />
             </div>
           </th>
@@ -222,7 +222,7 @@ class TablePanel extends Component {
     tableEle = (
       // class table-fixed helps with sticky column headers
       <div>
-        <table class border="1" className="table table-sm table-bordered low-table">
+        <table class border="1" className="table table-sm table-bordered">
           {this.createSuperTable()}
         </table>
         {menuArray}

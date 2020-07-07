@@ -106,5 +106,19 @@
   background-color: #fff;
 }
 
+/* The following class handles the style for filter modal */
+
+.filter-modal {
+  margin-top: 15vh;
+  margin-left: 25vw;
+  height: 50vh;
+  width: 50vw;
+  background-color: #fff;
+}
+
+.checkbox-list {
+  height: 35vh;
+  overflow: auto;
+}
 
 body.waiting * { cursor: wait; }
