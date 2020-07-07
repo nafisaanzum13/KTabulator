@@ -3,7 +3,7 @@ import React, { Component } from "react";
 // import Tooltip from '@atlaskit/tooltip';
 import Select from "react-select";
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
-import { FaFilter } from "react-icons/fa";
+import { FaSearch } from "react-icons/fa";
 
 class TablePanel extends Component {
   constructor(props) {
@@ -44,10 +44,10 @@ class TablePanel extends Component {
                 options={this.props.optionsMap[this.props.keyColIndex]}
                 isMulti={multiAllowed}
               />
-              <FaFilter
+              <FaSearch
                 className="search-icon"
                 title={"Set as key column"}
-                onClick={(e) => this.props.openFilter(e, colIndex)}
+                onClick={(e) => this.props.contextSetCell(e, 0, colIndex)}
               />
             </div>
           </th>
@@ -71,10 +71,10 @@ class TablePanel extends Component {
                 options={this.props.optionsMap[colIndex]}
                 isMulti={false}
               />
-              <FaFilter
+              <FaSearch
                 className="search-icon"
                 title={"Set as key column"}
-                onClick={(e) => this.props.openFilter(e, colIndex)}
+                onClick={(e) => this.props.contextSetCell(e, 0, colIndex)}
               />
             </div>
           </th>
@@ -193,6 +193,10 @@ class TablePanel extends Component {
             <MenuItem divider />
             <MenuItem onClick={(e) => this.props.contextDeleteColumn(e, j)}>
               Delete this column
+            </MenuItem>
+            <MenuItem divider />
+            <MenuItem onClick={(e) => this.props.openFilter(e, j)}>
+              Filter this column
             </MenuItem>
             <MenuItem divider />
             <MenuItem onClick={(e) => this.props.contextSortColumn(e, j, "ascending")}>
