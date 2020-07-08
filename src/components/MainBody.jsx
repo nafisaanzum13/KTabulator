@@ -789,7 +789,7 @@ class MainBody extends Component {
     });
   }
 
-  // TEST FUNCTION----------------------------------------------------
+  // // TEST FUNCTION----------------------------------------------------
 
   // getOtherColPromiseTwo(neighbour, type) {
   //   let promiseArray = [];
@@ -903,28 +903,32 @@ class MainBody extends Component {
     allPromiseReady(promiseArray).then((values) => {
     // allPromiseReady(promiseArrayTwo).then((testValues) => {
 
-      // // Now we need to process the testValues
+    //   // Let's compare the different values we get from getOtherColPromise and getOtherColPromiseTwo
+    //   console.log(values);
+    //   console.log(testValues);
 
-      // let pairArray = [];
+    //   // Now we need to process the testValues
 
-      // // First we removed the prefixes from resultArray
-      // for (let i=0; i<testValues[0].results.bindings.length; ++i) {
-      //   pairArray.push(
-      //     {
-      //       "key":removePrefix(testValues[0].results.bindings[i].key.value),
-      //       "value":removePrefix(testValues[0].results.bindings[i].val.value)
-      //     }
-      //   )
-      // }
-      // console.log(pairArray);
+    //   let pairArray = [];
 
-      // // Then we create a keyArray
-      // let keyArray = [];
+    //   // First we removed the prefixes from resultArray
+    //   for (let i=0; i<testValues[0].results.bindings.length; ++i) {
+    //     pairArray.push(
+    //       {
+    //         "key":removePrefix(testValues[0].results.bindings[i].key.value),
+    //         "value":removePrefix(testValues[0].results.bindings[i].val.value)
+    //       }
+    //     )
+    //   }
+    //   console.log(pairArray);
 
-      // for (let i=0; i<this.state.tableData.length; ++i) {
-      //   keyArray.push(this.state.tableData[i][this.state.keyColIndex].data);
-      // }
-      // console.log(keyArray);
+    //   // Then we create a keyArray
+    //   let keyArray = [];
+
+    //   for (let i=0; i<this.state.tableData.length; ++i) {
+    //     keyArray.push(this.state.tableData[i][this.state.keyColIndex].data);
+    //   }
+    //   console.log(keyArray);
 
       let tableData = _.cloneDeep(this.state.tableData);
       let requiredLength = neighbourIndex === -1 ? 1 : neighbourIndex + 1;
