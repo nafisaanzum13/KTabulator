@@ -1,3 +1,12 @@
+// This component takes in 5 props:
+
+// 1) originTableArray: 1D array storing all tables found on pasted URL
+// 2) tableOpenList:    1D array storing whether each table in originTableArray has been toggled open or not
+// 3) toggleTable:      function that handles the toggling on/off of a table
+// 4) listType:         string. Has value "select" when we are using TableSelection to select the starting table.
+//                              Has value "join" when we are using TableSelection in the join tables setting.
+// 5) buttonFunction:   function corresponding to the listType.
+
 import React, { Component } from "react";
 import { Collapse } from "reactstrap";
 import { FaTable } from "react-icons/fa";
@@ -34,17 +43,23 @@ class TableSelection extends Component {
       );
       let selectButton;
       if (this.props.tableOpenList[i] === true) {
+        let buttonText = "";
+        if (this.props.listType === "select") {
+          buttonText = "Select";
+        }
+        else {
+          buttonText = "Join"
+        }
         selectButton = 
           <button
-            onClick={(e) => this.props.handleStartTable(e, i)}
+            onClick={(e) => this.props.buttonFunction(e, i)}
           >
-            Select
+            {buttonText}
           </button>
       }
       buttonArray.push(
         <li
           className="list-group-item"
-          // onClick={(e) => this.props.toggleTable(e, i)}
         >
         <span 
           onClick={(e) => this.props.toggleTable(e, i)}

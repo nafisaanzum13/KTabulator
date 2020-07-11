@@ -6,6 +6,7 @@ import { FaList, FaTable } from "react-icons/fa";
 // The two following lines are for tabs
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
+import TableSelection from "./TableSelection";
 // The two following lines are for range sliders
 // import RangeSlider from "react-bootstrap-range-slider";
 // import "react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
@@ -462,7 +463,11 @@ class ActionPanel extends Component {
     // Now we have to determine whether we are rendering one tab or two tabs.
     // One tab for startSubject. Two tabs for startTable.
     // console.log(this.props.usecaseSelected);
-    // In the startSubject case, we will have one tab: wrangling actions
+
+    // Modified after JOIN has been added in:
+    // In the startSubject case, we will have two tab: wrangling actions, and table actions.
+    // Wrangling Actions: same as before.
+    // Table Actions: Union will be empty, JOIN will use the pasted URL from the beginning.
 
     if (this.props.usecaseSelected === "startSubject") {
       let curIndex = this.props.tabIndex;
@@ -474,42 +479,59 @@ class ActionPanel extends Component {
           >
             <TabList>
               <Tab>Wrangling Actions</Tab>
+              <Tab>Table Actions</Tab>
             </TabList>
-            <TabPanel>
-              <div className="wrangling-actions">
+              <TabPanel>
                 {actionEle}
-              </div>
-              {/* <div className="table-list">
-                <ul class="list-group list-css list-group-flush">
-                  <hr className="m-0"></hr>
-                  <li
-                    className="list-group-item"
-                  >
-                    <span 
-                      onClick={() => this.props.toggleTableSelection()}
+              </TabPanel>
+              <TabPanel>
+                <div>
+                  <ul class="list-group list-css list-group-flush">
+                    <hr className="m-0"></hr>
+                    <li
+                      className="list-group-item"
                     >
-                      Restart with an existing table from page <FaList />
-                    </span>
+                      <span 
+                        onClick={(e) => this.props.toggleUnionJoin(e, "union")}
+                      >
+                        Union Tables from Wikipedia
+                      </span>
 
-                    <Collapse isOpen={this.props.showTableSelection}>
-                      <CardBody>
-                        <Card>
-                          <div>
-                            <TableSelection
+                      <Collapse isOpen={this.props.showUnionTables}>
+                        <CardBody>
+                          <Card>
+                            Currently, finding unionable tables for customized table is not supported.
+                          </Card>
+                        </CardBody>
+                      </Collapse>
+                    </li>
+                    <li
+                      className="list-group-item"
+                    >
+                      <span 
+                        onClick={(e) => this.props.toggleUnionJoin(e, "join")}
+                      >
+                        Join Tables from Wikipedia
+                      </span>
+
+                      <Collapse isOpen={this.props.showJoinTables}>
+                        <CardBody>
+                          <Card>
+                            <TableSelection 
                               originTableArray={this.props.originTableArray}
                               tableOpenList={this.props.tableOpenList}
                               toggleTable={this.props.toggleTable}
-                              selectedTableIndex={this.props.selectedTableIndex}
-                              handleStartTable={this.props.handleStartTable}
+                              buttonFunction={this.props.handleJoinTable}
+                              listType={"join"}
                             />
-                          </div>
-                        </Card>
-                      </CardBody>
-                    </Collapse>
-                  </li>
-                </ul>
-              </div> */}
-            </TabPanel>
+                          </Card>
+                        </CardBody>
+                      </Collapse>
+                    </li>
+                    <hr className="m-0"></hr>
+                  </ul>
+                </div>
+              </TabPanel>
           </Tabs>
         </div>
       );
@@ -526,18 +548,61 @@ class ActionPanel extends Component {
             >
               <TabList>
                 <Tab>Wrangling Actions</Tab>
-                <Tab>Union Tables</Tab>
+                <Tab>Table Actions</Tab>
               </TabList>
               <TabPanel>
                 {actionEle}
               </TabPanel>
               <TabPanel>
-                <small>
-                  Explore relations below to look for other pages with similar
-                  tables:
-                </small>{" "}
-                <br></br>
-                {this.createPropertyArray()}
+                <div>
+                  <ul class="list-group list-css list-group-flush">
+                    <hr className="m-0"></hr>
+                    <li
+                      className="list-group-item"
+                    >
+                      <span 
+                        onClick={(e) => this.props.toggleUnionJoin(e, "union")}
+                      >
+                        Union Tables from Wikipedia
+                      </span>
+
+                      <Collapse isOpen={this.props.showUnionTables}>
+                        <CardBody>
+                          <Card>
+                              Expand relations below to look at other pages with similar
+                              tables:
+                            <br /><br />
+                            {this.createPropertyArray()}
+                          </Card>
+                        </CardBody>
+                      </Collapse>
+                    </li>
+                    <li
+                      className="list-group-item"
+                    >
+                      <span 
+                        onClick={(e) => this.props.toggleUnionJoin(e, "join")}
+                      >
+                        Join Tables from Wikipedia
+                      </span>
+
+                      <Collapse isOpen={this.props.showJoinTables}>
+                        <CardBody>
+                          <Card>
+                            <TableSelection 
+                              originTableArray={this.props.originTableArray}
+                              tableOpenList={this.props.tableOpenList}
+                              toggleTable={this.props.toggleTable}
+                              buttonFunction={this.props.handleJoinTable}
+                              listType={"join"}
+                            />
+                          </Card>
+                        </CardBody>
+                      </Collapse>
+                    </li>
+                    <hr className="m-0"></hr>
+                  </ul>
+                </div>
               </TabPanel>
             </Tabs>
           </div>

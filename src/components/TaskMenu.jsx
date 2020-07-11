@@ -38,8 +38,8 @@ class TaskMenu extends Component {
                       originTableArray={this.props.originTableArray}
                       tableOpenList={this.props.tableOpenList}
                       toggleTable={this.props.toggleTable}
-                      selectedTableIndex={this.props.selectedTableIndex}
-                      handleStartTable={this.props.handleStartTable}
+                      buttonFunction={this.props.handleStartTable}
+                      listType={"select"}
                     />
                   </div>
                 </Card>

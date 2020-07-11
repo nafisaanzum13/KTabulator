@@ -49,6 +49,8 @@ class MainBody extends Component {
       showSetting: false,    // boolean storing whether setting modal is shown or not. Default to false.
       showTableSelection: false,    // boolean storing whether the list of tables from page is shown. Default to false.
       tabIndex: 1,         // integer storing the index of the tab currently displaying. Default to 1.
+      showUnionTables: false,  // boolean storing whether all the unionable pages and tables is shown. Default to false.
+      showJoinTables: false,   // boolean storing whether the page storing joinable tables is shown. Default to false.
 
       // states below are useful for startSubject
       keyColIndex: 0,   // number storing the index of the search column. initially the key column is the first column
@@ -63,7 +65,7 @@ class MainBody extends Component {
       optionsMap: optionsMap, // 2D array storing the options map
       keyColNeighbours: [], // 1D array storing the neighbours of the key column
 
-      // startes below are useful for startTable
+      // states below are useful for startTable
       originTableArray: [], // 1D array storing all tables found on pasted URL
       tableOpenList: [], // 1D array storing whether each table in originTableArray has been toggled open or not
       selectedTableIndex: -1, // index of table selected by user. If it's -1, take user to table selection. Else, show the table in Table Panel.
@@ -139,6 +141,8 @@ class MainBody extends Component {
     this.openModal = this.openModal.bind(this);
     this.closeModal = this.closeModal.bind(this);
     this.toggleTableSelection = this.toggleTableSelection.bind(this);
+    this.toggleUnionJoin = this.toggleUnionJoin.bind(this);
+    this.handleJoinTable = this.handleJoinTable.bind(this);
 
     // functions below are for column filter
     this.openFilter = this.openFilter.bind(this);
@@ -147,11 +151,11 @@ class MainBody extends Component {
     this.applyFilter = this.applyFilter.bind(this);
   }
 
+  // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
+  // We then update the originTableArray, which stores all the tables found on the pasted URL
+  // We also initialize tableOpenList to all false
   handleURLPaste(urlPasted) {
     document.body.classList.add('waiting');
-    // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
-    // We then update the originTableArray, which stores all the tables found on the pasted URL
-    // We also initialize tableOpenList to all false
 
     // Lastly, we updated the urlPasted and iframeURL
 
@@ -2958,6 +2962,38 @@ class MainBody extends Component {
     })
   }
 
+  // The following function handles the toggling of "show unionable tables" and "show joinable tables".
+  // based on whether the string passed in is "union" or "join"
+
+  toggleUnionJoin(e, str) {
+    // In this case we are toggling on/off unionable tables 
+    if (str === "union") {
+      this.setState({
+        showUnionTables: !this.state.showUnionTables,
+        showJoinTables: false,
+      })
+    }
+    // In this case we are toggling on/off joinable tables 
+    else {
+      // Note: every time before we toggle on joinable tables, let's set all this.state.tableOpenList to false
+      let tableOpenList = this.state.tableOpenList.slice();
+      for (let i = 0; i < tableOpenList.length; ++i) {
+        tableOpenList[i] = false;
+      }
+      this.setState({
+        showUnionTables: false,
+        showJoinTables: !this.state.showJoinTables,
+        tableOpenList: tableOpenList,
+      })
+    }
+  }
+
+  // The following function handles the join of a selected table with the table in tablePanel.
+
+  handleJoinTable(e, i) {
+    console.log("The index of the table we want to join is "+i);
+  }
+
   render() {
     let bodyEle;
     let bottomContentClass = " bottom-content";
@@ -2988,7 +3024,7 @@ class MainBody extends Component {
           <div className="mainbody">
             <div className="">
               <div className={topContentClass}>
-                <div className="col-md-7 small-padding  table-panel">
+                <div className="col-md-7 small-padding table-panel">
                   <TablePanel
                     urlPasted={this.state.urlPasted}
                     usecaseSelected={this.state.usecaseSelected}
@@ -3043,6 +3079,11 @@ class MainBody extends Component {
                     tableOpenList={this.state.tableOpenList}
                     toggleTable={this.toggleTable}
                     selectedTableIndex={this.state.selectedTableIndex}
+                    // Following states are for union/join tables
+                    showUnionTables={this.state.showUnionTables}
+                    showJoinTables={this.state.showJoinTables}
+                    toggleUnionJoin={this.toggleUnionJoin}
+                    handleJoinTable={this.handleJoinTable}
                   />
                 </div>
               </div>
