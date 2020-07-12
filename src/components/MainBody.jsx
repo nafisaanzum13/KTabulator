@@ -5,6 +5,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import SettingModal from "../components/SettingModal";
 import FilterModal from "../components/FilterModal";
+import JoinModal from "../components/JoinModal";
 import LandingPage from "../components/LandingPage";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
@@ -93,6 +94,14 @@ class MainBody extends Component {
       showFilter: false,        // boolean storing whether we want to show column filter or not. Initially false.
       curFilterIndex: -1,       // number storing the index of the column on which we apply the filter. Initially -1 (no filter.)
       dataAndChecked: [],       // array of [data, checked] pairs storing which data are in the filter column, and whether we should keep them.
+    
+      // states below are for table join
+      showJoinModal: false,    // boolean storing whether the join option modal is show or not. Default to false.
+      joinTableData: [],       // 2D array storing the data of the table we want to join from originTableArray. Initially empty.
+      originColOptions: [],    // 1D array storing the selection options for the original table.
+      joinColOptions: [],      // 1D array storing the selection options for the newly selected table.
+      originJoinIndex: -1,     // number storing the index of the column of the original table that we are joining.
+      joinJoinIndex: -1,       // number storing the index of the column of the newly selected table that we are joining.
     };
 
     // functions below are useful during start up
@@ -142,13 +151,17 @@ class MainBody extends Component {
     this.closeModal = this.closeModal.bind(this);
     this.toggleTableSelection = this.toggleTableSelection.bind(this);
     this.toggleUnionJoin = this.toggleUnionJoin.bind(this);
-    this.handleJoinTable = this.handleJoinTable.bind(this);
 
     // functions below are for column filter
     this.openFilter = this.openFilter.bind(this);
     this.cancelFilter = this.cancelFilter.bind(this);
     this.toggleChecked = this.toggleChecked.bind(this);
     this.applyFilter = this.applyFilter.bind(this);
+
+    // functions below are for join feature
+    this.handleJoinTable = this.handleJoinTable.bind(this);
+    this.cancelJoin = this.cancelJoin.bind(this);
+    this.selectJoinColumn = this.selectJoinColumn.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -1830,8 +1843,8 @@ class MainBody extends Component {
 
       // continue from here
       allPromiseReady(promiseArray).then((values) => {
-        console.log(values[0]);
-        console.log(values[1]);
+        // console.log(values[0]);
+        // console.log(values[1]);
         let keyColNeighbours = [];
         keyColNeighbours = updateKeyColNeighbours(
           keyColNeighbours,
@@ -2991,7 +3004,113 @@ class MainBody extends Component {
   // The following function handles the join of a selected table with the table in tablePanel.
 
   handleJoinTable(e, i) {
-    console.log("The index of the table we want to join is "+i);
+    // We need to get two arrays of column headers. One for the table panel table, one for the selected table to join.
+    let tableHeader = this.state.tableHeader.slice();
+    let originTableHeader = [];
+    let joinTableHeader = [];
+
+    // Note: both originTableHeader and joinTableHeader are array of objects with three properties: label, value, and index
+
+    // First we get the header for the origin table
+    // Two cases: 1) first column is "OriginURL" (we started from a table) 2) otherwise, we have started from a subject
+
+    // In this clause, we are in the "Start Table" case.
+    if (tableHeader[0].value !== undefined) {
+      for (let i = 0; i < tableHeader.length; ++i) {
+        originTableHeader.push(tableHeader[i]);
+        originTableHeader[i].index = i;
+      }
+    }
+    // Else, we are in the "Start Subject" case.
+    else {
+      // console.log(tableHeader);
+      // Let's loop through this tableHeader to fill the originTableHeader
+      // We first push on the first element from tableHeader
+      let value = "";
+      for (let i = 0; i < tableHeader[0].length; ++i) {
+        if (i > 0) {
+          value+="&";
+        }
+        value+=tableHeader[0][i].value;
+      }
+      originTableHeader.push(
+        {
+          "value":value,
+          "label":value,
+          "index":0
+        }
+      )
+      for (let i = 1; i < tableHeader.length; ++i) {
+        if (tableHeader[i] === "") {
+          break;
+        }
+        else {
+          originTableHeader.push(
+            {
+              "value":tableHeader[i].value,
+              "label":tableHeader[i].label,
+              "index":i
+            }
+          )
+        }
+      }
+    }
+    // console.log(originTableHeader);
+
+    // Now that we have originTableHeader working correctly, let's get the joinTableHeader
+    let joinTableData = setTableFromHTML(this.state.originTableArray[i]);
+    // console.log(joinTable);
+
+    // We start the index from 1, because 0 index corresponds to OriginURL
+    for (let i = 0; i < joinTableData[0].length; ++i) {
+      joinTableHeader.push(
+        {
+          "value":joinTableData[0][i].data,
+          "label":joinTableData[0][i].data,
+          "index":i
+        }
+      )
+    }
+
+    // Now we take a look at originTableHeader, joinTableHeader, and joinTable
+    // console.log(originTableHeader);
+    // console.log(joinTableHeader);
+    // console.log(joinTableData);
+
+    // It seems like we have fetched the right values. 
+    // Now we use these to update states, so that jon modal can display the right content.
+
+    this.setState({
+      showJoinModal: true,
+      joinTableData: joinTableData,
+      originColOptions: originTableHeader,
+      joinColOptions: joinTableHeader,
+    })
+  }
+
+  // The following function handles cancelling the join operation.
+
+  cancelJoin(e) {
+    this.setState({
+      showJoinModal: false,
+    })
+  }
+
+  // The following function handles the selection of join columns.
+  // It updates either originJoinIndex, or joinJoinIndex, based on the second parameter passed in
+
+  selectJoinColumn(e, table) {
+    console.log(e.index);
+    if (table === "origin") {
+      this.setState({
+        originJoinIndex: e.index,
+      })
+    }
+    else {
+      this.setState({
+        joinJoinIndex: e.index,
+      })
+    }
   }
 
   render() {
@@ -3113,6 +3232,17 @@ class MainBody extends Component {
                   applyFilter={this.applyFilter}
                   cancelFilter={this.cancelFilter}
                   toggleChecked={this.toggleChecked}
+                />
+              </div>
+              <div>
+                <JoinModal 
+                  showJoin={this.state.showJoinModal}
+                  cancelJoin={this.cancelJoin}
+                  originColOptions={this.state.originColOptions}
+                  joinColOptions={this.state.joinColOptions}
+                  originJoinIndex={this.state.originJoinIndex}
+                  joinJoinIndex={this.state.joinJoinIndex}
+                  selectJoinColumn={this.selectJoinColumn}
                 />
               </div>
             </div>

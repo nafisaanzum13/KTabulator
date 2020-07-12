@@ -121,4 +121,13 @@
   overflow: auto;
 }
 
+/* The following class handles the stype for join modal */
+.join-modal {
+  margin-top: 25vh;
+  margin-left: 25vw;
+  height: 30vh;
+  width: 50vw;
+  background-color: #fff;
+}
+
 body.waiting * { cursor: wait; }
