@@ -21,8 +21,13 @@ class JoinModal extends Component {
           className="join-modal"
         >
           <div className="container">
-            <div>
-              Choose join column from table panel
+            <div className="row"> 
+              <div className="col-md-5">
+                Choose join column from table panel
+              </div>
+              <div className="offset-md-1 col-md-5">
+                Choose join column from selected table
+              </div>
             </div>
             <br />
             <div className="row">
@@ -46,7 +51,7 @@ class JoinModal extends Component {
             <br />
             <div className="row">
               <div className="col-md-1 offset-md-9">
-                <button>OK</button>
+                <button onClick={(e) => this.props.runJoin(e)}>OK</button>
               </div>
               <div className="col-md-2">
                 <button onClick={(e) => this.props.cancelJoin(e)}>Cancel</button>

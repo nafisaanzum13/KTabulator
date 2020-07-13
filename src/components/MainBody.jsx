@@ -97,6 +97,7 @@ class MainBody extends Component {
     
       // states below are for table join
       showJoinModal: false,    // boolean storing whether the join option modal is show or not. Default to false.
+      joinTableIndex: -1,      // number storing the index of the table we want to join from originTableArray.
       joinTableData: [],       // 2D array storing the data of the table we want to join from originTableArray. Initially empty.
       originColOptions: [],    // 1D array storing the selection options for the original table.
       joinColOptions: [],      // 1D array storing the selection options for the newly selected table.
@@ -162,6 +163,7 @@ class MainBody extends Component {
     this.handleJoinTable = this.handleJoinTable.bind(this);
     this.cancelJoin = this.cancelJoin.bind(this);
     this.selectJoinColumn = this.selectJoinColumn.bind(this);
+    this.runJoin = this.runJoin.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -2946,6 +2948,18 @@ class MainBody extends Component {
       })
     }
 
+    // Case 16: Undo the joining of two tables.
+    else if (lastAction === "runJoin") {
+      this.setState({
+        curActionInfo: prevState.curActionInfo,
+        tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        optionsMap: prevState.optionsMap,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        lastAction: "",
+      })
+    }
+
     // This is an empty else clause.
     else {
 
@@ -3005,7 +3019,7 @@ class MainBody extends Component {
 
   handleJoinTable(e, i) {
     // We need to get two arrays of column headers. One for the table panel table, one for the selected table to join.
-    let tableHeader = this.state.tableHeader.slice();
+    let tableHeader = _.cloneDeep(this.state.tableHeader);
     let originTableHeader = [];
     let joinTableHeader = [];
 
@@ -3058,7 +3072,8 @@ class MainBody extends Component {
     // console.log(originTableHeader);
 
     // Now that we have originTableHeader working correctly, let's get the joinTableHeader
-    let joinTableData = setTableFromHTML(this.state.originTableArray[i]);
+    let urlOrigin = decodeURIComponent(this.state.urlPasted.slice(30));
+    let joinTableData = setTableFromHTML(this.state.originTableArray[i], urlOrigin);
     // console.log(joinTable);
 
     // We start the index from 1, because 0 index corresponds to OriginURL
@@ -3082,6 +3097,7 @@ class MainBody extends Component {
 
     this.setState({
       showJoinModal: true,
+      joinTableIndex: i,
       joinTableData: joinTableData,
       originColOptions: originTableHeader,
       joinColOptions: joinTableHeader,
@@ -3100,8 +3116,8 @@ class MainBody extends Component {
   // It updates either originJoinIndex, or joinJoinIndex, based on the second parameter passed in
 
   selectJoinColumn(e, table) {
-    console.log(e.index);
-    if (table === "origin") {
+    // console.log(e.index);
+    if (table === "originTable") {
       this.setState({
         originJoinIndex: e.index,
       })
@@ -3111,6 +3127,173 @@ class MainBody extends Component {
         joinJoinIndex: e.index,
       })
     }
+  }
+
+  // The function handles the actual join of two selected tables. 
+  // Currently, the only join type supported is left join
+
+  // Since join is equal to column addition, we need to update tableData, tableHeader, optionsMap, and selectedClassAnnotation
+  runJoin(e) {
+    // First check all the info that we needed
+    let joinTableData = this.state.joinTableData.slice();
+    let originJoinIndex = this.state.originJoinIndex;
+    let joinJoinIndex = this.state.joinJoinIndex;
+    // console.log(joinTableData);
+    // console.log(originJoinIndex);
+    // console.log(joinJoinIndex);
+    
+    // If the join table has n columns, then we are adding n-1 new columns to the table in table panel.
+    // Since we only allow join of one column from each table.
+
+    // Let's deal with tableHeader, optionsMap, and selectedCalssAnnotation, before we move on to tableData.
+    let tableHeaderUpdated = this.state.tableHeader.slice();
+    let optionsMapUpdated = this.state.optionsMap.slice();
+    let selectedClassAnnotationUpdated = this.state.selectedClassAnnotation.slice();
+
+    // First we handle tableHeader's addition.
+    // We first loop through tableHeader to remove all the empty ones
+    for (let i = 0; i < tableHeaderUpdated.length; ++i) {
+      if (tableHeaderUpdated[i] === "") {
+        tableHeaderUpdated.splice(i,1);
+        --i;
+      }
+    }
+    // Now we push on the new columns
+    for (let i = 0; i < joinTableData[0].length; ++i) {
+      if (i !== joinJoinIndex) {
+        tableHeaderUpdated.push(
+          {
+            "value":joinTableData[0][i].data,
+            "label":joinTableData[0][i].data
+          }
+        )
+      }
+    }
+    // console.log(tableHeaderUpdated); 
+
+    // Then we handle optionsMap's addition. We do not need to do much here.
+    // We start the index from 1, because we only add in n-1 new columns.
+    for (let i = 1; i < joinTableData[0].length; ++i) {
+      optionsMapUpdated.push([]);
+    }
+    // console.log(optionsMapUpdated);
+
+    // Then we handle selectedClassAnnotation's addition.
+    let queryPromise = [findClassAnnotation(this.state.originTableArray[this.state.joinTableIndex])];
+    allPromiseReady(queryPromise).then((values) => {
+    for (let i = 0; i < values[0].length; ++i) {
+      if (i !== joinJoinIndex) {
+        selectedClassAnnotationUpdated.push(values[0][i]);
+      }
+    }
+    // console.log(selectedClassAnnotationUpdated);
+    
+    // Lastly, and most importantly, we want to handle tableData's change.
+    // Let's start with an empty tableDataUpdated. Loop through tableData. 
+    // Use a bool to keep track of if tableData[i][originJoinIndex] is in join table. For every yes, we push one element onto tableDataUpdated.
+    // If at the end, the bool is still no, we push on tableData[i] with a bunch of N/A's at the position of the newly added columns.
+    let tableData = _.cloneDeep(this.state.tableData);
+    let tableDataUpdated = [];
+    // Let's first run some code to process joinTableData, so that it shares the same format as tableData
+    // Now, let's deal with tableData. Wee need to handle both data and origin.
+    let joinTableHeader = [];
+    for (let j=0;j<joinTableData[0].length;++j) {
+      joinTableHeader.push(
+        {"value":joinTableData[0][j].data
+        ,"label":joinTableData[0][j].data}
+      )
+    }
+    let joinTableDataUpdated = [];
+    // console.log(tableDataExplore);
+    // This starts the loop for rows
+    for (let i=1;i<joinTableData.length;++i) {
+      let tempRow = [];
+      // This starts the loop for columns
+      for (let j=0;j<joinTableData[i].length;++j) {
+        // First set the data
+        let data = joinTableData[i][j].data;
+        // Then set the origin
+        let origin = [];
+        let originText = joinTableData[i][j].origin+": "+joinTableHeader[j].value+": "+joinTableData[i][j].data;
+        origin.push(originText);
+        tempRow.push({"data":data,"origin":origin});
+      }
+      joinTableDataUpdated.push(tempRow);
+    }
+
+    // Take a look at tableData, and joinTableDataUpdated
+    console.log(tableData);
+    console.log(joinTableDataUpdated);
+
+    // Now we can finally start the join operator
+    for (let i = 0; i < tableData.length; ++i) {
+      let curJoinEntry = tableData[i][originJoinIndex].data;
+      console.log("Current entry to join is "+curJoinEntry);
+      let curEntryFound = false;
+      // We start the index from 1 because the first column in joinTableData is the header
+      for (let j = 0; j < joinTableDataUpdated.length; ++j) {
+        if (joinTableDataUpdated[j][joinJoinIndex].data === curJoinEntry) {
+          // console.log("A match has been found at index "+j);
+          // Let's create the tempRow that we want to push onto tableDataUpdated
+
+          // Code Placeholder
+          let tempRow = _.cloneDeep(tableData[i]);
+          for (let k = 0; k < joinTableDataUpdated[j].length; ++k) {
+            if (k !== joinJoinIndex) {
+              tempRow.push(joinTableDataUpdated[j][k]);
+            }
+          }
+          tableDataUpdated.push(tempRow);
+          curEntryFound = true;
+        }
+      }
+      // If this current entry does NOT have a corresponding entry in the join table,
+      // We push it directly onto tableDataUpdated, with the addtion of some N/A's.
+      if (curEntryFound === false) {
+        // Let's create the tempRow that we want to push onto tableDataUpdated
+
+        // Code Placeholder
+        let tempRow = _.cloneDeep(tableData[i]);
+        for (let k = 0; k < joinTableDataUpdated[0].length; ++k) {
+          if (k !== joinJoinIndex) {
+            tempRow.push(
+              {
+                "data":"N/A",
+                "origin":[]
+              }
+            );
+          }
+        }
+        tableDataUpdated.push(tempRow);
+      }
+    }
+    // console.log(tableDataUpdated);
+
+    // Now, we have correctly got everything we needed: tableDataUpdated, tableHeaderUpdated, optionsMapUpdated, selectedClassAnnotationUpdated
+    // Let's add some support for undo, and do not forget to close the joinModal
+
+    // Support for undo: 
+    let lastAction = "runJoin";
+    let prevState = 
+      {
+        "curActionInfo":this.state.curActionInfo,
+        "tableData":this.state.tableData,
+        "tableHeader":this.state.tableHeader,
+        "optionsMap":this.state.optionsMap,
+        "selectedClassAnnotation":this.state.selectedClassAnnotation,
+      };
+
+    this.setState({
+      curActionInfo:{"task":"afterPopulateColumn"},
+      tableData:tableDataUpdated,
+      tableHeader:tableHeaderUpdated,
+      optionsMap:optionsMapUpdated,
+      selectedClassAnnotation:selectedClassAnnotationUpdated,
+      showJoinModal: false,
+      lastAction:lastAction,
+      prevState:prevState,
+    })
+    })
   }
 
   render() {
@@ -3243,6 +3426,7 @@ class MainBody extends Component {
                   originJoinIndex={this.state.originJoinIndex}
                   joinJoinIndex={this.state.joinJoinIndex}
                   selectJoinColumn={this.selectJoinColumn}
+                  runJoin={this.runJoin}
                 />
               </div>
             </div>
@@ -4172,6 +4356,7 @@ function findClassAnnotation(tableHTML, remainCols, pageName) {
       // console.log(classAnnotation);
     // }
     // console.log(classAnnotation);
+    classAnnotation.splice(0, 0, ["originURL"]);
     return Promise.resolve(classAnnotation);
   });
 }
@@ -4359,16 +4544,18 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
   // Also, since we are not modifying tableDataExplore, we do not need to make a copy of it.
 
   // First, let's deal with keyColIndex. 
-  // We will use the first column such that it's class annotation is not [] or ["Number"]
+  // We will use the first column such that it's class annotation is not [] or ["Number"] or ["originURL"]
   // If no such column exists, we default it to the first column
+
+  console.log(selectedClassAnnotation);
 
   let keyColIndex = -1;
   for (let i=0;i<selectedClassAnnotation.length;++i) {
     if (selectedClassAnnotation[i].length > 0 
-        && !(selectedClassAnnotation[i].length === 1 && selectedClassAnnotation[i][0] === "Number")) {
-      // Note: we have to include the plus 1 here, because selectedClassAnnotation's length is 1 smaller than the number of columns 
-      // Since OriginURL column does not have class annotation
-      keyColIndex = i+1; 
+        && !(selectedClassAnnotation[i].length === 1 && selectedClassAnnotation[i][0] === "Number")
+        && !(selectedClassAnnotation[i].length === 1 && selectedClassAnnotation[i][0] === "originURL")
+      ) {
+      keyColIndex = i; 
       break;
     }
   }
