@@ -645,48 +645,44 @@ class MainBody extends Component {
 
     // Below is the second query we will make.
     // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
-    // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+    // In here we are using the tableCell as SUBJECT.
+    // Also, if these neighbours contain a rdfs:range, we also want to fetch those, which let us support the "populate from same range".
 
-    // SELECT ?p
-    // WHERE {
-    //         dbr:Barack_Obama ?p ?o.
-    //         BIND(STR(?p) AS ?pString ).
-    //         FILTER(
-    //               !(regex(?pString,"abstract|wikiPage|align|caption|image|width|thumbnail|blank","i"))
-    //               && regex(?pString, "ontology|property", "i")
-    //               )
-    // }
+    //   select ?p ?range
+    //   where {
+    //   dbr:Barack_Obama ?p ?o.
+    //   OPTIONAL {?p rdfs:range ?range}.
+    //   }
 
-    // Let's modify the query below to support the "populate from same range feature"
-
-    // let prefixURLTwo = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    // let suffixURLTwo = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    // let queryBodyTwo =
-    //   "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++dbr%3A"
-    //   +regexReplace(this.state.tableData[0][colIndex].data)
-    //   +"+%3Fp+%3Fo.%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22abstract%7CwikiPage%7Calign%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A%0D%0A&";
     let prefixURLTwo =
       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLTwo =
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyTwo =
-      "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
+      "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
       regexReplace(this.state.tableData[0][colIndex].data) +
-      "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+      "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
     let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
     let otherColPromiseSubject = fetchJSON(queryURLTwo);
     promiseArray.push(otherColPromiseSubject);
 
     // Below is the third query we will make.
     // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
+    // And we do not care about rdfs:range.
+
+    // select ?p
+    // where {
+    // ?s ?p dbr:Barack_Obama
+    // }
+
     let prefixURLThree =
       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLThree =
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyThree =
-      "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
+      "select+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
       regexReplace(this.state.tableData[0][colIndex].data) +
-      ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+      "%0D%0A%7D&";
     let queryURLThree = prefixURLThree + queryBodyThree + suffixURLThree;
     let otherColPromiseObject = fetchJSON(queryURLThree);
     promiseArray.push(otherColPromiseObject);
@@ -1822,9 +1818,9 @@ class MainBody extends Component {
       let suffixURLOne =
         "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       let queryBodyOne =
-        "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
+        "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
         regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-        "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+        "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
       let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
       let otherColPromiseSubject = fetchJSON(queryURLOne);
       promiseArray.push(otherColPromiseSubject);
@@ -1836,9 +1832,9 @@ class MainBody extends Component {
       let suffixURLTwo =
         "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       let queryBodyTwo =
-        "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
+        "select+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
         regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-        ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+        "%0D%0A%7D&";
       let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
       let otherColPromiseObject = fetchJSON(queryURLTwo);
       promiseArray.push(otherColPromiseObject);
@@ -1949,14 +1945,9 @@ class MainBody extends Component {
 
     // Below is the first query we will make. In here we are using the tableCell as SUBJECT
 
-    // SELECT ?p ?value
-    // WHERE {
-    //       dbr:Barack_Obama ?p ?value.
-    //       BIND(STR(?p) AS ?pString ).
-    //       FILTER(
-    //               !(regex(?pString,"wikiPage|align|caption|image|width|thumbnail|blank","i"))
-    //               && regex(?pString, "ontology|property", "i")
-    //       )
+    // select ?p ?value
+    // where {
+    // dbr:Barack_Obama ?p ?value.
     // }
 
     let prefixURLOne = 
@@ -1964,33 +1955,28 @@ class MainBody extends Component {
     let suffixURLOne = 
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyOne = 
-      "SELECT+%3Fp+%3Fvalue%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" + 
+      "select+%3Fp+%3Fvalue%0D%0Awhere+%7B%0D%0Adbr%3A" + 
       regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-      "+%3Fp+%3Fvalue.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++%29%0D%0A%7D&";
+      "+%3Fp+%3Fvalue.%0D%0A%7D&";
     let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
     let otherColPromiseSubject = fetchJSON(queryURLOne);
     promiseArray.push(otherColPromiseSubject);
 
     // Below is the second query we will make. In here we are using the tableCell as OBJECT.
 
-    // SELECT ?p ?value
-    // WHERE {
-    //       ?value ?p dbr:Barack_Obama.
-    //       BIND(STR(?p) AS ?pString ).
-    //       FILTER(
-    //               !(regex(?pString,"wikiPage|align|caption|image|width|thumbnail|blank","i"))
-    //               && regex(?pString, "ontology|property", "i")
-    //       )
-    // } 
+    // select ?p ?value
+    // where {
+    // ?value ?p dbr:Barack_Obama.
+    // }
 
     let prefixURLTwo = 
       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
     let suffixURLTwo = 
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyTwo =
-      "SELECT+%3Fp+%3Fvalue%0D%0AWHERE+%7B%0D%0A+++++++%3Fvalue+%3Fp+dbr%3A" +
+      "select+%3Fp+%3Fvalue%0D%0Awhere+%7B%0D%0A%3Fvalue+%3Fp+dbr%3A" +
       regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-      ".%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++%29%0D%0A%7D&";
+      ".%0D%0A%7D&";
     let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
     let otherColPromiseObject = fetchJSON(queryURLTwo);
     promiseArray.push(otherColPromiseObject);
@@ -3222,8 +3208,8 @@ class MainBody extends Component {
     }
 
     // Take a look at tableData, and joinTableDataUpdated
-    console.log(tableData);
-    console.log(joinTableDataUpdated);
+    // console.log(tableData);
+    // console.log(joinTableDataUpdated);
 
     // Now we can finally start the join operator
     for (let i = 0; i < tableData.length; ++i) {
@@ -3530,14 +3516,35 @@ function removePrefix(str) {
 // It returns the updated keyColNeighbours
 function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
 
-  // we first sort the resultsBinding by p.value.slice(28)
-  let processedBinding = 
-    resultsBinding.sort((a, b) =>
-      a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
-    );
+  // we first filter out those in resultsBinding according to three criterias
 
-  // we then filter out those in resultsBinding with p.value.slice(28).length equal to 1
-  processedBinding = processedBinding.filter(a => a.p.value.slice(28).length > 1);
+  // 1) p.value.slice(28).length must > 1
+  // 2) p.value must include "ontology" or "property" (so it is one of dbo:XXXX or dbp:XXXX)
+  // 3) p.value must not include certain strings (which likely correspond to meaningless attributes)
+
+  let processedBinding = resultsBinding.filter(
+    a => a.p.value.slice(28).length > 1 &&
+         (a.p.value.includes("ontology") || a.p.value.includes("property")) &&
+         !(a.p.value.includes("wikiPage") 
+         || a.p.value.includes("align") 
+         || a.p.value.includes("abstract") 
+         || a.p.value.includes("caption") 
+         || a.p.value.includes("image") 
+         || a.p.value.includes("width") 
+         || a.p.value.includes("thumbnail") 
+         || a.p.value.includes("blank")
+         || a.p.value.includes("fec")
+         || a.p.value.includes("viaf")
+         || a.p.value.includes("soundRecording")
+         || a.p.value.includes("votesmart")
+         )
+  );
+
+
+  // we then sort the resultsBinding by p.value.slice(28)
+  processedBinding = processedBinding.sort((a, b) =>
+    a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
+  );
 
   // Let's only start the loop is processedBinding is non-empty
   if (processedBinding.length > 0) {
@@ -3644,14 +3651,35 @@ function updatePreviewInfo(resultsBinding, type) {
 
   // Let's do some preprocessing of resultsBinding. We want to do sorting, deduping, and some filtering.
 
-  // We first sort the resultsBinding by p.value.slice(28)
-  let processedBinding = 
-    resultsBinding.sort((a, b) =>
-      a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
-    );
+  // we first filter out those in resultsBinding according to three criterias
 
-  // We then filter out those in resultsBinding with p.value.slice(28).length equal to 1
-  processedBinding = processedBinding.filter(a => a.p.value.slice(28).length > 1);
+  // 1) p.value.slice(28).length must > 1
+  // 2) p.value must include "ontology" or "property" (so it is one of dbo:XXXX or dbp:XXXX)
+  // 3) p.value must not include certain strings (which likely correspond to meaningless attributes)
+
+  let processedBinding = resultsBinding.filter(
+    a => a.p.value.slice(28).length > 1 &&
+         (a.p.value.includes("ontology") || a.p.value.includes("property")) &&
+         !(a.p.value.includes("wikiPage") 
+         || a.p.value.includes("align") 
+         || a.p.value.includes("abstract") 
+         || a.p.value.includes("caption") 
+         || a.p.value.includes("image") 
+         || a.p.value.includes("width") 
+         || a.p.value.includes("thumbnail") 
+         || a.p.value.includes("blank")
+         || a.p.value.includes("fec")
+         || a.p.value.includes("viaf")
+         || a.p.value.includes("soundRecording")
+         || a.p.value.includes("votesmart")
+         )
+  );
+
+
+  // we then sort the resultsBinding by p.value.slice(28)
+  processedBinding = processedBinding.sort((a, b) =>
+    a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
+  );
 
   // Now let's create the previewInfoArray based on processedBinding
   // console.log(processedBinding);
@@ -4603,16 +4631,16 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
 
   // Below is the first query we will make.
   // This query fetches the neighbours for tableData[0][keyColIndex], so the first cell in column with index keyColIndex
-  // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+  // In here we are using the tableCell as SUBJECT
 
   let prefixURLOne =
     "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
   let suffixURLOne =
     "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
   let queryBodyOne =
-    "SELECT+%3Fp+%3Frange%0D%0AWHERE+%7B%0D%0A+++++++dbr%3A" +
+    "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
     regexReplace(tableData[0][keyColIndex].data) +
-    "+%3Fp+%3Fo.%0D%0A+++++++OPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A+++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A+++++++FILTER%28%0D%0A++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A++++++++++++++%29%0D%0A%7D&";
+    "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
   let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
   let otherColPromiseSubject = fetchJSON(queryURLOne);
   promiseArray.push(otherColPromiseSubject);
@@ -4626,7 +4654,7 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
   let queryBodyTwo =
     "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
     regexReplace(tableData[0][keyColIndex].data) +
-    ".%0D%0A++++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++++FILTER%28%0D%0A+++++++++++++++%21%28regex%28%3FpString%2C%22wikiPage%7Calign%7Cabstract%7Ccaption%7Cimage%7Cwidth%7Cthumbnail%7Cblank%22%2C%22i%22%29%29+%0D%0A+++++++++++++++%26%26+regex%28%3FpString%2C+%22ontology%7Cproperty%22%2C+%22i%22%29%0D%0A+++++++++++++++%29%0D%0A%7D%0D%0A&";
+    "%0D%0A%7D&";
   let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
   let otherColPromiseObject = fetchJSON(queryURLTwo);
   promiseArray.push(otherColPromiseObject);
