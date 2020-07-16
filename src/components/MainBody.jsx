@@ -116,6 +116,7 @@ class MainBody extends Component {
     this.selectColHeader = this.selectColHeader.bind(this);
     this.getKeyOptions = this.getKeyOptions.bind(this);
     this.getOtherOptions = this.getOtherOptions.bind(this);
+    this.getNeighbourPromise = this.getNeighbourPromise.bind(this);
     this.populateKeyColumn = this.populateKeyColumn.bind(this);
     this.getOtherColPromise = this.getOtherColPromise.bind(this);
     // this.getOtherColPromiseTwo = this.getOtherColPromiseTwo.bind(this);
@@ -586,6 +587,15 @@ class MainBody extends Component {
     }
   }
 
+  // This function is a helper function for populateKeyColumn. It is similar to getOtherColPromise.
+  // It makes an array of queries to find the union of neighbours for the first column (key column).
+
+  // It takes in one parameter "type", which is either "subject" or "object"
+
+  getNeighbourPromise(type) {
+
+  }
+
   // This function populates the key column
   // It also fetches the neighbours of the key column (based on the first cell in the table)
   // as well as setting the origins of cells in the key column
@@ -654,17 +664,17 @@ class MainBody extends Component {
     //   OPTIONAL {?p rdfs:range ?range}.
     //   }
 
-    let prefixURLTwo =
-      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    let suffixURLTwo =
-      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyTwo =
-      "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
-      regexReplace(this.state.tableData[0][colIndex].data) +
-      "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
-    let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
-    let otherColPromiseSubject = fetchJSON(queryURLTwo);
-    promiseArray.push(otherColPromiseSubject);
+    // let prefixURLTwo =
+    //   "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLTwo =
+    //   "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    // let queryBodyTwo =
+    //   "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
+    //   regexReplace(this.state.tableData[0][colIndex].data) +
+    //   "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
+    // let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
+    // let otherColPromiseSubject = fetchJSON(queryURLTwo);
+    // promiseArray.push(otherColPromiseSubject);
 
     // Below is the third query we will make.
     // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
@@ -675,17 +685,17 @@ class MainBody extends Component {
     // ?s ?p dbr:Barack_Obama
     // }
 
-    let prefixURLThree =
-      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    let suffixURLThree =
-      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyThree =
-      "select+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
-      regexReplace(this.state.tableData[0][colIndex].data) +
-      "%0D%0A%7D&";
-    let queryURLThree = prefixURLThree + queryBodyThree + suffixURLThree;
-    let otherColPromiseObject = fetchJSON(queryURLThree);
-    promiseArray.push(otherColPromiseObject);
+    // let prefixURLThree =
+    //   "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLThree =
+    //   "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    // let queryBodyThree =
+    //   "select+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
+    //   regexReplace(this.state.tableData[0][colIndex].data) +
+    //   "%0D%0A%7D&";
+    // let queryURLThree = prefixURLThree + queryBodyThree + suffixURLThree;
+    // let otherColPromiseObject = fetchJSON(queryURLThree);
+    // promiseArray.push(otherColPromiseObject);
 
     allPromiseReady(promiseArray).then((values) => {
       // let's first work with the first promise result: fill in table data with the entities we have fetched
@@ -693,114 +703,66 @@ class MainBody extends Component {
       // This part sets the data for each cell
       let tableData = _.cloneDeep(this.state.tableData);
 
-      // First we get the correct number of rows, which is equal to min(values[0].results.bindings.length, initialRowNum)
-      let updatedRowCount = Math.min(values[0].results.bindings.length, initialRowNum);
-      // console.log("Original length is "+values[0].results.bindings.length);
-      // console.log("Row Count is: "+updatedRowCount);
+      tableData = setFirstColumnData(
+        values[0].results.bindings,
+        tableData,
+        this.state.tableHeader,
+        colIndex
+      )
 
-      // If tableData currently has too many rows, we slice it.
-      if (tableData.length > updatedRowCount) {
-        tableData = tableData.slice(0,updatedRowCount);
-      }
-      // Else, if tableData currently has too few rows, we need to add some empty rows.
-      else if (tableData.length < updatedRowCount) {
-        let rowsToAdd = updatedRowCount - tableData.length;
-        for (let i = 0; i < rowsToAdd; ++i) {
-          let tempRow = [];
-          for (let j = 0; j < initialColNum; ++j) {
-            tempRow.push({ data: "", origin: [] });
-          }
-          tableData.push(tempRow);
-        }
-      }
+      console.log(tableData);
 
-      let rowNum = tableData.length;
-      // console.log("Number of rows is "+rowNum);
+      // We need to make modification here: find neighbours of a column, instead of neighbours of a cell
+      // To do this, we need to use this tableData to ask more queries (number of queires is equal to tableData.length)
 
-      // We do not want to overwrite entries that users have filled in.
-      // Let's calculate how many entries we want to fill in.
-      let emptyEntryCount = rowNum;
-      for (let i = 0; i < rowNum; ++i) {
-        if (tableData[i][colIndex].data !== "") {
-          emptyEntryCount--;
-        } else {
-          break;
-        }
-      }
-      // console.log("number of empty entries is "+emptyEntryCount);
 
-      let startingIndex = rowNum - emptyEntryCount;
-      // console.log("Starting index is"+startingIndex);
+      // // let's now work with the second and third promise result: update the selection options for non-key columns
 
-      for (let i = 0; i < emptyEntryCount; ++i) {
-        tableData[i + startingIndex][colIndex].data = 
-          values[0].results.bindings[i].somevar.value.slice(28);
-      }
+      // let keyColNeighbours = [];
 
-      // second part sets the origin for each cell
-      for (let i = 0; i < rowNum; ++i) {
-        // We need to process the tableHeader[colIndex] array to get the correct text for origin
-        let labelText = "";
-        for (let j = 0; j < this.state.tableHeader[colIndex].length; ++j) {
-          if (j > 0) {
-            labelText += "&";
-          }
-          labelText += this.state.tableHeader[colIndex][j].value;
-        }
-        let tempOrigin = labelText + ":" + tableData[i][colIndex].data;
-        tableData[i][colIndex].origin.push(tempOrigin);
-      }
+      // keyColNeighbours = updateKeyColNeighbours(
+      //   keyColNeighbours,
+      //   values[1].results.bindings,
+      //   "subject"
+      // );
+      // keyColNeighbours = updateKeyColNeighbours(
+      //   keyColNeighbours,
+      //   values[2].results.bindings,
+      //   "object"
+      // );
+      // // console.log(keyColNeighbours);
 
-      // Now we dedup by tableData by tableData[i][0].data
-      tableData = _.uniqBy(tableData, function(x) {return x[0].data;});
+      // let optionsMap = this.state.optionsMap.slice();
+      // for (let i = 0; i < optionsMap.length; ++i) {
+      //   if (i !== colIndex) {
+      //     optionsMap[i] = keyColNeighbours;
+      //   }
+      // }
 
-      // let's now work with the second and third promise result: update the selection options for non-key columns
 
-      let keyColNeighbours = [];
-
-      keyColNeighbours = updateKeyColNeighbours(
-        keyColNeighbours,
-        values[1].results.bindings,
-        "subject"
-      );
-      keyColNeighbours = updateKeyColNeighbours(
-        keyColNeighbours,
-        values[2].results.bindings,
-        "object"
-      );
-      // console.log(keyColNeighbours);
-
-      let optionsMap = this.state.optionsMap.slice();
-      for (let i = 0; i < optionsMap.length; ++i) {
-        if (i !== colIndex) {
-          optionsMap[i] = keyColNeighbours;
-        }
-      }
+      // // Support for undo: 
+      // // Let's save the previous state in an object
+      // let lastAction = "populateKeyColumn";
+      // let prevState = 
+      //   {
+      //     "keyColIndex":this.state.keyColIndex,
+      //     "keyColNeighbours":this.state.keyColNeighbours,
+      //     "curActionInfo":this.state.curActionInfo,
+      //     "tableData":this.state.tableData,
+      //     "optionsMap":this.state.optionsMap
+      //   };
 
       document.body.classList.remove('waiting');
 
-      // Support for undo: 
-      // Let's save the previous state in an object
-      let lastAction = "populateKeyColumn";
-      let prevState = 
-        {
-          "keyColIndex":this.state.keyColIndex,
-          "keyColNeighbours":this.state.keyColNeighbours,
-          "curActionInfo":this.state.curActionInfo,
-          "tableData":this.state.tableData,
-          "optionsMap":this.state.optionsMap
-        };
-
-
-      this.setState({
-        keyColIndex: colIndex,
-        keyColNeighbours: keyColNeighbours,
-        curActionInfo: {"task":"afterPopulateColumn"},
-        tableData: tableData,
-        optionsMap: optionsMap,
-        lastAction: lastAction,
-        prevState: prevState,
-      });
+      // this.setState({
+      //   keyColIndex: colIndex,
+      //   keyColNeighbours: keyColNeighbours,
+      //   curActionInfo: {"task":"afterPopulateColumn"},
+      //   tableData: tableData,
+      //   optionsMap: optionsMap,
+      //   lastAction: lastAction,
+      //   prevState: prevState,
+      // });
     });
   }
 
@@ -858,7 +820,7 @@ class MainBody extends Component {
   // }
 
   // The following function serves as a helper function for "populateOtherColumn" and "populateSameNeighbour"
-  // It makes an array of querie, which may affect the performance of our system. Let's change it now.
+  // It makes an array of queries, which may affect the performance of our system. Let's change it now.
 
   getOtherColPromise(neighbour, type) {
     let promiseArray = [];
@@ -4700,17 +4662,88 @@ function getTableStates(tableDataExplore, selectedClassAnnotation) {
 // This function renders this.props.tableData[i][j].data in a nicer way. 
 // It changes"_" to " ", and removes everything after the first occurence of (
 
-  function niceRender(str) {
-    let resultStr = str;
-    let bracketIndex = str.indexOf("(");
-    // If ( is present in a string, we want to remove it
-    // We include the -1 because usually ( is preceeded by _
-    if (bracketIndex !== -1) {
-      resultStr = resultStr.slice(0, bracketIndex-1);
+function niceRender(str) {
+  let resultStr = str;
+  let bracketIndex = str.indexOf("(");
+  // If ( is present in a string, we want to remove it
+  // We include the -1 because usually ( is preceeded by _
+  if (bracketIndex !== -1) {
+    resultStr = resultStr.slice(0, bracketIndex-1);
+  }
+  // now we turn all "_" into " "
+  return resultStr.replace(/_/g, " ");
+}
+
+// This function takes in four parameters: 
+// 1) resultsBinding: an array of JSON values representing entities satisfying the first column
+// 2) tableData:      the tableData before update
+// 3) tableHeader:    this.state.tableHeader
+// 4) colIndex:       which column usersa are filling (usually 0)
+
+// and returns the updated tableData, after updates have been made to the first column.
+
+function setFirstColumnData(resultsBinding, tableData, tableHeader, colIndex) {
+  // First we get the correct number of rows, which is equal to min(values[0].results.bindings.length, initialRowNum)
+  let updatedRowCount = Math.min(resultsBinding.length, initialRowNum);
+  // console.log("Original length is "+values[0].results.bindings.length);
+  // console.log("Row Count is: "+updatedRowCount);
+
+  // If tableData currently has too many rows, we slice it.
+  if (tableData.length > updatedRowCount) {
+    tableData = tableData.slice(0,updatedRowCount);
+  }
+  // Else, if tableData currently has too few rows, we need to add some empty rows.
+  else if (tableData.length < updatedRowCount) {
+    let rowsToAdd = updatedRowCount - tableData.length;
+    for (let i = 0; i < rowsToAdd; ++i) {
+      let tempRow = [];
+      for (let j = 0; j < initialColNum; ++j) {
+        tempRow.push({ data: "", origin: [] });
+      }
+      tableData.push(tempRow);
     }
-    // now we turn all "_" into " "
-    return resultStr.replace(/_/g, " ");
   }
 
-// Testing repo change
+  let rowNum = tableData.length;
+  // console.log("Number of rows is "+rowNum);
+
+  // We do not want to overwrite entries that users have filled in.
+  // Let's calculate how many entries we want to fill in.
+  let emptyEntryCount = rowNum;
+  for (let i = 0; i < rowNum; ++i) {
+    if (tableData[i][colIndex].data !== "") {
+      emptyEntryCount--;
+    } else {
+      break;
+    }
+  }
+  // console.log("number of empty entries is "+emptyEntryCount);
+
+  let startingIndex = rowNum - emptyEntryCount;
+  // console.log("Starting index is"+startingIndex);
+
+  for (let i = 0; i < emptyEntryCount; ++i) {
+    tableData[i + startingIndex][colIndex].data = 
+      resultsBinding[i].somevar.value.slice(28);
+  }
+
+  // second part sets the origin for each cell
+  for (let i = 0; i < rowNum; ++i) {
+    // We need to process the tableHeader[colIndex] array to get the correct text for origin
+    let labelText = "";
+    for (let j = 0; j < tableHeader[colIndex].length; ++j) {
+      if (j > 0) {
+        labelText += "&";
+      }
+      labelText += tableHeader[colIndex][j].value;
+    }
+    let tempOrigin = labelText + ":" + tableData[i][colIndex].data;
+    tableData[i][colIndex].origin.push(tempOrigin);
+  }
+
+  // Now we dedup by tableData by tableData[i][0].data
+  tableData = _.uniqBy(tableData, function(x) {return x[0].data;});
+  return tableData;
+}
+
 
