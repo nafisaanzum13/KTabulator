@@ -349,6 +349,7 @@ class ActionPanel extends Component {
                   actionInfo.colIndex,
                   actionInfo.neighbour,
                   actionInfo.neighbourIndex,
+                  actionInfo.count,
                   actionInfo.type,
                   actionInfo.range
                 )

@@ -527,6 +527,7 @@ class MainBody extends Component {
       // The first few lines fix some pass by reference problems
       let evalue = e.value;
       let elabel = e.label;
+      let ecount = e.count;
       tableHeader[colIndex] = { value: evalue, label: elabel };
       // We want to change the label of non-key column headers with respect to the label of key column
       // We first create the label text for the key column
@@ -558,16 +559,9 @@ class MainBody extends Component {
       tempObj["colIndex"] = colIndex;
       tempObj["neighbour"] = e.value;
       tempObj["type"] = e.type;
+      tempObj["count"] = e.count;
       // We want to deal with duplicate neighbour names since we are selecting column headers for non-key columns
-      // let arr = elabel.split("-");
-      // if (arr.length > 1 && !isNaN(Number(arr[1]) - 1)) {
-      //   // arr[1] stores the index of the neighbour with duplicate names
-      //   tempObj["neighbourIndex"] = Number(arr[1]) - 1;
-      // } else {
-      //   // If neighbourIndex is equal to -1, that means this property has no duplicate names
-      //   tempObj["neighbourIndex"] = -1;
-      // }
-      if (elabel.includes("*")) {
+      if (ecount > 1) {
         tempObj["neighbourIndex"] = 0;
       }
       else {
@@ -590,11 +584,12 @@ class MainBody extends Component {
   // This function is a helper function for populateKeyColumn. It is similar to getOtherColPromise.
   // It makes an array of queries to find the union of neighbours for the first column (key column).
 
-  // It takes in two parameters
+  // It takes in three parameters
   // 1) tableData: tableData (with updated values in the first column)
   // 2) type: either "subject" or "object"
+  // 3) colIndex:  integer representing which column's neighbours we are fetching
 
-  getNeighbourPromise(tableData, type) {
+  getNeighbourPromise(tableData, type, colIndex) {
     // console.log(tableData);
     // console.log(type);
     let promiseArray = [];
@@ -603,7 +598,11 @@ class MainBody extends Component {
     let suffixURL =
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     for (let i = 0; i < tableData.length; ++i) {
-      let cellValue = regexReplace(tableData[i][0].data);
+      let cellValue = regexReplace(tableData[i][colIndex].data);
+      // N/A's will block the search, let's replace it with some string that does not block the search
+      if (cellValue === "N/A") {
+        cellValue = "NONEXISTINGSTRING";
+      }
       // console.log(cellValue);
       let queryBody;
       if (type === "subject") {
@@ -743,8 +742,8 @@ class MainBody extends Component {
 
       // We need to make modification here: find neighbours of a column, instead of neighbours of a cell
       // To do this, we need to use this tableData to ask more queries (number of queires is equal to tableData.length)
-      let promiseArrayOne = this.getNeighbourPromise(tableData, "subject");
-      let promiseArrayTwo = this.getNeighbourPromise(tableData, "object");
+      let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", 0);
+      let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", 0);
       allPromiseReady(promiseArrayOne).then((valuesOne) => {
       allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
@@ -761,7 +760,7 @@ class MainBody extends Component {
           )
           subjectNeighbourArray.push(temp);
         }
-        processAllNeighbours(subjectNeighbourArray);
+        let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
 
         // Then we deal with object neighbours, so valuesTwo
         let objectNeighbourArray = [];
@@ -773,57 +772,46 @@ class MainBody extends Component {
           )
           objectNeighbourArray.push(temp);
         }
-        processAllNeighbours(objectNeighbourArray);
+        let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
 
+        // console.log(processedSubjectNeighbours);
+        // console.log(processedObjectNeighbours);
 
+        // we now concat subjectNeighbours and objectNeighbours together
+        let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
 
-        // // let's now work with the second and third promise result: update the selection options for non-key columns
+        // console.log(keyColNeighbours);
 
-        // let keyColNeighbours = [];
+        let optionsMap = this.state.optionsMap.slice();
+        for (let i = 0; i < optionsMap.length; ++i) {
+          if (i !== colIndex) {
+            optionsMap[i] = keyColNeighbours;
+          }
+        }
 
-        // keyColNeighbours = updateKeyColNeighbours(
-        //   keyColNeighbours,
-        //   values[1].results.bindings,
-        //   "subject"
-        // );
-        // keyColNeighbours = updateKeyColNeighbours(
-        //   keyColNeighbours,
-        //   values[2].results.bindings,
-        //   "object"
-        // );
-        // // console.log(keyColNeighbours);
-
-        // let optionsMap = this.state.optionsMap.slice();
-        // for (let i = 0; i < optionsMap.length; ++i) {
-        //   if (i !== colIndex) {
-        //     optionsMap[i] = keyColNeighbours;
-        //   }
-        // }
-
-
-        // // Support for undo: 
-        // // Let's save the previous state in an object
-        // let lastAction = "populateKeyColumn";
-        // let prevState = 
-        //   {
-        //     "keyColIndex":this.state.keyColIndex,
-        //     "keyColNeighbours":this.state.keyColNeighbours,
-        //     "curActionInfo":this.state.curActionInfo,
-        //     "tableData":this.state.tableData,
-        //     "optionsMap":this.state.optionsMap
-        //   };
+        // Support for undo: 
+        // Let's save the previous state in an object
+        let lastAction = "populateKeyColumn";
+        let prevState = 
+          {
+            "keyColIndex":this.state.keyColIndex,
+            "keyColNeighbours":this.state.keyColNeighbours,
+            "curActionInfo":this.state.curActionInfo,
+            "tableData":this.state.tableData,
+            "optionsMap":this.state.optionsMap
+          };
 
         document.body.classList.remove('waiting');
 
-        // this.setState({
-        //   keyColIndex: colIndex,
-        //   keyColNeighbours: keyColNeighbours,
-        //   curActionInfo: {"task":"afterPopulateColumn"},
-        //   tableData: tableData,
-        //   optionsMap: optionsMap,
-        //   lastAction: lastAction,
-        //   prevState: prevState,
-        // });
+        this.setState({
+          keyColIndex: colIndex,
+          keyColNeighbours: keyColNeighbours,
+          curActionInfo: {"task":"afterPopulateColumn"},
+          tableData: tableData,
+          optionsMap: optionsMap,
+          lastAction: lastAction,
+          prevState: prevState,
+        });
       })
       })
     });
@@ -926,7 +914,7 @@ class MainBody extends Component {
     return promiseArray;
   }
 
-  populateOtherColumn(e, colIndex, neighbour, neighbourIndex, type, range) {
+  populateOtherColumn(e, colIndex, neighbour, neighbourIndex, count, type, range) {
     document.body.classList.add('waiting');
 
     // console.log(neighbourIndex);
@@ -1014,11 +1002,11 @@ class MainBody extends Component {
 
       // Note: the index we use in the values array has to be this.state.keyEntryIndex, because that one is the entry currently in effect
       let maxCount = Math.min(
-        values[this.state.keyEntryIndex].results.bindings.length,
+        count,
         maxNeighbourCount
       );
-      // console.log("neighbour index is "+neighbourIndex);
-      // console.log("max count is "+maxCount);
+      console.log("neighbour index is "+neighbourIndex);
+      console.log("max count is "+maxCount);
       let remainNeighbourCount = maxCount - neighbourIndex - 1;
       // console.log("remain neighbour count is "+remainNeighbourCount);
       let tempObj = {};
@@ -4850,8 +4838,14 @@ function processAllNeighbours(allNeighboursArray) {
   // Now we want to sort (and potentially filter) keyColNeighbours, by filledCount 
   keyColNeighbours.sort((a,b) => a.filledCount < b.filledCount ? 1 : -1);
 
+  // Before we return, let's change the label to include filledCount
+  for (let i = 0; i < keyColNeighbours.length; ++i) {
+    let filledPercent = Math.round(keyColNeighbours[i].filledCount/allNeighboursArray.length * 100) / 100;
+    keyColNeighbours[i].label = keyColNeighbours[i].label + " (" + filledPercent + ")";
+  }
+
   // Take a look at keyColNeighbours
-  console.log(keyColNeighbours);
+  // console.log(keyColNeighbours);
 
   return keyColNeighbours;
 }
