@@ -590,10 +590,30 @@ class MainBody extends Component {
   // This function is a helper function for populateKeyColumn. It is similar to getOtherColPromise.
   // It makes an array of queries to find the union of neighbours for the first column (key column).
 
-  // It takes in one parameter "type", which is either "subject" or "object"
+  // It takes in two parameters
+  // 1) tableData: tableData (with updated values in the first column)
+  // 2) type: either "subject" or "object"
 
-  getNeighbourPromise(type) {
-
+  getNeighbourPromise(tableData, type) {
+    console.log(tableData);
+    console.log(type);
+    let promiseArray = [];
+    let prefixURL =
+      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    let suffixURL =
+      "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    for (let i = 0; i < tableData.length; ++i) {
+      let cellValue = regexReplace(tableData[i][0].data);
+      console.log(cellValue);
+      let queryBody =
+        "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
+        cellValue +
+        "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
+      let queryURL = prefixURL + queryBody + suffixURL;
+      let curPromise = fetchJSON(queryURL);
+      promiseArray.push(curPromise);
+    }
+    return promiseArray;
   }
 
   // This function populates the key column
@@ -710,59 +730,77 @@ class MainBody extends Component {
         colIndex
       )
 
-      console.log(tableData);
+      // console.log(tableData);
 
       // We need to make modification here: find neighbours of a column, instead of neighbours of a cell
       // To do this, we need to use this tableData to ask more queries (number of queires is equal to tableData.length)
+      let promiseArray = this.getNeighbourPromise(tableData, "subject");
+      allPromiseReady(promiseArray).then((values) => {
+
+        // console.log(values);
+
+        // Now let's figure out how we want to work with each values[i]
+        let allNeighboursArray = [];
+        for (let i = 0; i < values.length; ++i) {
+          let temp = updateKeyColNeighbours(
+            [],
+            values[i].results.bindings,
+            "subject"
+          )
+          allNeighboursArray.push(temp);
+        }
+        processAllNeighbours(allNeighboursArray);
 
 
-      // // let's now work with the second and third promise result: update the selection options for non-key columns
 
-      // let keyColNeighbours = [];
+        // // let's now work with the second and third promise result: update the selection options for non-key columns
 
-      // keyColNeighbours = updateKeyColNeighbours(
-      //   keyColNeighbours,
-      //   values[1].results.bindings,
-      //   "subject"
-      // );
-      // keyColNeighbours = updateKeyColNeighbours(
-      //   keyColNeighbours,
-      //   values[2].results.bindings,
-      //   "object"
-      // );
-      // // console.log(keyColNeighbours);
+        // let keyColNeighbours = [];
 
-      // let optionsMap = this.state.optionsMap.slice();
-      // for (let i = 0; i < optionsMap.length; ++i) {
-      //   if (i !== colIndex) {
-      //     optionsMap[i] = keyColNeighbours;
-      //   }
-      // }
+        // keyColNeighbours = updateKeyColNeighbours(
+        //   keyColNeighbours,
+        //   values[1].results.bindings,
+        //   "subject"
+        // );
+        // keyColNeighbours = updateKeyColNeighbours(
+        //   keyColNeighbours,
+        //   values[2].results.bindings,
+        //   "object"
+        // );
+        // // console.log(keyColNeighbours);
+
+        // let optionsMap = this.state.optionsMap.slice();
+        // for (let i = 0; i < optionsMap.length; ++i) {
+        //   if (i !== colIndex) {
+        //     optionsMap[i] = keyColNeighbours;
+        //   }
+        // }
 
 
-      // // Support for undo: 
-      // // Let's save the previous state in an object
-      // let lastAction = "populateKeyColumn";
-      // let prevState = 
-      //   {
-      //     "keyColIndex":this.state.keyColIndex,
-      //     "keyColNeighbours":this.state.keyColNeighbours,
-      //     "curActionInfo":this.state.curActionInfo,
-      //     "tableData":this.state.tableData,
-      //     "optionsMap":this.state.optionsMap
-      //   };
+        // // Support for undo: 
+        // // Let's save the previous state in an object
+        // let lastAction = "populateKeyColumn";
+        // let prevState = 
+        //   {
+        //     "keyColIndex":this.state.keyColIndex,
+        //     "keyColNeighbours":this.state.keyColNeighbours,
+        //     "curActionInfo":this.state.curActionInfo,
+        //     "tableData":this.state.tableData,
+        //     "optionsMap":this.state.optionsMap
+        //   };
 
-      document.body.classList.remove('waiting');
+        document.body.classList.remove('waiting');
 
-      // this.setState({
-      //   keyColIndex: colIndex,
-      //   keyColNeighbours: keyColNeighbours,
-      //   curActionInfo: {"task":"afterPopulateColumn"},
-      //   tableData: tableData,
-      //   optionsMap: optionsMap,
-      //   lastAction: lastAction,
-      //   prevState: prevState,
-      // });
+        // this.setState({
+        //   keyColIndex: colIndex,
+        //   keyColNeighbours: keyColNeighbours,
+        //   curActionInfo: {"task":"afterPopulateColumn"},
+        //   tableData: tableData,
+        //   optionsMap: optionsMap,
+        //   lastAction: lastAction,
+        //   prevState: prevState,
+        // });
+      })
     });
   }
 
@@ -3499,6 +3537,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
          || a.p.value.includes("viaf")
          || a.p.value.includes("soundRecording")
          || a.p.value.includes("votesmart")
+         || a.p.value.includes("wordnet")
          )
   );
 
@@ -3547,7 +3586,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           let objType = type;
           // set count
           let objCount = neighbourCount;
-          let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount};
+          let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount, "filledCount":1};
           // Lastly, if the current type is "subject", we want to see if this neighbour has a range
           if (type === "subject" && neighbourRange !== "") {
             tempObj["range"] = neighbourRange;
@@ -3580,7 +3619,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
       let objType = type;
       // set count
       let objCount = neighbourCount;
-      let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount};
+      let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount, "filledCount":1};
       // Lastly, if the current type is "subject", we want to see if this neighbour has a range
       if (type === "subject" && neighbourRange !== "") {
         tempObj["range"] = neighbourRange;
@@ -4744,6 +4783,23 @@ function setFirstColumnData(resultsBinding, tableData, tableHeader, colIndex) {
   // Now we dedup by tableData by tableData[i][0].data
   tableData = _.uniqBy(tableData, function(x) {return x[0].data;});
   return tableData;
+}
+
+// The following function takes in 2D array recording information of neighbours for the search column
+
+// It return a desired oneD keyColNeighbours that we can give to selection Headers.
+
+function processAllNeighbours(allNeighboursArray) {
+  let keyColNeighbours = [];
+  console.log(allNeighboursArray);
+
+  for (let i = 0; i < allNeighboursArray.length; ++i) {
+    keyColNeighbours = keyColNeighbours.concat(allNeighboursArray[i]);
+  }
+
+  // Now we sort keyColNeighbours based on value
+  keyColNeighbours.sort((a,b) => a.value < b.value ? -1 : 1);
+  console.log(keyColNeighbours);
 }
 
 
