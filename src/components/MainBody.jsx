@@ -595,8 +595,8 @@ class MainBody extends Component {
   // 2) type: either "subject" or "object"
 
   getNeighbourPromise(tableData, type) {
-    console.log(tableData);
-    console.log(type);
+    // console.log(tableData);
+    // console.log(type);
     let promiseArray = [];
     let prefixURL =
       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
@@ -604,11 +604,20 @@ class MainBody extends Component {
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     for (let i = 0; i < tableData.length; ++i) {
       let cellValue = regexReplace(tableData[i][0].data);
-      console.log(cellValue);
-      let queryBody =
-        "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
-        cellValue +
-        "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
+      // console.log(cellValue);
+      let queryBody;
+      if (type === "subject") {
+        queryBody =
+          "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
+          cellValue +
+          "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
+      }
+      else {
+        queryBody = 
+          "select+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
+          cellValue +
+          "%0D%0A%7D&";
+      }
       let queryURL = prefixURL + queryBody + suffixURL;
       let curPromise = fetchJSON(queryURL);
       promiseArray.push(curPromise);
@@ -734,22 +743,37 @@ class MainBody extends Component {
 
       // We need to make modification here: find neighbours of a column, instead of neighbours of a cell
       // To do this, we need to use this tableData to ask more queries (number of queires is equal to tableData.length)
-      let promiseArray = this.getNeighbourPromise(tableData, "subject");
-      allPromiseReady(promiseArray).then((values) => {
+      let promiseArrayOne = this.getNeighbourPromise(tableData, "subject");
+      let promiseArrayTwo = this.getNeighbourPromise(tableData, "object");
+      allPromiseReady(promiseArrayOne).then((valuesOne) => {
+      allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
-        // console.log(values);
+        // console.log(valuesOne);
+        // console.log(valuesTwo);
 
-        // Now let's figure out how we want to work with each values[i]
-        let allNeighboursArray = [];
-        for (let i = 0; i < values.length; ++i) {
+        // First we deal with subject neighbours, so valuesOne
+        let subjectNeighbourArray = [];
+        for (let i = 0; i < valuesOne.length; ++i) {
           let temp = updateKeyColNeighbours(
             [],
-            values[i].results.bindings,
+            valuesOne[i].results.bindings,
             "subject"
           )
-          allNeighboursArray.push(temp);
+          subjectNeighbourArray.push(temp);
         }
-        processAllNeighbours(allNeighboursArray);
+        processAllNeighbours(subjectNeighbourArray);
+
+        // Then we deal with object neighbours, so valuesTwo
+        let objectNeighbourArray = [];
+        for (let i = 0; i < valuesTwo.length; ++i) {
+          let temp = updateKeyColNeighbours(
+            [],
+            valuesTwo[i].results.bindings,
+            "object"
+          )
+          objectNeighbourArray.push(temp);
+        }
+        processAllNeighbours(objectNeighbourArray);
 
 
 
@@ -800,6 +824,7 @@ class MainBody extends Component {
         //   lastAction: lastAction,
         //   prevState: prevState,
         // });
+      })
       })
     });
   }
@@ -3538,6 +3563,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
          || a.p.value.includes("soundRecording")
          || a.p.value.includes("votesmart")
          || a.p.value.includes("wordnet")
+         || a.p.value.includes("float")
          )
   );
 
@@ -3579,9 +3605,9 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           if (type === "object") {
             objLabel = "is " + objLabel + " of";
           }
-          if (neighbourCount > 1) {
-            objLabel+=" *";
-          }
+          // if (neighbourCount > 1) {
+          //   objLabel+=" *";
+          // }
           // set type
           let objType = type;
           // set count
@@ -3612,9 +3638,9 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
       if (type === "object") {
         objLabel = "is " + objLabel + " of";
       }
-      if (neighbourCount > 1) {
-        objLabel+=" *";
-      }
+      // if (neighbourCount > 1) {
+      //   objLabel+=" *";
+      // }
       // set type
       let objType = type;
       // set count
@@ -3673,6 +3699,8 @@ function updatePreviewInfo(resultsBinding, type) {
          || a.p.value.includes("viaf")
          || a.p.value.includes("soundRecording")
          || a.p.value.includes("votesmart")
+         || a.p.value.includes("wordnet")
+         || a.p.value.includes("float")
          )
   );
 
@@ -4791,7 +4819,7 @@ function setFirstColumnData(resultsBinding, tableData, tableHeader, colIndex) {
 
 function processAllNeighbours(allNeighboursArray) {
   let keyColNeighbours = [];
-  console.log(allNeighboursArray);
+  // console.log(allNeighboursArray);
 
   for (let i = 0; i < allNeighboursArray.length; ++i) {
     keyColNeighbours = keyColNeighbours.concat(allNeighboursArray[i]);
@@ -4799,7 +4827,33 @@ function processAllNeighbours(allNeighboursArray) {
 
   // Now we sort keyColNeighbours based on value
   keyColNeighbours.sort((a,b) => a.value < b.value ? -1 : 1);
+  // console.log(keyColNeighbours);
+
+  // Now, we run a loop to remove duplicates, and update count and filledCount
+  if (keyColNeighbours.length > 0) {
+    for (let i = 1; i < keyColNeighbours.length; ++i) {
+      let prevEntry = keyColNeighbours[i-1];
+      let curEntry = keyColNeighbours[i];
+
+      // If the current entry's data is equal to the previous entry's data, we want to 
+      // 1) delete curEntry
+      // 2) (maybe) update prevEntry's count
+      // 3) increment prevEntry's filledCount
+      if (prevEntry.value === curEntry.value) {
+        keyColNeighbours[i-1].filledCount = keyColNeighbours[i-1].filledCount + 1;
+        keyColNeighbours[i-1].count = Math.max(prevEntry.count, curEntry.count);
+        keyColNeighbours.splice(i,1);
+        --i;
+      }
+    }
+  }
+  // Now we want to sort (and potentially filter) keyColNeighbours, by filledCount 
+  keyColNeighbours.sort((a,b) => a.filledCount < b.filledCount ? 1 : -1);
+
+  // Take a look at keyColNeighbours
   console.log(keyColNeighbours);
+
+  return keyColNeighbours;
 }
 
 
