@@ -591,7 +591,7 @@ class MainBody extends Component {
   // 3) colIndex:  integer representing which column's neighbours we are fetching
 
   getNeighbourPromise(tableData, type, colIndex) {
-    console.log(tableData);
+    // console.log(tableData);
     // console.log(type);
 
     // Query we make if type is subject
@@ -2195,8 +2195,8 @@ class MainBody extends Component {
     let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", keyColIndex);
     return allPromiseReady(promiseArrayOne).then((valuesOne) => {
     return allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
-      console.log(valuesOne);
-      console.log(valuesTwo);
+      // console.log(valuesOne);
+      // console.log(valuesTwo);
       // First we deal with subject neighbours, so valuesOne
       let subjectNeighbourArray = [];
       for (let i = 0; i < valuesOne.length; ++i) {
