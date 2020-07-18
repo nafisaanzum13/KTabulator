@@ -122,12 +122,13 @@ class MainBody extends Component {
     // this.getOtherColPromiseTwo = this.getOtherColPromiseTwo.bind(this);
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
     this.addAllNeighbour = this.addAllNeighbour.bind(this);
+    this.getTableStates = this.getTableStates.bind(this);
     this.sameNeighbourDiffCol = this.sameNeighbourDiffCol.bind(this);
     this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
     this.populateSameRange = this.populateSameRange.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextDeleteColumn = this.contextDeleteColumn.bind(this);
-    this.contextSetCell = this.contextSetCell.bind(this);
+    this.contextSetColumn = this.contextSetColumn.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
     this.contextCellPreview = this.contextCellPreview.bind(this);
     this.contextOpenLink = this.contextOpenLink.bind(this);
@@ -590,8 +591,24 @@ class MainBody extends Component {
   // 3) colIndex:  integer representing which column's neighbours we are fetching
 
   getNeighbourPromise(tableData, type, colIndex) {
-    // console.log(tableData);
+    console.log(tableData);
     // console.log(type);
+
+    // Query we make if type is subject
+
+    // select ?p ?range
+    // where {
+    // dbr:Barack_Obama ?p ?o.
+    // OPTIONAL {?p rdfs:range ?range}.
+    // }
+
+    // Query we make if type is object
+
+    // select ?p
+    // where {
+    // ?s ?p dbr:Barack_Obama
+    // }
+
     let promiseArray = [];
     let prefixURL =
       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
@@ -680,50 +697,6 @@ class MainBody extends Component {
     let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
     let keyColPromise = fetchJSON(queryURLOne);
     promiseArray.push(keyColPromise);
-
-    // Below is the second query we will make.
-    // This query fetches the neighbours for tableData[0][colIndex], so the first cell in column with index colIndex
-    // In here we are using the tableCell as SUBJECT.
-    // Also, if these neighbours contain a rdfs:range, we also want to fetch those, which let us support the "populate from same range".
-
-    //   select ?p ?range
-    //   where {
-    //   dbr:Barack_Obama ?p ?o.
-    //   OPTIONAL {?p rdfs:range ?range}.
-    //   }
-
-    // let prefixURLTwo =
-    //   "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    // let suffixURLTwo =
-    //   "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    // let queryBodyTwo =
-    //   "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
-    //   regexReplace(this.state.tableData[0][colIndex].data) +
-    //   "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
-    // let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
-    // let otherColPromiseSubject = fetchJSON(queryURLTwo);
-    // promiseArray.push(otherColPromiseSubject);
-
-    // Below is the third query we will make.
-    // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
-    // And we do not care about rdfs:range.
-
-    // select ?p
-    // where {
-    // ?s ?p dbr:Barack_Obama
-    // }
-
-    // let prefixURLThree =
-    //   "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    // let suffixURLThree =
-    //   "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    // let queryBodyThree =
-    //   "select+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
-    //   regexReplace(this.state.tableData[0][colIndex].data) +
-    //   "%0D%0A%7D&";
-    // let queryURLThree = prefixURLThree + queryBodyThree + suffixURLThree;
-    // let otherColPromiseObject = fetchJSON(queryURLThree);
-    // promiseArray.push(otherColPromiseObject);
 
     allPromiseReady(promiseArray).then((values) => {
       // let's first work with the first promise result: fill in table data with the entities we have fetched
@@ -1005,8 +978,8 @@ class MainBody extends Component {
         count,
         maxNeighbourCount
       );
-      console.log("neighbour index is "+neighbourIndex);
-      console.log("max count is "+maxCount);
+      // console.log("neighbour index is "+neighbourIndex);
+      // console.log("max count is "+maxCount);
       let remainNeighbourCount = maxCount - neighbourIndex - 1;
       // console.log("remain neighbour count is "+remainNeighbourCount);
       let tempObj = {};
@@ -1805,102 +1778,169 @@ class MainBody extends Component {
     });
   }
 
-  // The following functions sets the selected cell to be the search cell.
-  // As a result, the column of the cell needs to be set as the search column as well.
+  // The following functions sets the selected column to be the search column.
 
-  contextSetCell(e, rowIndex, colIndex) {
-    document.body.classList.add('waiting');
-    // console.log("Row index of search cell is "+rowIndex);
+  contextSetColumn(e, colIndex) {
+
     // console.log("Col index of search cell is "+colIndex);
 
-    // Let's first do a check. We don't want users to set N/A's as search cells.
-    if (this.state.tableData[rowIndex][colIndex].data === "N/A") {
-      alert("N/A should not be set as search cell.");
-    }
+    document.body.classList.add('waiting');
 
-    else {
-      // This is the function that we need to fill out
-      let promiseArray = [];
-      // Below is the first query we will make.
-      // This query fetches the neighbours for tableData[rowIndex][colIndex]. So the search cell in the search column.
-      // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+    // Start working from here: code here should largely be similar to what we have in populateKeyColumn
 
-      // Note: we need to modify this query so it looks for ranges of certain attributes as well
-      let prefixURLOne =
-        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      let suffixURLOne =
-        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      let queryBodyOne =
-        "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
-        regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-        "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
-      let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
-      let otherColPromiseSubject = fetchJSON(queryURLOne);
-      promiseArray.push(otherColPromiseSubject);
+    let tableData = _.cloneDeep(this.state.tableData);
 
-      // Below is the second query we will make.
-      // Difference with the previous query is that we are using tableData[rowIndex][colIndex] as OBJECT
-      let prefixURLTwo =
-        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      let suffixURLTwo =
-        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      let queryBodyTwo =
-        "select+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
-        regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-        "%0D%0A%7D&";
-      let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
-      let otherColPromiseObject = fetchJSON(queryURLTwo);
-      promiseArray.push(otherColPromiseObject);
+    // We need to find neighbours of a column.
+    // We need to use tableData to ask more queries (number of queries is equal to tableData.length)
+    let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", colIndex);
+    let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", colIndex);
 
-      // continue from here
-      allPromiseReady(promiseArray).then((values) => {
-        // console.log(values[0]);
-        // console.log(values[1]);
-        let keyColNeighbours = [];
-        keyColNeighbours = updateKeyColNeighbours(
-          keyColNeighbours,
-          values[0].results.bindings,
+    allPromiseReady(promiseArrayOne).then((valuesOne) => {
+    allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+      // console.log(valuesOne);
+      // console.log(valuesTwo);
+
+      // First we deal with subject neighbours, so valuesOne
+      let subjectNeighbourArray = [];
+      for (let i = 0; i < valuesOne.length; ++i) {
+        let temp = updateKeyColNeighbours(
+          [],
+          valuesOne[i].results.bindings,
           "subject"
-        );
-        keyColNeighbours = updateKeyColNeighbours(
-          keyColNeighbours,
-          values[1].results.bindings,
+        )
+        subjectNeighbourArray.push(temp);
+      }
+      let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+
+      // Then we deal with object neighbours, so valuesTwo
+      let objectNeighbourArray = [];
+      for (let i = 0; i < valuesTwo.length; ++i) {
+        let temp = updateKeyColNeighbours(
+          [],
+          valuesTwo[i].results.bindings,
           "object"
-        );
-        // console.log(keyColNeighbours);
-        let optionsMap = this.state.optionsMap.slice();
-        for (let i = 0; i < optionsMap.length; ++i) {
-          if (i !== colIndex) {
-            optionsMap[i] = keyColNeighbours;
-          }
+        )
+        objectNeighbourArray.push(temp);
+      }
+      let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+
+      // console.log(processedSubjectNeighbours);
+      // console.log(processedObjectNeighbours);
+
+      // we now concat subjectNeighbours and objectNeighbours together
+      let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
+      let optionsMap = this.state.optionsMap.slice();
+      for (let i = 0; i < optionsMap.length; ++i) {
+        if (i !== colIndex) {
+          optionsMap[i] = keyColNeighbours;
         }
-        // console.log(keyColNeighbours);
+      }
 
-        document.body.classList.remove('waiting');
-        // Support for undo: 
-        let lastAction = "contextSetCell";
-        let prevState = 
-            {
-              "keyEntryIndex": this.state.keyEntryIndex,
-              "keyColIndex": this.state.keyColIndex,
-              "keyColNeighbours": this.state.keyColNeighbours,
-              "curActionInfo": this.state.curActionInfo,
-              "optionsMap": this.state.optionsMap,
-              "tabIndex": this.state.tabIndex,
-            };
+      document.body.classList.remove('waiting');
 
-        this.setState({
-          keyEntryIndex: rowIndex,
-          keyColIndex: colIndex,
-          keyColNeighbours: keyColNeighbours,
-          curActionInfo: {"task":"afterPopulateColumn"},
-          optionsMap: optionsMap,
-          tabIndex: 0, // we want to set the currently active tab to be wrangling actions
-          lastAction: lastAction,
-          prevState: prevState,
-        });
+      // Support for undo: 
+      let lastAction = "contextSetColumn";
+      let prevState = 
+          {
+            "keyColIndex": this.state.keyColIndex,
+            "keyColNeighbours": this.state.keyColNeighbours,
+            "curActionInfo": this.state.curActionInfo,
+            "optionsMap": this.state.optionsMap,
+            "tabIndex": this.state.tabIndex,
+          };
+
+      this.setState({
+        keyColIndex: colIndex,
+        keyColNeighbours: keyColNeighbours,
+        curActionInfo: {"task":"afterPopulateColumn"},
+        optionsMap: optionsMap,
+        tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+        lastAction: lastAction,
+        prevState: prevState,
       });
-    }
+    })
+    })
+
+    // let promiseArray = [];
+    // // Below is the first query we will make.
+    // // This query fetches the neighbours for tableData[rowIndex][colIndex]. So the search cell in the search column.
+    // // These neighbours are either dbo or dbp, with some eliminations. In here we are using the tableCell as SUBJECT
+
+    // // Note: we need to modify this query so it looks for ranges of certain attributes as well
+    // let prefixURLOne =
+    //   "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLOne =
+    //   "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    // let queryBodyOne =
+    //   "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
+    //   regexReplace(this.state.tableData[rowIndex][colIndex].data) +
+    //   "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
+    // let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
+    // let otherColPromiseSubject = fetchJSON(queryURLOne);
+    // promiseArray.push(otherColPromiseSubject);
+
+    // // Below is the second query we will make.
+    // // Difference with the previous query is that we are using tableData[rowIndex][colIndex] as OBJECT
+    // let prefixURLTwo =
+    //   "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLTwo =
+    //   "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    // let queryBodyTwo =
+    //   "select+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
+    //   regexReplace(this.state.tableData[rowIndex][colIndex].data) +
+    //   "%0D%0A%7D&";
+    // let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
+    // let otherColPromiseObject = fetchJSON(queryURLTwo);
+    // promiseArray.push(otherColPromiseObject);
+
+    // // continue from here
+    // allPromiseReady(promiseArray).then((values) => {
+    //   // console.log(values[0]);
+    //   // console.log(values[1]);
+    //   let keyColNeighbours = [];
+    //   keyColNeighbours = updateKeyColNeighbours(
+    //     keyColNeighbours,
+    //     values[0].results.bindings,
+    //     "subject"
+    //   );
+    //   keyColNeighbours = updateKeyColNeighbours(
+    //     keyColNeighbours,
+    //     values[1].results.bindings,
+    //     "object"
+    //   );
+    //   // console.log(keyColNeighbours);
+    //   let optionsMap = this.state.optionsMap.slice();
+    //   for (let i = 0; i < optionsMap.length; ++i) {
+    //     if (i !== colIndex) {
+    //       optionsMap[i] = keyColNeighbours;
+    //     }
+    //   }
+    //   // console.log(keyColNeighbours);
+
+    //   document.body.classList.remove('waiting');
+    //   // Support for undo: 
+    //   let lastAction = "contextSetColumn";
+    //   let prevState = 
+    //       {
+    //         "keyEntryIndex": this.state.keyEntryIndex,
+    //         "keyColIndex": this.state.keyColIndex,
+    //         "keyColNeighbours": this.state.keyColNeighbours,
+    //         "curActionInfo": this.state.curActionInfo,
+    //         "optionsMap": this.state.optionsMap,
+    //         "tabIndex": this.state.tabIndex,
+    //       };
+
+    //   this.setState({
+    //     keyEntryIndex: rowIndex,
+    //     keyColIndex: colIndex,
+    //     keyColNeighbours: keyColNeighbours,
+    //     curActionInfo: {"task":"afterPopulateColumn"},
+    //     optionsMap: optionsMap,
+    //     tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+    //     lastAction: lastAction,
+    //     prevState: prevState,
+    //   });
+    // });
   }
 
   // The following function displays the origin of a cell in the Action Panel.
@@ -2072,6 +2112,214 @@ class MainBody extends Component {
     }
   }
 
+  // The following function is a helper function for handleStartTable.
+
+  // It takes in 2 parameters:
+  // 1) tableDataExplore
+  // 2) selectedClassAnnotation
+
+  // It returns a Promise of an object with 5 properties:
+  // 1) keyColIndex
+  // 2) tableHeader
+  // 3) tableData
+  // 4) keyColNeighbours
+  // 5) optionsMap.
+
+  // This object contains all the information we needed for the Excel-style table.
+
+  getTableStates(tableDataExplore, selectedClassAnnotation) {
+    // We need to take care of keyColIndex, tableHeader, tableData, optionsMap, and keyColNeighbours
+
+    // tableDataExplore contains all the information we need to set the five states listed above
+    // We just need to make use of the "data" and "origin" attributes. rowSpan and colSpan have no impact here.
+    // Also, since we are not modifying tableDataExplore, we do not need to make a copy of it.
+
+    // First, let's deal with keyColIndex. 
+    // We will use the first column such that it's class annotation is not [] or ["Number"] or ["originURL"]
+    // If no such column exists, we default it to the first column
+
+    // console.log(selectedClassAnnotation);
+
+    let keyColIndex = -1;
+    for (let i=0;i<selectedClassAnnotation.length;++i) {
+      if (selectedClassAnnotation[i].length > 0 
+          && !(selectedClassAnnotation[i].length === 1 && selectedClassAnnotation[i][0] === "Number")
+          && !(selectedClassAnnotation[i].length === 1 && selectedClassAnnotation[i][0] === "originURL")
+        ) {
+        keyColIndex = i; 
+        break;
+      }
+    }
+    if (keyColIndex === -1) {
+      keyColIndex = 0;
+    }
+    // console.log("Key Column Index is: ");
+    // console.log(keyColIndex);
+
+    // Now, let's deal with tableHeader. Note: these tableHeaders only have value and label, no range or type
+    let tableHeader = [];
+    for (let j=0;j<tableDataExplore[0].length;++j) {
+      tableHeader.push(
+        {"value":tableDataExplore[0][j].data
+        ,"label":tableDataExplore[0][j].data}
+      )
+    }
+    // console.log("Table header is: ");
+    // console.log(tableHeader);
+
+    // Now, let's deal with tableData. Wee need to handle both data and origin.
+    let tableData = [];
+    // console.log(tableDataExplore);
+    // This starts the loop for rows
+    for (let i=1;i<tableDataExplore.length;++i) {
+      let tempRow = [];
+      // This starts the loop for columns
+      for (let j=0;j<tableDataExplore[i].length;++j) {
+        // First set the data
+        let data = tableDataExplore[i][j].data;
+        // Then set the origin
+        let origin = [];
+        let originText = tableDataExplore[i][j].origin+": "+tableHeader[j].value+": "+tableDataExplore[i][j].data;
+        origin.push(originText);
+        tempRow.push({"data":data,"origin":origin});
+      }
+      tableData.push(tempRow);
+    }
+    // console.log("Table data is: ");
+    // console.log(tableData);
+
+    // Now, let's deal with keyColNeighbours and optionsMap
+    // Note: the following part should be similar to what we have in contextSetColumn
+
+    let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", keyColIndex);
+    let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", keyColIndex);
+    return allPromiseReady(promiseArrayOne).then((valuesOne) => {
+    return allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+      console.log(valuesOne);
+      console.log(valuesTwo);
+      // First we deal with subject neighbours, so valuesOne
+      let subjectNeighbourArray = [];
+      for (let i = 0; i < valuesOne.length; ++i) {
+        let temp = updateKeyColNeighbours(
+          [],
+          valuesOne[i].results.bindings,
+          "subject"
+        )
+        subjectNeighbourArray.push(temp);
+      }
+      let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+
+      // Then we deal with object neighbours, so valuesTwo
+      let objectNeighbourArray = [];
+      for (let i = 0; i < valuesTwo.length; ++i) {
+        let temp = updateKeyColNeighbours(
+          [],
+          valuesTwo[i].results.bindings,
+          "object"
+        )
+        objectNeighbourArray.push(temp);
+      }
+      let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+
+      // console.log(processedSubjectNeighbours);
+      // console.log(processedObjectNeighbours);
+
+      // we now concat subjectNeighbours and objectNeighbours together
+      let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
+
+      // console.log(keyColNeighbours);
+
+      // Now, we handle the optionsMaps
+      // We can just put on empty options.
+      let optionsMap = [];
+      for (let j=0;j<tableHeader.length;++j) {
+        optionsMap.push([]);
+      }
+      // console.log("Options Map are: ");
+      // console.log(optionsMap);
+      
+      // Lastly, let's put all the information together in a single object, and return it as a Promise
+      return Promise.resolve(
+        {
+          "keyColIndex":keyColIndex,
+          "tableHeader":tableHeader,
+          "tableData":tableData,
+          "keyColNeighbours":keyColNeighbours,
+          "optionsMap":optionsMap
+        }
+      )
+    })
+    })
+    // let promiseArray = [];
+
+    // // Below is the first query we will make.
+    // // This query fetches the neighbours for tableData[0][keyColIndex], so the first cell in column with index keyColIndex
+    // // In here we are using the tableCell as SUBJECT
+
+    // let prefixURLOne =
+    //   "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLOne =
+    //   "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    // let queryBodyOne =
+    //   "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
+    //   regexReplace(tableData[0][keyColIndex].data) +
+    //   "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
+    // let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
+    // let otherColPromiseSubject = fetchJSON(queryURLOne);
+    // promiseArray.push(otherColPromiseSubject);
+
+    // // Below is the second query we will make.
+    // // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
+    // let prefixURLTwo =
+    //   "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // let suffixURLTwo =
+    //   "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    // let queryBodyTwo =
+    //   "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
+    //   regexReplace(tableData[0][keyColIndex].data) +
+    //   "%0D%0A%7D&";
+    // let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
+    // let otherColPromiseObject = fetchJSON(queryURLTwo);
+    // promiseArray.push(otherColPromiseObject);
+
+    // return allPromiseReady(promiseArray).then((values) => {
+    //   // Now we finalize the keyColNeighbours
+    //   let keyColNeighbours = [];
+    //   keyColNeighbours = updateKeyColNeighbours(
+    //     keyColNeighbours,
+    //     values[0].results.bindings,
+    //     "subject"
+    //   );
+    //   keyColNeighbours = updateKeyColNeighbours(
+    //     keyColNeighbours,
+    //     values[1].results.bindings,
+    //     "object"
+    //   );
+    //   // console.log("Key Column Neighbours are: ");
+    //   // console.log(keyColNeighbours);
+
+    //   // Now, we handle the optionsMaps
+    //   // We can just put on empty options.
+    //   let optionsMap = [];
+    //   for (let j=0;j<tableHeader.length;++j) {
+    //     optionsMap.push([]);
+    //   }
+    //   // console.log("Options Map are: ");
+    //   // console.log(optionsMap);
+
+    //   // Lastly, let's put all the information together in a single object, and return it as a Promise
+    //   return Promise.resolve(
+    //     {
+    //       "keyColIndex":keyColIndex,
+    //       "tableHeader":tableHeader,
+    //       "tableData":tableData,
+    //       "keyColNeighbours":keyColNeighbours,
+    //       "optionsMap":optionsMap
+    //     }
+    //   )
+    // })
+  }
+
   // The following function handles the selection of table.
 
   handleStartTable(e, tableIndex) {
@@ -2215,11 +2463,11 @@ class MainBody extends Component {
         // setTableFromHTML is the function that prepares the data for tableDataExplore
         let tableDataExplore = setTableFromHTML(selectedTableHTML, urlOrigin);
 
-        // Modeless Change: We need to call the helper function getTableStates.
+        // Modeless Change: We need to call the helper function this.getTableStates.
         // By processing the tableDataExplore to get the right states for the Excel-style table.
 
-        // To do this, we need to call getTableStates here. We just need to pass in tableDataExplore and selectedClassAnnotation 
-        let statePromise = [getTableStates(tableDataExplore, selectedClassAnnotation)];
+        // To do this, we need to call this.getTableStates here. We just need to pass in tableDataExplore and selectedClassAnnotation 
+        let statePromise = [this.getTableStates(tableDataExplore, selectedClassAnnotation)];
         allPromiseReady(statePromise).then((values) => {
           let stateInfo = values[0];
           // console.log(stateInfo);
@@ -2884,7 +3132,7 @@ class MainBody extends Component {
     }
 
     // Case 11: Undo the set of search cell.
-    else if (lastAction === "contextSetCell") {
+    else if (lastAction === "contextSetColumn") {
       this.setState({
         keyEntryIndex: prevState.keyEntryIndex,
         keyColIndex: prevState.keyColIndex,
@@ -3341,7 +3589,7 @@ class MainBody extends Component {
                     optionsMap={this.state.optionsMap}
                     contextAddColumn={this.contextAddColumn}
                     contextDeleteColumn={this.contextDeleteColumn}
-                    contextSetCell={this.contextSetCell}
+                    contextSetColumn={this.contextSetColumn}
                     contextCellOrigin={this.contextCellOrigin}
                     contextCellPreview={this.contextCellPreview}
                     contextOpenLink={this.contextOpenLink}
@@ -4566,152 +4814,6 @@ function hyperCDF(x, N, K, n) {
     count += (combinations(K, i) * combinations(N - K, n - i)) / denom;
   }
   return count;
-}
-
-// This function takes in 2 parameters:
-// 1) tableDataExplore
-// 2) selectedClassAnnotation
-
-// It returns a Promise of an object with 5 properties:
-// 1) keyColIndex
-// 2) tableHeader
-// 3) tableData
-// 4) keyColNeighbours
-// 5) optionsMap.
-
-// This object contains all the information we needed for the Excel-style table
-
-function getTableStates(tableDataExplore, selectedClassAnnotation) {
-  // We need to take care of keyColIndex, tableHeader, tableData, optionsMap, and keyColNeighbours
-
-  // tableDataExplore contains all the information we need to set the five states listed above
-  // We just need to make use of the "data" and "origin" attributes. rowSpan and colSpan have no impact here.
-  // Also, since we are not modifying tableDataExplore, we do not need to make a copy of it.
-
-  // First, let's deal with keyColIndex. 
-  // We will use the first column such that it's class annotation is not [] or ["Number"] or ["originURL"]
-  // If no such column exists, we default it to the first column
-
-  console.log(selectedClassAnnotation);
-
-  let keyColIndex = -1;
-  for (let i=0;i<selectedClassAnnotation.length;++i) {
-    if (selectedClassAnnotation[i].length > 0 
-        && !(selectedClassAnnotation[i].length === 1 && selectedClassAnnotation[i][0] === "Number")
-        && !(selectedClassAnnotation[i].length === 1 && selectedClassAnnotation[i][0] === "originURL")
-      ) {
-      keyColIndex = i; 
-      break;
-    }
-  }
-  if (keyColIndex === -1) {
-    keyColIndex = 0;
-  }
-  // console.log("Key Column Index is: ");
-  // console.log(keyColIndex);
-
-  // Now, let's deal with tableHeader. Note: these tableHeaders only have value and label, no range or type
-  let tableHeader = [];
-  for (let j=0;j<tableDataExplore[0].length;++j) {
-    tableHeader.push(
-      {"value":tableDataExplore[0][j].data
-      ,"label":tableDataExplore[0][j].data}
-    )
-  }
-  // console.log("Table header is: ");
-  // console.log(tableHeader);
-
-  // Now, let's deal with tableData. Wee need to handle both data and origin.
-  let tableData = [];
-  // console.log(tableDataExplore);
-  // This starts the loop for rows
-  for (let i=1;i<tableDataExplore.length;++i) {
-    let tempRow = [];
-    // This starts the loop for columns
-    for (let j=0;j<tableDataExplore[i].length;++j) {
-      // First set the data
-      let data = tableDataExplore[i][j].data;
-      // Then set the origin
-      let origin = [];
-      let originText = tableDataExplore[i][j].origin+": "+tableHeader[j].value+": "+tableDataExplore[i][j].data;
-      origin.push(originText);
-      tempRow.push({"data":data,"origin":origin});
-    }
-    tableData.push(tempRow);
-  }
-  // console.log("Table data is: ");
-  // console.log(tableData);
-
-  // Now, let's deal with keyColNeighbours and optionsMap
-  // Note: the following part is really similar to what we have in contextSetCell
-  let promiseArray = [];
-
-  // Below is the first query we will make.
-  // This query fetches the neighbours for tableData[0][keyColIndex], so the first cell in column with index keyColIndex
-  // In here we are using the tableCell as SUBJECT
-
-  let prefixURLOne =
-    "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-  let suffixURLOne =
-    "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-  let queryBodyOne =
-    "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
-    regexReplace(tableData[0][keyColIndex].data) +
-    "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
-  let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
-  let otherColPromiseSubject = fetchJSON(queryURLOne);
-  promiseArray.push(otherColPromiseSubject);
-
-  // Below is the second query we will make.
-  // Difference with the previous query is that we are using tableData[0][colIndex] as OBJECT
-  let prefixURLTwo =
-    "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-  let suffixURLTwo =
-    "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-  let queryBodyTwo =
-    "SELECT+%3Fp+%0D%0AWHERE+%7B%0D%0A++++++++%3Fs+%3Fp+dbr%3A" +
-    regexReplace(tableData[0][keyColIndex].data) +
-    "%0D%0A%7D&";
-  let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
-  let otherColPromiseObject = fetchJSON(queryURLTwo);
-  promiseArray.push(otherColPromiseObject);
-
-  return allPromiseReady(promiseArray).then((values) => {
-    // Now we finalize the keyColNeighbours
-    let keyColNeighbours = [];
-    keyColNeighbours = updateKeyColNeighbours(
-      keyColNeighbours,
-      values[0].results.bindings,
-      "subject"
-    );
-    keyColNeighbours = updateKeyColNeighbours(
-      keyColNeighbours,
-      values[1].results.bindings,
-      "object"
-    );
-    // console.log("Key Column Neighbours are: ");
-    // console.log(keyColNeighbours);
-
-    // Now, we handle the optionsMaps
-    // We can just put on empty options.
-    let optionsMap = [];
-    for (let j=0;j<tableHeader.length;++j) {
-      optionsMap.push([]);
-    }
-    // console.log("Options Map are: ");
-    // console.log(optionsMap);
-
-    // Lastly, let's put all the information together in a single object, and return it as a Promise
-    return Promise.resolve(
-      {
-        "keyColIndex":keyColIndex,
-        "tableHeader":tableHeader,
-        "tableData":tableData,
-        "keyColNeighbours":keyColNeighbours,
-        "optionsMap":optionsMap
-      }
-    )
-  })
 }
 
 // This function renders this.props.tableData[i][j].data in a nicer way. 

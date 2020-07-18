@@ -47,7 +47,7 @@ class TablePanel extends Component {
               <FaSearch
                 className="search-icon"
                 title={"Set as key column"}
-                onClick={(e) => this.props.contextSetCell(e, 0, colIndex)}
+                onClick={(e) => this.props.contextSetColumn(e, colIndex)}
               />
             </div>
           </th>
@@ -74,7 +74,7 @@ class TablePanel extends Component {
               <FaSearch
                 className="search-icon"
                 title={"Set as key column"}
-                onClick={(e) => this.props.contextSetCell(e, 0, colIndex)}
+                onClick={(e) => this.props.contextSetColumn(e, colIndex)}
               />
             </div>
           </th>
@@ -206,10 +206,10 @@ class TablePanel extends Component {
               Sort descending
             </MenuItem>
             <MenuItem divider />
-            <MenuItem onClick={(e) => this.props.contextSetCell(e, i, j)}>
+            {/* <MenuItem onClick={(e) => this.props.contextSetColumn(e, j)}>
               Set as Search Cell
             </MenuItem>
-            <MenuItem divider />
+            <MenuItem divider /> */}
             <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
               Show Origin of Cell
             </MenuItem>
