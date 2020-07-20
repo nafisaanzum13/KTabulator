@@ -2369,7 +2369,7 @@ class MainBody extends Component {
       // console.log(queryResults[1].results.bindings);
       // console.log(queryResults[2]);
       let selectedClassAnnotation = queryResults[2];
-      // console.log(selectedClassAnnotation);
+      console.log(selectedClassAnnotation);
 
       // First we fetch the property neighbours
       // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings (150)
@@ -3428,12 +3428,14 @@ class MainBody extends Component {
     // Then we handle selectedClassAnnotation's addition.
     let queryPromise = [findClassAnnotation(this.state.originTableArray[this.state.joinTableIndex])];
     allPromiseReady(queryPromise).then((values) => {
+    // Note, we need to push on an empty [] to values here, corresponding to the originURL column's class annotation
+    values[0].splice(0, 0, []);
     for (let i = 0; i < values[0].length; ++i) {
       if (i !== joinJoinIndex) {
         selectedClassAnnotationUpdated.push(values[0][i]);
       }
     }
-    // console.log(selectedClassAnnotationUpdated);
+    console.log(selectedClassAnnotationUpdated);
     
     // Lastly, and most importantly, we want to handle tableData's change.
     // Let's start with an empty tableDataUpdated. Loop through tableData. 
@@ -3809,6 +3811,9 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
     a.p.value.slice(28) > b.p.value.slice(28) ? 1 : -1
   );
 
+  // we take a look at processedBinding at this stage
+  // console.log(processedBinding);
+
   // Let's only start the loop is processedBinding is non-empty
   if (processedBinding.length > 0) {
     // We set count of neighbour ready to be added
@@ -4052,7 +4057,7 @@ function findTableFromHTML(
   pageName
 ) {
   // We first get the column names of the table in the table panel, using this.state.tableHeader.
-  // Note: the index starts from 1 because we don't care about the originURL column (column 0).
+  // Note: the index starts from 1 because we don't care about the originURL column (column 0). ***
   let originCols = [];
   for (let j = 1; j < tableHeader.length; ++j) {
     originCols.push(tableHeader[j].value);
@@ -4645,11 +4650,13 @@ function findClassAnnotation(tableHTML, remainCols, pageName) {
     }
     // return classAnnotation;
     // console.log("Current class annotation is ");
-    // if (classAnnotation.length === 5 && pageName === "2008–09_Premier_League") {
-      // console.log(classAnnotation);
+    // if (pageName === "2009–10_Premier_League") {
+    //   console.log("TableData is ");
+    //   console.log(tempTable);
+    //   console.log(classAnnotation);
     // }
     // console.log(classAnnotation);
-    classAnnotation.splice(0, 0, ["originURL"]);
+
     return Promise.resolve(classAnnotation);
   });
 }
