@@ -100,11 +100,7 @@ class TablePanel extends Component {
         let tempID = "cellRow" + i + "Col" + j;
         let cellColor;
         if (j === this.props.keyColIndex) {
-          if (i === this.props.keyEntryIndex) {
-            cellColor = { backgroundColor: "Yellow" };
-          } else {
-            cellColor = { backgroundColor: "LightBlue" };
-          }
+          cellColor = { backgroundColor: "LightBlue" };
         } else {
           cellColor = { backgroundColor: "White" };
         }
