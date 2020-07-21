@@ -585,6 +585,9 @@ class MainBody extends Component {
   // This function is a helper function for populateKeyColumn. It is similar to getOtherColPromise.
   // It makes an array of queries to find the union of neighbours for the first column (key column).
 
+  // Start here: some modification needs to be made to the queries
+  // So that ?o in the first query and ?s in the second query have to be included as well.
+
   // It takes in three parameters
   // 1) tableData: tableData (with updated values in the first column)
   // 2) type: either "subject" or "object"
@@ -596,7 +599,7 @@ class MainBody extends Component {
 
     // Query we make if type is subject
 
-    // select ?p ?range
+    // select ?p ?o ?range
     // where {
     // dbr:Barack_Obama ?p ?o.
     // OPTIONAL {?p rdfs:range ?range}.
@@ -604,7 +607,7 @@ class MainBody extends Component {
 
     // Query we make if type is object
 
-    // select ?p
+    // select ?s ?p
     // where {
     // ?s ?p dbr:Barack_Obama
     // }
@@ -624,13 +627,13 @@ class MainBody extends Component {
       let queryBody;
       if (type === "subject") {
         queryBody =
-          "select+%3Fp+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
+          "select+%3Fp+%3Fo+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
           cellValue +
           "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
       }
       else {
         queryBody = 
-          "select+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
+          "select+%3Fs+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
           cellValue +
           "%0D%0A%7D&";
       }
@@ -3622,6 +3625,8 @@ function removePrefix(str) {
 
 // This function updates the key column's neighbours.
 
+// Start here: we need to make some modifications here, to support the IMPORTANT IDEA from daily notes.
+
 // It taks three parameters:
 //  1) array "keyColNeighbour" storing list of neighbours for the key column
 //  2) array "resultsBinding", storing the returned result of queryURL from Virtuoso
@@ -3664,7 +3669,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
   );
 
   // we take a look at processedBinding at this stage
-  // console.log(processedBinding);
+  console.log(processedBinding);
 
   // Let's only start the loop is processedBinding is non-empty
   if (processedBinding.length > 0) {
@@ -3698,9 +3703,6 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           if (type === "object") {
             objLabel = "is " + objLabel + " of";
           }
-          // if (neighbourCount > 1) {
-          //   objLabel+=" *";
-          // }
           // set type
           let objType = type;
           // set count
