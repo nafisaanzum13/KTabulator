@@ -585,7 +585,7 @@ class MainBody extends Component {
   // This function is a helper function for populateKeyColumn. It is similar to getOtherColPromise.
   // It makes an array of queries to find the union of neighbours for the first column (key column).
 
-  // Start here: some modification needs to be made to the queries
+  // Some modification needs to be made to the queries
   // So that ?o in the first query and ?s in the second query have to be included as well.
 
   // It takes in three parameters
@@ -736,6 +736,8 @@ class MainBody extends Component {
           )
           subjectNeighbourArray.push(temp);
         }
+        // Start here: to support the IMPORTANT idea, we need to store the info from subjectNeighbourArray in a new state
+        console.log(subjectNeighbourArray);
         let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
 
         // Then we deal with object neighbours, so valuesTwo
@@ -3669,15 +3671,21 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
   );
 
   // we take a look at processedBinding at this stage
-  console.log(processedBinding);
+  // console.log(processedBinding);
 
   // Let's only start the loop is processedBinding is non-empty
   if (processedBinding.length > 0) {
     // We set count of neighbour ready to be added
     let neighbourCount = 1;  
+
     // We set literal of neighbour ready to be added.
+    // Morever, we get the value of the neighbour ready to be added, depending on type.
     // Initialized with the first neighbour.
+
     let neighbourToAdd = processedBinding[0].p.value.slice(28); 
+    let valuesToAdd = [];
+    valuesToAdd.push(type === "subject" ? removePrefix(processedBinding[0].o.value) : removePrefix(processedBinding[0].s.value))
+
     // we set range of neighbour ready to be added. "" if doesn't exist.
     let neighbourRange = "";
     if (processedBinding[0].range !== undefined) {
@@ -3687,9 +3695,10 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
     // We loop over processedBinding
     for (let i = 1; i < processedBinding.length; ++i) {
       let curNeighbour = processedBinding[i].p.value.slice(28);
-      // If the current neighbour is equal to neighbourToAdd, we just increment the count
+      // If the current neighbour is equal to neighbourToAdd, we increment the count, and push valuesToAdd
       if (curNeighbour === neighbourToAdd) {
         ++neighbourCount;
+        valuesToAdd.push(type === "subject" ? removePrefix(processedBinding[i].o.value) : removePrefix(processedBinding[i].s.value))
       }
       // else, we decide if we want to push neighbourToAdd to keyColNeighbours. 
       // We push if neighbourCount is <= maxNeighbourCount
@@ -3707,7 +3716,11 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           let objType = type;
           // set count
           let objCount = neighbourCount;
-          let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount, "filledCount":1};
+          // set data
+          let objData = valuesToAdd;
+
+          // Set object from all its attributes
+          let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount, "filledCount":1, "data":objData};
           // Lastly, if the current type is "subject", we want to see if this neighbour has a range
           if (type === "subject" && neighbourRange !== "") {
             tempObj["range"] = neighbourRange;
@@ -3715,9 +3728,10 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           // we push this tempObj onto keyColNeighbours
           keyColNeighbours.push(tempObj)
         }
-        // Regardless of pushing or not, we now need to reset neighbourCount, neighbourToAdd, and neighbourRange
+        // Regardless of pushing or not, we now need to reset neighbourCount, neighbourToAdd, neighbourRange, and valuesToAdd
         neighbourCount = 1;
         neighbourToAdd = curNeighbour;
+        valuesToAdd = [type === "subject" ? removePrefix(processedBinding[i].o.value) : removePrefix(processedBinding[i].s.value)];
         neighbourRange = "";
         if (processedBinding[i].range !== undefined) {
           neighbourRange = processedBinding[i].range.value;
@@ -3733,14 +3747,15 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
       if (type === "object") {
         objLabel = "is " + objLabel + " of";
       }
-      // if (neighbourCount > 1) {
-      //   objLabel+=" *";
-      // }
       // set type
       let objType = type;
       // set count
       let objCount = neighbourCount;
-      let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount, "filledCount":1};
+      // set data
+      let objData = valuesToAdd;
+      // Set object from all its attributes
+
+      let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount, "filledCount":1, "data":objData};
       // Lastly, if the current type is "subject", we want to see if this neighbour has a range
       if (type === "subject" && neighbourRange !== "") {
         tempObj["range"] = neighbourRange;
@@ -3749,10 +3764,11 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
       keyColNeighbours.push(tempObj)
     }
   }
-  return keyColNeighbours;
-  
+
   // console.log(keyColNeighbours);
   // console.log(processedBinding);
+
+  return keyColNeighbours;
 }
 
 // This helper function is designed to process the result bindings passed from contextCellPreview.
@@ -4772,9 +4788,10 @@ function setFirstColumnData(resultsBinding, tableData, tableHeader, colIndex) {
 function processAllNeighbours(allNeighboursArray) {
   let keyColNeighbours = [];
   // console.log(allNeighboursArray);
+  let allNeighboursArrayCopy = _.cloneDeep(allNeighboursArray);
 
-  for (let i = 0; i < allNeighboursArray.length; ++i) {
-    keyColNeighbours = keyColNeighbours.concat(allNeighboursArray[i]);
+  for (let i = 0; i < allNeighboursArrayCopy.length; ++i) {
+    keyColNeighbours = keyColNeighbours.concat(allNeighboursArrayCopy[i]);
   }
 
   // Now we sort keyColNeighbours based on value
@@ -4804,7 +4821,7 @@ function processAllNeighbours(allNeighboursArray) {
 
   // Before we return, let's change the label to include filledCount
   for (let i = 0; i < keyColNeighbours.length; ++i) {
-    let filledPercent = Math.round(keyColNeighbours[i].filledCount/allNeighboursArray.length * 100) / 100;
+    let filledPercent = Math.round(keyColNeighbours[i].filledCount/allNeighboursArrayCopy.length * 100) / 100;
     keyColNeighbours[i].label = keyColNeighbours[i].label + " (" + filledPercent + ")";
   }
 
