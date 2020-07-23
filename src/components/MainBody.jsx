@@ -737,7 +737,7 @@ class MainBody extends Component {
           subjectNeighbourArray.push(temp);
         }
         // Start here: to support the IMPORTANT idea, we need to store the info from subjectNeighbourArray in a new state
-        console.log(subjectNeighbourArray);
+        // console.log(subjectNeighbourArray);
         let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
 
         // Then we deal with object neighbours, so valuesTwo
@@ -750,6 +750,7 @@ class MainBody extends Component {
           )
           objectNeighbourArray.push(temp);
         }
+        // console.log(objectNeighbourArray);
         let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
 
         // console.log(processedSubjectNeighbours);
@@ -3626,8 +3627,6 @@ function removePrefix(str) {
 }
 
 // This function updates the key column's neighbours.
-
-// Start here: we need to make some modifications here, to support the IMPORTANT IDEA from daily notes.
 
 // It taks three parameters:
 //  1) array "keyColNeighbour" storing list of neighbours for the key column
