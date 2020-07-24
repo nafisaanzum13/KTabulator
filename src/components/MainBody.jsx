@@ -762,12 +762,12 @@ class MainBody extends Component {
 
         // console.log(processedSubjectNeighbours);
         // console.log(processedObjectNeighbours);
-        console.log(firstDegNeighbours);
+        // console.log(firstDegNeighbours);
 
         // we now concat subjectNeighbours and objectNeighbours together
         let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
 
-        // console.log(keyColNeighbours);
+        console.log(keyColNeighbours);
 
         let optionsMap = this.state.optionsMap.slice();
         for (let i = 0; i < optionsMap.length; ++i) {
@@ -976,6 +976,8 @@ class MainBody extends Component {
     // console.log(longestDataArray);
     let maxCount = Math.min(longestDataArray.length, maxNeighbourCount);
     let remainNeighbourCount = maxCount - 1;
+
+    console.log(remainNeighbourCount);
     
     // Now we set up the content for ActionPanel
     let tempObj = {};
@@ -1006,7 +1008,8 @@ class MainBody extends Component {
         }
       }
       // If we have found columns from the same range (other than the current neighbour),
-      // we give user the option to populate other columns from the same range.
+      console.log(siblingNeighbour);
+      // If sibling neighbour is non-empty, we give user the option to populate other columns from the same range.
       if (siblingNeighbour.length > 0) {
         // Let's do some string processing to improve UI clarity
         let rangeLiteral = "";
@@ -1023,8 +1026,10 @@ class MainBody extends Component {
         // console.log(siblingNeighbour);
         tempObj["siblingNeighbour"] = siblingNeighbour;
       }
-      // If we have NOT found anything from the same range, we tell user that they can populate more columns
-      tempObj["task"] = "afterPopulateColumn";
+      // Else, if we have NOT found anything from the same range, we tell user that they can populate more columns
+      else {
+        tempObj["task"] = "afterPopulateColumn";
+      }
     }
     // In this case, we tell users that they can populate more columns
     else {
@@ -1059,7 +1064,9 @@ class MainBody extends Component {
   // 6) tableHeader:                 original tableHeader
   // 7) tableData:                   original tableData
   // 8) optionsMap:                  original optionsMap
-  // 9) selectedClassAnnotation:    original selectedClassAnnotation
+  // 9) selectedClassAnnotation:     original selectedClassAnnotation
+
+  // 10) sameRange:                  optional parameter. true if we are calling this helper from populateSameRange
 
   // and returns an object with 5 values:
   // 1) tableHeader:                tableHeader after modification
@@ -1078,6 +1085,7 @@ class MainBody extends Component {
     tableData,
     optionsMap,
     selectedClassAnnotation,
+    sameRange
   ) {
     // Let's first check if all the variables are as expected
 
@@ -1109,148 +1117,125 @@ class MainBody extends Component {
     }
     // console.log(keyColIndexUpdated);
 
-    // // We first take care of table data's (empty) additions
-    // let tableDataUpdated = [];
-    // for (let i = 0; i < rowNum; ++i) {
-    //   let tempRow = [];
-    //   for (let j = 0; j < colIndex + 1; ++j) {
-    //     tempRow.push(tableData[i][j]);
-    //   }
-    //   // we add in numCols number of empty columns
-    //   for (let j = 0; j < numCols; ++j) {
-    //     tempRow.push({ data: "", origin: [] });
-    //   }
-    //   for (let k = colIndex + 1; k < colNum; ++k) {
-    //     tempRow.push(tableData[i][k]);
-    //   }
-    //   tableDataUpdated.push(tempRow);
-    // }
+    // We first take care of table data's (empty) additions
+    let tableDataUpdated = [];
+    for (let i = 0; i < rowNum; ++i) {
+      let tempRow = [];
+      for (let j = 0; j < colIndex + 1; ++j) {
+        tempRow.push(tableData[i][j]);
+      }
+      // we add in numCols number of empty columns
+      for (let j = 0; j < numCols; ++j) {
+        tempRow.push({ data: "", origin: [] });
+      }
+      for (let k = colIndex + 1; k < colNum; ++k) {
+        tempRow.push(tableData[i][k]);
+      }
+      tableDataUpdated.push(tempRow);
+    }
+    // console.log(tableDataUpdated);
 
-    // // we now take care of table header's addition.
-    // let tableHeaderUpdated = [];
-    // for (let j = 0; j < colIndex + 1; ++j) {
-    //   tableHeaderUpdated.push(tableHeader[j]);
-    // }
-    // // some modification needs to be made here
-    // let labelText = "";
-    // if (keyColIndex === 0) {
-    //   for (
-    //     let i = 0;
-    //     i < tableHeader[0].length;
-    //     ++i
-    //   ) {
-    //     if (i > 0) {
-    //       labelText += "&";
-    //     }
-    //     labelText += tableHeader[0][i].value;
-    //   }
-    // } else {
-    //   // there's a bug somewhere here. Needs to fix it later.
-    //   labelText = tableHeader[keyColIndex].label;
-    // }
-    // for (let j = 0; j < numCols; ++j) {
-    //   let curLabel = "";
-    //   // First case is for type "subject"
-    //   if (type === "subject") {
-    //     curLabel =
-    //       curLabel +
-    //       neighbour +
-    //       "-" +
-    //       (2 + j) +
-    //       "--" +
-    //       labelText;
-    //   }
-    //   // Second case is for type "object"
-    //   else {
-    //     curLabel =
-    //       curLabel +
-    //       "is " +
-    //       neighbour +
-    //       " of-" +
-    //       (2 + j) +
-    //       "--" +
-    //       labelText;
-    //   }
-    //   tableHeaderUpdated.push({ value: neighbour, label: curLabel });
-    // }
-    // for (let k = colIndex + 1; k < colNum; ++k) {
-    //   tableHeaderUpdated.push(tableHeader[k]);
-    // }
+    // we now take care of table header's addition.
+    let tableHeaderUpdated = [];
+    for (let j = 0; j < colIndex + 1; ++j) {
+      tableHeaderUpdated.push(tableHeader[j]);
+    }
+    // some modification needs to be made here
+    let labelText = "";
+    if (keyColIndex === 0) {
+      for (let i = 0; i < tableHeader[0].length; ++i) {
+        if (i > 0) {
+          labelText += "&";
+        }
+        labelText += tableHeader[0][i].value;
+      }
+    } else {
+      // there's a bug somewhere here. Needs to fix it later.
+      console.log(tableHeader[keyColIndex]);
+      labelText = tableHeader[keyColIndex].label;
+    }
+    for (let j = 0; j < numCols; ++j) {
+      let curLabel = "";
+      // First case is for type "subject"
+      if (type === "subject") {
+        curLabel = curLabel + neighbour + "--" + labelText;
+      }
+      // Second case is for type "object"
+      else {
+        curLabel = curLabel + "is " + neighbour + " of--" + labelText;
+      }
+      tableHeaderUpdated.push({ value: neighbour, label: curLabel });
+    }
+    for (let k = colIndex + 1; k < colNum; ++k) {
+      tableHeaderUpdated.push(tableHeader[k]);
+    }
+    // console.log(tableHeaderUpdated);
 
-    // // We now take care of selectedClassAnnotation. For now, we just add some empty arrays to it
-    // let selectedClassAnnotationUpdated = [];
-    // for (let j = 0; j < colIndex; ++j) {
-    //   selectedClassAnnotationUpdated.push(selectedClassAnnotation[j]);
-    // }
-    // for (let j = 0; j < numCols; ++j) {
-    //   selectedClassAnnotationUpdated.push([]);
-    // }
-    // for (let k = colIndex; k < colNum-1; ++k) {
-    //   selectedClassAnnotationUpdated.push(selectedClassAnnotation[k]);
-    // }
+    // We now take care of selectedClassAnnotation. For now, we just add some empty arrays to it
+    let selectedClassAnnotationUpdated = [];
+    for (let j = 0; j < colIndex; ++j) {
+      selectedClassAnnotationUpdated.push(selectedClassAnnotation[j]);
+    }
+    for (let j = 0; j < numCols; ++j) {
+      selectedClassAnnotationUpdated.push([]);
+    }
+    for (let k = colIndex; k < colNum-1; ++k) {
+      selectedClassAnnotationUpdated.push(selectedClassAnnotation[k]);
+    }
+    // console.log(selectedClassAnnotationUpdated);
 
-    // // we now take care of optionMap's addition. We just need to add some empty arrays to it
-    // let optionsMapUpdated = [];
-    // for (let j = 0; j < colIndex + 1; ++j) {
-    //   optionsMapUpdated.push(optionsMap[j]);
-    // }
-    // for (let j = 0; j < numCols; ++j) {
-    //   optionsMapUpdated.push([]);
-    // }
-    // for (let k = colIndex + 1; k < colNum; ++k) {
-    //   optionsMapUpdated.push(optionsMap[k]);
-    // }
+    // we now take care of optionMap's addition. We just need to add some empty arrays to it
+    let optionsMapUpdated = [];
+    for (let j = 0; j < colIndex + 1; ++j) {
+      optionsMapUpdated.push(optionsMap[j]);
+    }
+    for (let j = 0; j < numCols; ++j) {
+      optionsMapUpdated.push([]);
+    }
+    for (let k = colIndex + 1; k < colNum; ++k) {
+      optionsMapUpdated.push(optionsMap[k]);
+    }
+    // console.log(optionsMapUpdated);
 
-    // // Finally, we fill in the actual data for tableData. We need to take care of both data and origin
-    // // for (let i=0;i<values.length;++i) {
-    // //   console.log(values[i].results.bindings);
-    // // }
-    // for (let curCol = colIndex + 1; curCol < colIndex + 1 + numCols; ++curCol) {
-    //   // curNeighbourIndex represents the required length
-    //   let requiredLength = curCol - colIndex + 1;
-    //   for (let i = 0; i < values.length; ++i) {
-    //     // Firt case: result is not found, or there is not enough results (in duplicate neighbour case)
-    //     // console.log(values[i]);
-    //     if (values[i].results.bindings.length < requiredLength) {
-    //       tableDataUpdated[i][curCol].data = "N/A";
-    //     }
-    //     // Second case: result is found. We need to process them.
-    //     else {
-    //       // let's determine if we need to truncate
-    //       // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
-    //       // Think about what to do when there are duplicates
-    //       let dbResult =
-    //         values[i].results.bindings[requiredLength - 1].somevar.value;
-    //       dbResult = removePrefix(dbResult);
-    //       // We first set the data of the cell
-    //       tableDataUpdated[i][curCol].data = dbResult;
-    //       // We then set the origin of the cell
-    //       // This origin depends on whether type is "subject" or "object"
-    //       let originToAdd;
-    //       // console.log(type);
-    //       if (type === "subject") {
-    //         originToAdd = neighbour + ":" + dbResult;
-    //       } else {
-    //         originToAdd = "is " + neighbour + " of:" + dbResult;
-    //       }
-    //       // console.log(originToAdd);
-    //       let keyOrigin = tableDataUpdated[i][
-    //         keyColIndexUpdated
-    //       ].origin.slice();
-    //       // console.log(keyOrigin);
-    //       keyOrigin.push(originToAdd);
-    //       // console.log(keyOrigin);
-    //       tableDataUpdated[i][curCol].origin = keyOrigin;
-    //     }
-    //   }
-    // }
-    // return {
-    //   tableHeader: tableHeaderUpdated,
-    //   tableData: tableDataUpdated,
-    //   optionsMap: optionsMapUpdated,
-    //   selectedClassAnnotation: selectedClassAnnotationUpdated,
-    //   keyColIndex: keyColIndexUpdated,
-    // };
+    // Finally, we fill in the actual data for tableData. We need to take care of both data and origin
+    let firstDegNeighbours = type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
+
+    for (let curCol = colIndex + 1; curCol < colIndex + 1 + numCols; ++curCol) {
+      // curNeighbourIndex represents the required length
+      let requiredLength = curCol - colIndex + 1;
+      // The three following lines adds support for populateSameRange
+      if (sameRange !== undefined && sameRange === true) {
+        --requiredLength;
+      }
+      for (let i = 0; i < tableDataUpdated.length; ++i) {
+        // We fetch the dataArray from firstDegNeighbours
+        let dataArray = firstDegNeighbours[i][neighbour];
+        // First case: result is not found, or there's not enough results.
+        if (dataArray === undefined || dataArray.length < requiredLength) {
+          tableDataUpdated[i][curCol].data = "N/A";
+        }
+        // Second case: result is found. We need to process them.
+        else {
+          // We first set the data of the cell
+          let value = dataArray[requiredLength - 1];
+          tableDataUpdated[i][curCol].data = value;
+          // We then set the origin of the cell
+          // This origin depends on whether type is "subject" or "object"
+          let originToAdd = type === "subject" ? neighbour + ":" + value : "is " + neighbour + " of:" + value;
+          let keyOrigin = tableDataUpdated[i][keyColIndexUpdated].origin.slice();
+          keyOrigin.push(originToAdd);
+          // console.log(keyOrigin);
+          tableDataUpdated[i][curCol].origin = keyOrigin;
+        }
+      }
+    }
+    return {
+      tableHeader: tableHeaderUpdated,
+      tableData: tableDataUpdated,
+      optionsMap: optionsMapUpdated,
+      selectedClassAnnotation: selectedClassAnnotationUpdated,
+      keyColIndex: keyColIndexUpdated,
+    };
   }
 
   // This function populates all neighbour with the same names in different columns, if that neighbour has multiple occurences.
@@ -1277,84 +1262,71 @@ class MainBody extends Component {
                                         this.state.tableHeader,
                                         this.state.tableData,
                                         this.state.optionsMap,
-                                        this.state.selectedClassAnnotation)
+                                        this.state.selectedClassAnnotation);
+    console.log(newState);
 
-    // let promiseArray = this.getOtherColPromise(neighbour,type);
-    // allPromiseReady(promiseArray).then((values) => {
-    //   let newState = this.addAllNeighbour(colIndex,
-    //                                     neighbour,
-    //                                     0,
-    //                                     type,
-    //                                     numCols,
-    //                                     values,
-    //                                     this.state.tableHeader,
-    //                                     this.state.tableData,
-    //                                     this.state.optionsMap,
-    //                                     this.state.selectedClassAnnotation,
-    //                                     this.state.keyColIndex);
-    //   // Let's also create the object we need for populateSameRange
-    //   // Note: the following code is identical to what we have in populateOtherColumn
-    //   let tempObj = {};
-    //   let siblingNeighbour = [];
-    //   // console.log("Range is "+range);
-    //   // console.log(this.state.keyColNeighbours);
-    //   for (let i=0;i<this.state.keyColNeighbours.length;++i) {
-    //     if (range !== undefined
-    //         &&this.state.keyColNeighbours[i].range === range 
-    //         && this.state.keyColNeighbours[i].value !== neighbour) {
-    //       siblingNeighbour.push(this.state.keyColNeighbours[i]);
-    //     }
-    //   }
-      
-    //   // Now we need to determine what goes in the Action Panel
+    // Let's also create the object we need for populateSameRange
+    // Note: the following code is identical to what we have in populateOtherColumn
+    let tempObj = {};
+    let siblingNeighbour = [];
+    // console.log("Range is "+range);
+    // console.log(this.state.keyColNeighbours);
+    for (let i=0;i<this.state.keyColNeighbours.length;++i) {
+      if (range !== undefined
+          &&this.state.keyColNeighbours[i].range === range 
+          && this.state.keyColNeighbours[i].value !== neighbour) {
+        siblingNeighbour.push(this.state.keyColNeighbours[i]);
+      }
+    }
+    
+    // Now we need to determine what goes in the Action Panel
 
-    //   // If we have found columns from the same range (other than the current neighbour), 
-    //   // we give user the option to populate other columns from the same range.
-    //   if (siblingNeighbour.length > 0) {
-    //     // Let's do some string processing to improve UI clarity
-    //     let rangeLiteral = "";
-    //     if (range.includes("http://dbpedia.org/ontology/")) {
-    //       rangeLiteral = range.slice(28);
-    //     } else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
-    //       rangeLiteral = range.slice(33);
-    //     } else {
-    //       rangeLiteral = range;
-    //     }
-    //     tempObj["task"] = "populateSameRange";
-    //     tempObj["colIndex"] = colIndex+numCols;  // Small change here: we need to adjust the position of the column index
-    //     tempObj["range"] = rangeLiteral;
-    //     console.log(siblingNeighbour);
-    //     tempObj["siblingNeighbour"] = siblingNeighbour;
-    //   }
-    //   // In this case, we tell user that they can populate more columns
-    //   else {
-    //     tempObj["task"] = "afterPopulateColumn";
-    //   }
+    // If we have found columns from the same range (other than the current neighbour), 
+    // we give user the option to populate other columns from the same range.
+    if (siblingNeighbour.length > 0) {
+      // Let's do some string processing to improve UI clarity
+      let rangeLiteral = "";
+      if (range.includes("http://dbpedia.org/ontology/")) {
+        rangeLiteral = range.slice(28);
+      } else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
+        rangeLiteral = range.slice(33);
+      } else {
+        rangeLiteral = range;
+      }
+      tempObj["task"] = "populateSameRange";
+      tempObj["colIndex"] = colIndex+numCols;  // Small change here: we need to adjust the position of the column index
+      tempObj["range"] = rangeLiteral;
+      // console.log(siblingNeighbour);
+      tempObj["siblingNeighbour"] = siblingNeighbour;
+    }
+    // In this case, we tell user that they can populate more columns
+    else {
+      tempObj["task"] = "afterPopulateColumn";
+    }
 
-    //   // Support for undo: 
-    //   // Let's save the previous state in an object
-    //   let lastAction = "sameNeighbourDiffCol";
-    //   let prevState = 
-    //     {
-    //       "curActionInfo":this.state.curActionInfo,
-    //       "tableData":this.state.tableData,
-    //       "tableHeader":this.state.tableHeader,
-    //       "optionsMap":this.state.optionsMap,
-    //       "selectedClassAnnotation":this.state.selectedClassAnnotation,
-    //       "keyColIndex":this.state.keyColIndex,
-    //     };
+    // Support for undo: 
+    // Let's save the previous state in an object
+    let lastAction = "sameNeighbourDiffCol";
+    let prevState = 
+      {
+        "curActionInfo":this.state.curActionInfo,
+        "tableData":this.state.tableData,
+        "tableHeader":this.state.tableHeader,
+        "optionsMap":this.state.optionsMap,
+        "selectedClassAnnotation":this.state.selectedClassAnnotation,
+        "keyColIndex":this.state.keyColIndex,
+      };
 
-    //   this.setState({
-    //     curActionInfo:tempObj,
-    //     tableData:newState.tableData,
-    //     tableHeader:newState.tableHeader,
-    //     optionsMap:newState.optionsMap,
-    //     selectedClassAnnotation:newState.selectedClassAnnotation,
-    //     keyColIndex:newState.keyColIndex,
-    //     lastAction: lastAction,
-    //     prevState: prevState,
-    //   })
-    // })
+    this.setState({
+      curActionInfo:tempObj,
+      tableData:newState.tableData,
+      tableHeader:newState.tableHeader,
+      optionsMap:newState.optionsMap,
+      selectedClassAnnotation:newState.selectedClassAnnotation,
+      keyColIndex:newState.keyColIndex,
+      lastAction: lastAction,
+      prevState: prevState,
+    })
   }
 
   // This function populates all neighbour with the same names in the same columns, if that neighbour has multiple occurences.
@@ -1404,85 +1376,60 @@ class MainBody extends Component {
   // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
   // This function should use addAllNeighbour as a helper function
   populateSameRange(e, colIndex, range, siblingNeighbour) {
-    document.body.classList.add('waiting');
 
     // console.log("Column index is "+colIndex);
     // console.log("Range is "+range);
     // console.log("Sibling neighbours are: ");
     // console.log(siblingNeighbour);
-    // for (let i=0;i<siblingNeighbour.length;++i) {
-    //   console.log("Neighbour name is: "+siblingNeighbour[i].name);
-    //   console.log("Count is: "+siblingNeighbour[i].count);
-    // }
-    let promiseArrayTwoD = [];
-    for (let i=0;i<siblingNeighbour.length;++i) {
-      let curPromiseArray = this.getOtherColPromise(siblingNeighbour[i].value,"subject");
-      for (let j=0;j<curPromiseArray.length;++j) {
-        promiseArrayTwoD.push(curPromiseArray[j]);
-      }
-      // promiseArrayTwoD.push(this.getOtherColPromise(siblingNeighbour[i].name,"subject"));
-    } 
-    allPromiseReady(promiseArrayTwoD).then((values) => {
 
-      // for (let i=0;i<values.length;++i) {
-      //   console.log(values[i]);
-      // }
+    // first we fetch the initial state of tableHeader, tableData, optionsMap, selectedClassAnnotation, keyColIndex, and curColIndex
+    let tempHeader = this.state.tableHeader;
+    let tempData = this.state.tableData;
+    let tempOptions = this.state.optionsMap;
+    let tempAnnotation = this.state.selectedClassAnnotation;
+    let tempKeyColIndex = this.state.keyColIndex;
+    let curColIndex = colIndex;
 
-      // first we fetch the initial state of tableHeader, tableData, optionsMap, and selectedClassAnnotation
-      let tempHeader = this.state.tableHeader;
-      let tempData = this.state.tableData;
-      let tempOptions = this.state.optionsMap;
-      let tempAnnotation = this.state.selectedClassAnnotation;
-      let tempKeyColIndex = this.state.keyColIndex;
-      let curColIndex = colIndex;
-      for (let i=0;i<siblingNeighbour.length;++i) {
-        let curValueArray = [];
-        for (let j=0;j<tempData.length;++j) {
-          curValueArray.push(values[tempData.length*i+j]) // since working with 2D promise array is not figured out yet, we need to manipulate index
-        }
-        let newState = this.addAllNeighbour(curColIndex,
-                                            siblingNeighbour[i].value,    // this is name of the neighbour
-                                            -1,                          // this is neighbour index. -1 indicates that we have not populated any neighbour of this name
-                                            "subject",                   // for now, type can only be subject
-                                            siblingNeighbour[i].count,   // we need to populate this number of columns for this neighbour
-                                            curValueArray,               // This is the fetched data
-                                            tempHeader,
-                                            tempData,
-                                            tempOptions,
-                                            tempAnnotation,
-                                            tempKeyColIndex);
-        curColIndex+=siblingNeighbour[i].count;
-        tempHeader = newState.tableHeader;
-        tempData = newState.tableData;
-        tempOptions = newState.optionsMap;
-        tempAnnotation = newState.selectedClassAnnotation;
-        tempKeyColIndex = newState.keyColIndex;
-      }
+    for (let i = 0; i < siblingNeighbour.length; ++i) {
+      let newState = this.addAllNeighbour(curColIndex,
+                                          siblingNeighbour[i].value,
+                                          "subject",
+                                          siblingNeighbour[i].count,
+                                          tempKeyColIndex,
+                                          tempHeader,
+                                          tempData,
+                                          tempOptions,
+                                          tempAnnotation,
+                                          true);
+      curColIndex+=siblingNeighbour[i].count;
+      tempHeader = newState.tableHeader;
+      tempData = newState.tableData;
+      tempOptions = newState.optionsMap;
+      tempAnnotation = newState.selectedClassAnnotation;
+      tempKeyColIndex = newState.keyColIndex;
+    }
 
-      document.body.classList.remove('waiting');
+    // Support for undo: 
+    let lastAction = "populateSameRange";
+    let prevState = 
+      {
+        "curActionInfo":this.state.curActionInfo,
+        "tableData":this.state.tableData,
+        "tableHeader":this.state.tableHeader,
+        "optionsMap":this.state.optionsMap,
+        "selectedClassAnnotation":this.state.selectedClassAnnotation,
+        "keyColIndex":this.state.keyColIndex,
+      };
 
-      // Support for undo: 
-      let lastAction = "populateSameRange";
-      let prevState = 
-        {
-          "curActionInfo":this.state.curActionInfo,
-          "tableData":this.state.tableData,
-          "tableHeader":this.state.tableHeader,
-          "optionsMap":this.state.optionsMap,
-          "selectedClassAnnotation":this.state.selectedClassAnnotation,
-          "keyColIndex":this.state.keyColIndex,
-        };
-
-      this.setState({
-        curActionInfo:{"task":"afterPopulateColumn"},
-        tableData:tempData,
-        tableHeader:tempHeader,
-        optionsMap:tempOptions,
-        selectedClassAnnotation:tempAnnotation,
-        keyColIndex:tempKeyColIndex,
-        lastAction:lastAction,
-        prevState:prevState,
-      })
+    this.setState({
+      curActionInfo:{"task":"afterPopulateColumn"},
+      tableData:tempData,
+      tableHeader:tempHeader,
+      optionsMap:tempOptions,
+      selectedClassAnnotation:tempAnnotation,
+      keyColIndex:tempKeyColIndex,
+      lastAction:lastAction,
+      prevState:prevState,
     })
   }
 
