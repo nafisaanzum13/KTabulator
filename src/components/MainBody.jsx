@@ -500,24 +500,23 @@ class MainBody extends Component {
   // Note: we want to deal with the selection of key column header vs non key column header differently
 
   selectColHeader(e, colIndex) {
-    // console.log("Check table header here");
-    // console.log(this.state.tableHeader);
-    //  We first create a copy of the existing table headers
+
     let tableHeader = this.state.tableHeader.slice();
 
-    // This part deals with the selection of key column header
-    if (colIndex === this.state.keyColIndex) {
-      // We create a copy of the selected option
-      if (e !== null) {
-        let selectedOptions = e.slice();
-        // console.log(selectedOptions);
-        tableHeader[colIndex] = selectedOptions;
+    if (e !== null) {
+
+      // We first get the selectedOptions
+      let selectedOptions = e.slice();
+      console.log(selectedOptions);
+      tableHeader[colIndex] = selectedOptions;
+
+      // This part deals with the selection of a key column header
+      if (colIndex === this.state.keyColIndex) {
         let tempObj = {};
         tempObj["task"] = "populateKeyColumn";
         tempObj["colIndex"] = colIndex;
         tempObj["neighbourArray"] = [];
-        // Modification here: instead of simplying passing the value, we want to pass the selectedOptions as a whole
-        // Because we need its "dataset" attribute
+        // Since neighbourArray is an array, let's push on selectedOptions one by one
         for (let i = 0; i < selectedOptions.length; ++i) {
           tempObj.neighbourArray.push(selectedOptions[i]);
         }
@@ -525,66 +524,101 @@ class MainBody extends Component {
         this.setState({
           tableHeader: tableHeader,
           curActionInfo: tempObj,
-        });
+        })
       }
-    }
-    // This part deals with the selection of non key column header
-    else {
-      // The first few lines fix some pass by reference problems
-      let evalue = e.value;
-      let elabel = e.label;
-      // let ecount = e.count;
-      tableHeader[colIndex] = { value: evalue, label: elabel };
-      // We want to change the label of non-key column headers with respect to the label of key column
-      // We first create the label text for the key column
-      let keyColLabel = "";
-      if (this.state.keyColIndex === 0) {
+
+      // This part deals with the selection of a non key column header
+      else {
+        // We want to change the label of non-key column headers with respect to the label of key column
+        // First step: set up the label text for the key column
+        let keyColLabel = "";
         for (let i = 0; i < tableHeader[this.state.keyColIndex].length; ++i) {
-          if (i > 0) {
-            keyColLabel += "&";
-          }
-          keyColLabel += tableHeader[this.state.keyColIndex][i].label;
+          let labelToAdd = i > 0 ? "&" + tableHeader[this.state.keyColIndex][i].label : tableHeader[this.state.keyColIndex][i].label;
+          keyColLabel+=labelToAdd;
         }
-      } else {
-        keyColLabel = tableHeader[this.state.keyColIndex].label;
+        console.log(keyColLabel);
       }
-      // Bugfix for Go Table Creation: if at this stage, keyColLable is still "", that means we came from the tabel union task first.
-      // In this case, tableHeader[keyColIndex] is an object, not an array. 
-      // So we just set keyColLabel as tableHeader[this.state.keyColIndex].label
-      if (keyColLabel === "") {
-        keyColLabel = tableHeader[this.state.keyColIndex].label;
-      }
-      // We then append the current column's label to it
-      // console.log(keyColLabel);
-      tableHeader[colIndex].label =
-        tableHeader[colIndex].label + "--" + keyColLabel;
-      // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
-      // ask in ActionPanel whether user wants to populate the column based on the chosen column name
-      let tempObj = {};
-      tempObj["task"] = "populateOtherColumn";
-      tempObj["colIndex"] = colIndex;
-      tempObj["neighbour"] = e.value;
-      tempObj["type"] = e.type;
-      // tempObj["count"] = e.count;
-      // We want to deal with duplicate neighbour names since we are selecting column headers for non-key columns
-      // if (ecount > 1) {
-      //   tempObj["neighbourIndex"] = 0;
-      // }
-      // else {
-      //   tempObj["neighbourIndex"] = -1;
-      // }
-
-      // If type is subject, let's check if this neighbour also has a "range" (rdfs:range)
-      if (e.type === "subject" && e.range !== undefined) {
-        tempObj["range"] = e.range;
-      }
-      // console.log(tempObj);
-
-      this.setState({
-        tableHeader: tableHeader,
-        curActionInfo: tempObj,
-      });
     }
+
+
+
+    // // console.log("Check table header here");
+    // // console.log(this.state.tableHeader);
+    // //  We first create a copy of the existing table headers
+    // let tableHeader = this.state.tableHeader.slice();
+
+    // // This part deals with the selection of key column header
+    // if (colIndex === this.state.keyColIndex) {
+    //   // We create a copy of the selected option
+    //   if (e !== null) {
+    //     let selectedOptions = e.slice();
+    //     // console.log(selectedOptions);
+    //     tableHeader[colIndex] = selectedOptions;
+    //     let tempObj = {};
+    //     tempObj["task"] = "populateKeyColumn";
+    //     tempObj["colIndex"] = colIndex;
+    //     tempObj["neighbourArray"] = [];
+    //     // Modification here: instead of simplying passing the value, we want to pass the selectedOptions as a whole
+    //     // Because we need its "dataset" attribute
+    //     for (let i = 0; i < selectedOptions.length; ++i) {
+    //       tempObj.neighbourArray.push(selectedOptions[i]);
+    //     }
+    //     // console.log(tempObj);
+    //     this.setState({
+    //       tableHeader: tableHeader,
+    //       curActionInfo: tempObj,
+    //     });
+    //   }
+    // }
+    // // This part deals with the selection of non key column header
+    // else {
+    //   // The first few lines fix some pass by reference problems
+    //   let evalue = e.value;
+    //   let elabel = e.label;
+    //   // let ecount = e.count;
+    //   tableHeader[colIndex] = { value: evalue, label: elabel };
+    //   // We want to change the label of non-key column headers with respect to the label of key column
+    //   // We first create the label text for the key column
+    //   let keyColLabel = "";
+    //   if (this.state.keyColIndex === 0) {
+    //     for (let i = 0; i < tableHeader[this.state.keyColIndex].length; ++i) {
+    //       if (i > 0) {
+    //         keyColLabel += "&";
+    //       }
+    //       keyColLabel += tableHeader[this.state.keyColIndex][i].label;
+    //     }
+    //   } else {
+    //     keyColLabel = tableHeader[this.state.keyColIndex].label;
+    //   }
+    //   // Bugfix for Go Table Creation: if at this stage, keyColLable is still "", that means we came from the tabel union task first.
+    //   // In this case, tableHeader[keyColIndex] is an object, not an array. 
+    //   // So we just set keyColLabel as tableHeader[this.state.keyColIndex].label
+    //   if (keyColLabel === "") {
+    //     keyColLabel = tableHeader[this.state.keyColIndex].label;
+    //   }
+    //   // We then append the current column's label to it
+    //   // console.log(keyColLabel);
+    //   tableHeader[colIndex].label =
+    //     tableHeader[colIndex].label + "--" + keyColLabel;
+    //   // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
+    //   // ask in ActionPanel whether user wants to populate the column based on the chosen column name
+    //   let tempObj = {};
+    //   tempObj["task"] = "populateOtherColumn";
+    //   tempObj["colIndex"] = colIndex;
+    //   tempObj["neighbour"] = e.value;
+    //   tempObj["type"] = e.type;
+
+    //   // If type is subject, let's check if this neighbour also has a "range" (rdfs:range)
+    //   if (e.type === "subject" && e.range !== undefined) {
+    //     tempObj["range"] = e.range;
+    //   }
+    //   // console.log(tempObj);
+
+    //   this.setState({
+    //     tableHeader: tableHeader,
+    //     curActionInfo: tempObj,
+    //   });
+    // }
   }
 
   // This function is a helper function for populateKeyColumn. It is similar to getOtherColPromise.
@@ -701,6 +735,15 @@ class MainBody extends Component {
           regexReplace(neighbour[i].value) +
           ".";
       }
+      else {
+        let errorMsg = 
+          "We cannot find attribute "
+          +neighbour[i].value
+          +" in DBpedia. Remove this attribute and try again.";
+        alert(errorMsg);
+        document.body.classList.remove('waiting');
+        return;
+      }
     }
     let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
     let keyColPromise = fetchJSON(queryURLOne);
@@ -712,19 +755,21 @@ class MainBody extends Component {
       // This part sets the data for each cell
       let tableData = _.cloneDeep(this.state.tableData);
 
-      tableData = setFirstColumnData(
-        values[0].results.bindings,
-        tableData,
-        this.state.tableHeader,
-        colIndex
-      )
+      if (this.state.tableHeader[0][0].value !== "OriginURL") {
+        tableData = setFirstColumnData(
+          values[0].results.bindings,
+          tableData,
+          this.state.tableHeader,
+          colIndex
+        )
+      }
 
       // console.log(tableData);
 
       // We need to make modification here: find neighbours of a column, instead of neighbours of a cell
       // To do this, we need to use this tableData to ask more queries (number of queires is equal to tableData.length)
-      let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", 0);
-      let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", 0);
+      let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", colIndex);
+      let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", colIndex);
       allPromiseReady(promiseArrayOne).then((valuesOne) => {
       allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
@@ -760,14 +805,14 @@ class MainBody extends Component {
         firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
         let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
 
-        // console.log(processedSubjectNeighbours);
-        // console.log(processedObjectNeighbours);
-        // console.log(firstDegNeighbours);
+        console.log(processedSubjectNeighbours);
+        console.log(processedObjectNeighbours);
+        console.log(firstDegNeighbours);
 
         // we now concat subjectNeighbours and objectNeighbours together
         let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
 
-        console.log(keyColNeighbours);
+        // console.log(keyColNeighbours);
 
         let optionsMap = this.state.optionsMap.slice();
         for (let i = 0; i < optionsMap.length; ++i) {
@@ -1998,7 +2043,7 @@ class MainBody extends Component {
           && !(selectedClassAnnotation[i].length === 1 && selectedClassAnnotation[i][0] === "Number")
           && !(selectedClassAnnotation[i].length === 1 && selectedClassAnnotation[i][0] === "originURL")
         ) {
-        keyColIndex = i; 
+        keyColIndex = i+1; 
         break;
       }
     }
@@ -2012,8 +2057,10 @@ class MainBody extends Component {
     let tableHeader = [];
     for (let j=0;j<tableDataExplore[0].length;++j) {
       tableHeader.push(
-        {"value":tableDataExplore[0][j].data
-        ,"label":tableDataExplore[0][j].data}
+        [
+          {"value":tableDataExplore[0][j].data
+          ,"label":tableDataExplore[0][j].data}
+        ]
       )
     }
     // console.log("Table header is: ");

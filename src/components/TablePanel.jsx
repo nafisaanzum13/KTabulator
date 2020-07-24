@@ -29,7 +29,7 @@ class TablePanel extends Component {
       let tempHeader;
       // This part deals with the key column headers
       if (colIndex === this.props.keyColIndex) {
-        let multiAllowed = colIndex === 0 ? true : false;
+        // let multiAllowed = colIndex === 0 ? true : false;
         tempHeader = (
           <th className="table-head">
             <div
@@ -42,7 +42,8 @@ class TablePanel extends Component {
                 onChange={(e) => this.props.selectColHeader(e, colIndex)}
                 placeholder={"Choose header"}
                 options={this.props.optionsMap[this.props.keyColIndex]}
-                isMulti={multiAllowed}
+                // isMulti={multiAllowed}
+                isMulti={true}
               />
               <FaSearch
                 className="search-icon"
@@ -69,7 +70,8 @@ class TablePanel extends Component {
                 onChange={(e) => this.props.selectColHeader(e, colIndex)}
                 placeholder={"Choose header"}
                 options={this.props.optionsMap[colIndex]}
-                isMulti={false}
+                // isMulti={false}
+                isMulti={true}
               />
               <FaSearch
                 className="search-icon"
