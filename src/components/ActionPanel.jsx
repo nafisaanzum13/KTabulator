@@ -348,8 +348,8 @@ class ActionPanel extends Component {
                   e,
                   actionInfo.colIndex,
                   actionInfo.neighbour,
-                  actionInfo.neighbourIndex,
-                  actionInfo.count,
+                  // actionInfo.neighbourIndex,
+                  // actionInfo.count,
                   actionInfo.type,
                   actionInfo.range
                 )
@@ -378,7 +378,6 @@ class ActionPanel extends Component {
                     e,
                     actionInfo.colIndex,
                     actionInfo.neighbour,
-                    actionInfo.neighbourIndex,
                     actionInfo.type,
                     actionInfo.numCols
                   )
@@ -393,7 +392,7 @@ class ActionPanel extends Component {
                     e,
                     actionInfo.colIndex,
                     actionInfo.neighbour,
-                    actionInfo.neighbourIndex,
+                    // actionInfo.neighbourIndex,
                     actionInfo.type,
                     actionInfo.numCols,
                     actionInfo.range
