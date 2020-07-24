@@ -66,10 +66,9 @@ class MainBody extends Component {
       optionsMap: optionsMap, // 2D array storing the options map
       keyColNeighbours: [], // 1D array storing the neighbours of the key column
       // An object with two attributes: subject and object
-      // Subject and Object are both 2D arrays 
-      // - Outer array has length tableData.length
-      // - Inner array is an array of objects. Each object has two property: value and data.
-      // Example: value: almaMater, data: [Harvard, Occidental College, Columbia University]
+      // Subject and Object are both 1D arrays 
+      // - Length tableData.length
+      // - Each element is an object with multiple objects. Ex: {birthdate:[1998-01-01], almaMater:[a, b, c]}
       firstDegNeighbours: [],
 
       // states below are useful for startTable
@@ -1048,20 +1047,19 @@ class MainBody extends Component {
     });
   }
 
-  // This function is a helper function that takes in 10 parameters:
+  // This function is a helper function that takes in 9 parameters:
   // Note: this function does not make any fetch requests, thus does NOT involve promises.
 
   // 1) colIndex:        index of the column that we just filled     (ex. 1, if we just filled in column 1)
   // 2) neighbour:       attribute name of the column we just filled (ex. almaMater)
-  // 3) neighbourIndex:  index of the attribute we just filled       (ex. 0, if we have filled in almaMater-1)
-  // 4) type:            type of the attribute. Either "subject" or "object"
-  // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
-  // 6) values:          query results that are passed in
+  // 3) type:            type of the attribute. Either "subject" or "object"
+  // 4) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
+  // 5) keyColIndex:     the original key column index
 
-  // 7) tableHeader:                 original tableHeader
-  // 8) tableData:                   original tableData
-  // 9) optionsMap:                  original optionsMap
-  // 10) selectedClassAnnotation:    original selectedClassAnnotation
+  // 6) tableHeader:                 original tableHeader
+  // 7) tableData:                   original tableData
+  // 8) optionsMap:                  original optionsMap
+  // 9) selectedClassAnnotation:    original selectedClassAnnotation
 
   // and returns an object with 5 values:
   // 1) tableHeader:                tableHeader after modification
@@ -1073,32 +1071,31 @@ class MainBody extends Component {
   addAllNeighbour(
     colIndex,
     neighbour,
-    neighbourIndex,
     type,
     numCols,
-    values,
+    keyColIndex,
     tableHeader,
     tableData,
     optionsMap,
     selectedClassAnnotation,
-    keyColIndex,
   ) {
     // Let's first check if all the variables are as expected
 
     // console.log("Column index is: "+colIndex);
     // console.log("Neighbour is: "+neighbour);
-    // console.log("Neighbour index is: "+neighbourIndex);
     // console.log("Type is: "+type);
     // console.log("Number of columns to fill is: "+numCols);
+    // console.log("Key column index "+keyColIndex);
     // console.log("Table header is: ");
     // console.log(tableHeader);
     // console.log("Table Data is: ");
     // console.log(tableData);
     // console.log("Options map is: ");
     // console.log(optionsMap);
-    // console.log(values);
+    // console.log("selected class annotation is ");
+    // console.log(selectedClassAnnotation);
 
-    // Now we need to write the body for this function
+    // // Now we need to write the body for this function
 
     // First thing should be to insert "numCols" number of empty columns right after column with index "colIndex"
     const rowNum = tableData.length;
@@ -1110,149 +1107,150 @@ class MainBody extends Component {
     if (colIndex < keyColIndex) {
       keyColIndexUpdated+=numCols;
     }
+    // console.log(keyColIndexUpdated);
 
-    // We first take care of table data's (empty) additions
-    let tableDataUpdated = [];
-    for (let i = 0; i < rowNum; ++i) {
-      let tempRow = [];
-      for (let j = 0; j < colIndex + 1; ++j) {
-        tempRow.push(tableData[i][j]);
-      }
-      // we add in numCols number of empty columns
-      for (let j = 0; j < numCols; ++j) {
-        tempRow.push({ data: "", origin: [] });
-      }
-      for (let k = colIndex + 1; k < colNum; ++k) {
-        tempRow.push(tableData[i][k]);
-      }
-      tableDataUpdated.push(tempRow);
-    }
-
-    // we now take care of table header's addition.
-    let tableHeaderUpdated = [];
-    for (let j = 0; j < colIndex + 1; ++j) {
-      tableHeaderUpdated.push(tableHeader[j]);
-    }
-    // some modification needs to be made here
-    let labelText = "";
-    if (keyColIndex === 0) {
-      for (
-        let i = 0;
-        i < tableHeader[0].length;
-        ++i
-      ) {
-        if (i > 0) {
-          labelText += "&";
-        }
-        labelText += tableHeader[0][i].value;
-      }
-    } else {
-      // there's a bug somewhere here. Needs to fix it later.
-      labelText = tableHeader[keyColIndex].label;
-    }
-    for (let j = 0; j < numCols; ++j) {
-      let curLabel = "";
-      // First case is for type "subject"
-      if (type === "subject") {
-        curLabel =
-          curLabel +
-          neighbour +
-          "-" +
-          (2 + j) +
-          "--" +
-          labelText;
-      }
-      // Second case is for type "object"
-      else {
-        curLabel =
-          curLabel +
-          "is " +
-          neighbour +
-          " of-" +
-          (2 + j) +
-          "--" +
-          labelText;
-      }
-      tableHeaderUpdated.push({ value: neighbour, label: curLabel });
-    }
-    for (let k = colIndex + 1; k < colNum; ++k) {
-      tableHeaderUpdated.push(tableHeader[k]);
-    }
-
-    // We now take care of selectedClassAnnotation. For now, we just add some empty arrays to it
-    let selectedClassAnnotationUpdated = [];
-    for (let j = 0; j < colIndex; ++j) {
-      selectedClassAnnotationUpdated.push(selectedClassAnnotation[j]);
-    }
-    for (let j = 0; j < numCols; ++j) {
-      selectedClassAnnotationUpdated.push([]);
-    }
-    for (let k = colIndex; k < colNum-1; ++k) {
-      selectedClassAnnotationUpdated.push(selectedClassAnnotation[k]);
-    }
-
-    // we now take care of optionMap's addition. We just need to add some empty arrays to it
-    let optionsMapUpdated = [];
-    for (let j = 0; j < colIndex + 1; ++j) {
-      optionsMapUpdated.push(optionsMap[j]);
-    }
-    for (let j = 0; j < numCols; ++j) {
-      optionsMapUpdated.push([]);
-    }
-    for (let k = colIndex + 1; k < colNum; ++k) {
-      optionsMapUpdated.push(optionsMap[k]);
-    }
-
-    // Finally, we fill in the actual data for tableData. We need to take care of both data and origin
-    // for (let i=0;i<values.length;++i) {
-    //   console.log(values[i].results.bindings);
+    // // We first take care of table data's (empty) additions
+    // let tableDataUpdated = [];
+    // for (let i = 0; i < rowNum; ++i) {
+    //   let tempRow = [];
+    //   for (let j = 0; j < colIndex + 1; ++j) {
+    //     tempRow.push(tableData[i][j]);
+    //   }
+    //   // we add in numCols number of empty columns
+    //   for (let j = 0; j < numCols; ++j) {
+    //     tempRow.push({ data: "", origin: [] });
+    //   }
+    //   for (let k = colIndex + 1; k < colNum; ++k) {
+    //     tempRow.push(tableData[i][k]);
+    //   }
+    //   tableDataUpdated.push(tempRow);
     // }
-    for (let curCol = colIndex + 1; curCol < colIndex + 1 + numCols; ++curCol) {
-      // curNeighbourIndex represents the required length
-      let requiredLength = curCol - colIndex + 1;
-      for (let i = 0; i < values.length; ++i) {
-        // Firt case: result is not found, or there is not enough results (in duplicate neighbour case)
-        // console.log(values[i]);
-        if (values[i].results.bindings.length < requiredLength) {
-          tableDataUpdated[i][curCol].data = "N/A";
-        }
-        // Second case: result is found. We need to process them.
-        else {
-          // let's determine if we need to truncate
-          // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
-          // Think about what to do when there are duplicates
-          let dbResult =
-            values[i].results.bindings[requiredLength - 1].somevar.value;
-          dbResult = removePrefix(dbResult);
-          // We first set the data of the cell
-          tableDataUpdated[i][curCol].data = dbResult;
-          // We then set the origin of the cell
-          // This origin depends on whether type is "subject" or "object"
-          let originToAdd;
-          // console.log(type);
-          if (type === "subject") {
-            originToAdd = neighbour + ":" + dbResult;
-          } else {
-            originToAdd = "is " + neighbour + " of:" + dbResult;
-          }
-          // console.log(originToAdd);
-          let keyOrigin = tableDataUpdated[i][
-            keyColIndexUpdated
-          ].origin.slice();
-          // console.log(keyOrigin);
-          keyOrigin.push(originToAdd);
-          // console.log(keyOrigin);
-          tableDataUpdated[i][curCol].origin = keyOrigin;
-        }
-      }
-    }
-    return {
-      tableHeader: tableHeaderUpdated,
-      tableData: tableDataUpdated,
-      optionsMap: optionsMapUpdated,
-      selectedClassAnnotation: selectedClassAnnotationUpdated,
-      keyColIndex: keyColIndexUpdated,
-    };
+
+    // // we now take care of table header's addition.
+    // let tableHeaderUpdated = [];
+    // for (let j = 0; j < colIndex + 1; ++j) {
+    //   tableHeaderUpdated.push(tableHeader[j]);
+    // }
+    // // some modification needs to be made here
+    // let labelText = "";
+    // if (keyColIndex === 0) {
+    //   for (
+    //     let i = 0;
+    //     i < tableHeader[0].length;
+    //     ++i
+    //   ) {
+    //     if (i > 0) {
+    //       labelText += "&";
+    //     }
+    //     labelText += tableHeader[0][i].value;
+    //   }
+    // } else {
+    //   // there's a bug somewhere here. Needs to fix it later.
+    //   labelText = tableHeader[keyColIndex].label;
+    // }
+    // for (let j = 0; j < numCols; ++j) {
+    //   let curLabel = "";
+    //   // First case is for type "subject"
+    //   if (type === "subject") {
+    //     curLabel =
+    //       curLabel +
+    //       neighbour +
+    //       "-" +
+    //       (2 + j) +
+    //       "--" +
+    //       labelText;
+    //   }
+    //   // Second case is for type "object"
+    //   else {
+    //     curLabel =
+    //       curLabel +
+    //       "is " +
+    //       neighbour +
+    //       " of-" +
+    //       (2 + j) +
+    //       "--" +
+    //       labelText;
+    //   }
+    //   tableHeaderUpdated.push({ value: neighbour, label: curLabel });
+    // }
+    // for (let k = colIndex + 1; k < colNum; ++k) {
+    //   tableHeaderUpdated.push(tableHeader[k]);
+    // }
+
+    // // We now take care of selectedClassAnnotation. For now, we just add some empty arrays to it
+    // let selectedClassAnnotationUpdated = [];
+    // for (let j = 0; j < colIndex; ++j) {
+    //   selectedClassAnnotationUpdated.push(selectedClassAnnotation[j]);
+    // }
+    // for (let j = 0; j < numCols; ++j) {
+    //   selectedClassAnnotationUpdated.push([]);
+    // }
+    // for (let k = colIndex; k < colNum-1; ++k) {
+    //   selectedClassAnnotationUpdated.push(selectedClassAnnotation[k]);
+    // }
+
+    // // we now take care of optionMap's addition. We just need to add some empty arrays to it
+    // let optionsMapUpdated = [];
+    // for (let j = 0; j < colIndex + 1; ++j) {
+    //   optionsMapUpdated.push(optionsMap[j]);
+    // }
+    // for (let j = 0; j < numCols; ++j) {
+    //   optionsMapUpdated.push([]);
+    // }
+    // for (let k = colIndex + 1; k < colNum; ++k) {
+    //   optionsMapUpdated.push(optionsMap[k]);
+    // }
+
+    // // Finally, we fill in the actual data for tableData. We need to take care of both data and origin
+    // // for (let i=0;i<values.length;++i) {
+    // //   console.log(values[i].results.bindings);
+    // // }
+    // for (let curCol = colIndex + 1; curCol < colIndex + 1 + numCols; ++curCol) {
+    //   // curNeighbourIndex represents the required length
+    //   let requiredLength = curCol - colIndex + 1;
+    //   for (let i = 0; i < values.length; ++i) {
+    //     // Firt case: result is not found, or there is not enough results (in duplicate neighbour case)
+    //     // console.log(values[i]);
+    //     if (values[i].results.bindings.length < requiredLength) {
+    //       tableDataUpdated[i][curCol].data = "N/A";
+    //     }
+    //     // Second case: result is found. We need to process them.
+    //     else {
+    //       // let's determine if we need to truncate
+    //       // Note: In here we are fetching the first value from the binding array. But sometimes there will be more than 1.
+    //       // Think about what to do when there are duplicates
+    //       let dbResult =
+    //         values[i].results.bindings[requiredLength - 1].somevar.value;
+    //       dbResult = removePrefix(dbResult);
+    //       // We first set the data of the cell
+    //       tableDataUpdated[i][curCol].data = dbResult;
+    //       // We then set the origin of the cell
+    //       // This origin depends on whether type is "subject" or "object"
+    //       let originToAdd;
+    //       // console.log(type);
+    //       if (type === "subject") {
+    //         originToAdd = neighbour + ":" + dbResult;
+    //       } else {
+    //         originToAdd = "is " + neighbour + " of:" + dbResult;
+    //       }
+    //       // console.log(originToAdd);
+    //       let keyOrigin = tableDataUpdated[i][
+    //         keyColIndexUpdated
+    //       ].origin.slice();
+    //       // console.log(keyOrigin);
+    //       keyOrigin.push(originToAdd);
+    //       // console.log(keyOrigin);
+    //       tableDataUpdated[i][curCol].origin = keyOrigin;
+    //     }
+    //   }
+    // }
+    // return {
+    //   tableHeader: tableHeaderUpdated,
+    //   tableData: tableDataUpdated,
+    //   optionsMap: optionsMapUpdated,
+    //   selectedClassAnnotation: selectedClassAnnotationUpdated,
+    //   keyColIndex: keyColIndexUpdated,
+    // };
   }
 
   // This function populates all neighbour with the same names in different columns, if that neighbour has multiple occurences.
@@ -1269,102 +1267,103 @@ class MainBody extends Component {
 
   sameNeighbourDiffCol(e,colIndex,neighbour,type,numCols,range) {
 
-    // The following is testing for 2D Promise arrays. Turns out it works!
-    // let promiseArrayOne = this.getOtherColPromise(neighbour,type);
-    // let promiseArrayTwo = this.getOtherColPromise(neighbour,type);
-    // let twoD = [promiseArrayOne,promiseArrayTwo];
-    // allPromiseReady(twoD).then((values) => {
-    //   console.log(values);
-    // })
-
-    // console.log(neighbourIndex);
     // console.log(range);
 
-    let promiseArray = this.getOtherColPromise(neighbour,type);
-    allPromiseReady(promiseArray).then((values) => {
-      let newState = this.addAllNeighbour(colIndex,
+    let newState = this.addAllNeighbour(colIndex,
                                         neighbour,
-                                        0,
                                         type,
                                         numCols,
-                                        values,
+                                        this.state.keyColIndex,
                                         this.state.tableHeader,
                                         this.state.tableData,
                                         this.state.optionsMap,
-                                        this.state.selectedClassAnnotation,
-                                        this.state.keyColIndex);
-      // Let's also create the object we need for populateSameRange
-      // Note: the following code is identical to what we have in populateOtherColumn
-      let tempObj = {};
-      let siblingNeighbour = [];
-      // console.log("Range is "+range);
-      // console.log(this.state.keyColNeighbours);
-      for (let i=0;i<this.state.keyColNeighbours.length;++i) {
-        if (range !== undefined
-            &&this.state.keyColNeighbours[i].range === range 
-            && this.state.keyColNeighbours[i].value !== neighbour) {
-          siblingNeighbour.push(this.state.keyColNeighbours[i]);
-        }
-      }
+                                        this.state.selectedClassAnnotation)
+
+    // let promiseArray = this.getOtherColPromise(neighbour,type);
+    // allPromiseReady(promiseArray).then((values) => {
+    //   let newState = this.addAllNeighbour(colIndex,
+    //                                     neighbour,
+    //                                     0,
+    //                                     type,
+    //                                     numCols,
+    //                                     values,
+    //                                     this.state.tableHeader,
+    //                                     this.state.tableData,
+    //                                     this.state.optionsMap,
+    //                                     this.state.selectedClassAnnotation,
+    //                                     this.state.keyColIndex);
+    //   // Let's also create the object we need for populateSameRange
+    //   // Note: the following code is identical to what we have in populateOtherColumn
+    //   let tempObj = {};
+    //   let siblingNeighbour = [];
+    //   // console.log("Range is "+range);
+    //   // console.log(this.state.keyColNeighbours);
+    //   for (let i=0;i<this.state.keyColNeighbours.length;++i) {
+    //     if (range !== undefined
+    //         &&this.state.keyColNeighbours[i].range === range 
+    //         && this.state.keyColNeighbours[i].value !== neighbour) {
+    //       siblingNeighbour.push(this.state.keyColNeighbours[i]);
+    //     }
+    //   }
       
-      // Now we need to determine what goes in the Action Panel
+    //   // Now we need to determine what goes in the Action Panel
 
-      // If we have found columns from the same range (other than the current neighbour), 
-      // we give user the option to populate other columns from the same range.
-      if (siblingNeighbour.length > 0) {
-        // Let's do some string processing to improve UI clarity
-        let rangeLiteral = "";
-        if (range.includes("http://dbpedia.org/ontology/")) {
-          rangeLiteral = range.slice(28);
-        } else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
-          rangeLiteral = range.slice(33);
-        } else {
-          rangeLiteral = range;
-        }
-        tempObj["task"] = "populateSameRange";
-        tempObj["colIndex"] = colIndex+numCols;  // Small change here: we need to adjust the position of the column index
-        tempObj["range"] = rangeLiteral;
-        console.log(siblingNeighbour);
-        tempObj["siblingNeighbour"] = siblingNeighbour;
-      }
-      // In this case, we tell user that they can populate more columns
-      else {
-        tempObj["task"] = "afterPopulateColumn";
-      }
+    //   // If we have found columns from the same range (other than the current neighbour), 
+    //   // we give user the option to populate other columns from the same range.
+    //   if (siblingNeighbour.length > 0) {
+    //     // Let's do some string processing to improve UI clarity
+    //     let rangeLiteral = "";
+    //     if (range.includes("http://dbpedia.org/ontology/")) {
+    //       rangeLiteral = range.slice(28);
+    //     } else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
+    //       rangeLiteral = range.slice(33);
+    //     } else {
+    //       rangeLiteral = range;
+    //     }
+    //     tempObj["task"] = "populateSameRange";
+    //     tempObj["colIndex"] = colIndex+numCols;  // Small change here: we need to adjust the position of the column index
+    //     tempObj["range"] = rangeLiteral;
+    //     console.log(siblingNeighbour);
+    //     tempObj["siblingNeighbour"] = siblingNeighbour;
+    //   }
+    //   // In this case, we tell user that they can populate more columns
+    //   else {
+    //     tempObj["task"] = "afterPopulateColumn";
+    //   }
 
-      // Support for undo: 
-      // Let's save the previous state in an object
-      let lastAction = "sameNeighbourDiffCol";
-      let prevState = 
-        {
-          "curActionInfo":this.state.curActionInfo,
-          "tableData":this.state.tableData,
-          "tableHeader":this.state.tableHeader,
-          "optionsMap":this.state.optionsMap,
-          "selectedClassAnnotation":this.state.selectedClassAnnotation,
-          "keyColIndex":this.state.keyColIndex,
-        };
+    //   // Support for undo: 
+    //   // Let's save the previous state in an object
+    //   let lastAction = "sameNeighbourDiffCol";
+    //   let prevState = 
+    //     {
+    //       "curActionInfo":this.state.curActionInfo,
+    //       "tableData":this.state.tableData,
+    //       "tableHeader":this.state.tableHeader,
+    //       "optionsMap":this.state.optionsMap,
+    //       "selectedClassAnnotation":this.state.selectedClassAnnotation,
+    //       "keyColIndex":this.state.keyColIndex,
+    //     };
 
-      this.setState({
-        curActionInfo:tempObj,
-        tableData:newState.tableData,
-        tableHeader:newState.tableHeader,
-        optionsMap:newState.optionsMap,
-        selectedClassAnnotation:newState.selectedClassAnnotation,
-        keyColIndex:newState.keyColIndex,
-        lastAction: lastAction,
-        prevState: prevState,
-      })
-    })
+    //   this.setState({
+    //     curActionInfo:tempObj,
+    //     tableData:newState.tableData,
+    //     tableHeader:newState.tableHeader,
+    //     optionsMap:newState.optionsMap,
+    //     selectedClassAnnotation:newState.selectedClassAnnotation,
+    //     keyColIndex:newState.keyColIndex,
+    //     lastAction: lastAction,
+    //     prevState: prevState,
+    //   })
+    // })
   }
 
   // This function populates all neighbour with the same names in the same columns, if that neighbour has multiple occurences.
 
   sameNeighbourOneCol(e, colIndex, neighbour, type, numCols) {
-    console.log(colIndex);
-    console.log(neighbour);
-    console.log(type);
-    console.log(numCols);
+    // console.log(colIndex);
+    // console.log(neighbour);
+    // console.log(type);
+    // console.log(numCols);
 
     let tableData = _.cloneDeep(this.state.tableData);
     let firstDegNeighbours = type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
@@ -1400,46 +1399,6 @@ class MainBody extends Component {
       lastAction: lastAction,
       prevState: prevState,
     });
-
-    // In this option, we just need to change data in column "ColIndex", by putting "numCols" numbers of new values into it
-    // let tableData = _.cloneDeep(this.state.tableData);
-    // let promiseArray = this.getOtherColPromise(neighbour, type);
-    // allPromiseReady(promiseArray).then((values) => {
-    //   for (
-    //     let requiredLength = 2;
-    //     requiredLength < numCols + 2;
-    //     ++requiredLength
-    //   ) {
-    //     for (let i = 0; i < values.length; ++i) {
-    //       if (values[i].results.bindings.length >= requiredLength) {
-    //         let dbResult =
-    //           values[i].results.bindings[requiredLength - 1].somevar.value;
-    //         dbResult = removePrefix(dbResult);
-    //         tableData[i][colIndex].data =
-    //           tableData[i][colIndex].data + ";" + dbResult;
-    //         let updatedOrigin = tableData[i][colIndex].origin.slice();
-    //         updatedOrigin[updatedOrigin.length - 1] =
-    //           updatedOrigin[updatedOrigin.length - 1] + ";" + dbResult;
-    //         tableData[i][colIndex].origin = updatedOrigin;
-    //       }
-    //     }
-    //   }
-
-    //   // Support for undo: 
-    //   let lastAction = "sameNeighbourOneCol";
-    //   let prevState = 
-    //     {
-    //       "curActionInfo":this.state.curActionInfo,
-    //       "tableData":this.state.tableData,
-    //     };
-
-    //   this.setState({
-    //     curActionInfo: {"task":"afterPopulateColumn"},
-    //     tableData: tableData,
-    //     lastAction: lastAction,
-    //     prevState: prevState,
-    //   });
-    // });
   }
 
   // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
@@ -1820,6 +1779,9 @@ class MainBody extends Component {
       // console.log(valuesOne);
       // console.log(valuesTwo);
 
+      // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
+      let firstDegNeighbours = {};
+
       // First we deal with subject neighbours, so valuesOne
       let subjectNeighbourArray = [];
       for (let i = 0; i < valuesOne.length; ++i) {
@@ -1830,6 +1792,7 @@ class MainBody extends Component {
         )
         subjectNeighbourArray.push(temp);
       }
+      firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
       let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
 
       // Then we deal with object neighbours, so valuesTwo
@@ -1842,6 +1805,7 @@ class MainBody extends Component {
         )
         objectNeighbourArray.push(temp);
       }
+      firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
       let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
 
       // console.log(processedSubjectNeighbours);
@@ -1864,6 +1828,7 @@ class MainBody extends Component {
           {
             "keyColIndex": this.state.keyColIndex,
             "keyColNeighbours": this.state.keyColNeighbours,
+            "firstDegNeighbours": this.state.firstDegNeighbours,
             "curActionInfo": this.state.curActionInfo,
             "optionsMap": this.state.optionsMap,
             "tabIndex": this.state.tabIndex,
@@ -1872,6 +1837,7 @@ class MainBody extends Component {
       this.setState({
         keyColIndex: colIndex,
         keyColNeighbours: keyColNeighbours,
+        firstDegNeighbours: firstDegNeighbours,
         curActionInfo: {"task":"afterPopulateColumn"},
         optionsMap: optionsMap,
         tabIndex: 0, // we want to set the currently active tab to be wrangling actions
@@ -2136,6 +2102,10 @@ class MainBody extends Component {
     return allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
       // console.log(valuesOne);
       // console.log(valuesTwo);
+
+      // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
+      let firstDegNeighbours = {};
+
       // First we deal with subject neighbours, so valuesOne
       let subjectNeighbourArray = [];
       for (let i = 0; i < valuesOne.length; ++i) {
@@ -2146,6 +2116,7 @@ class MainBody extends Component {
         )
         subjectNeighbourArray.push(temp);
       }
+      firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
       let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
 
       // Then we deal with object neighbours, so valuesTwo
@@ -2158,6 +2129,7 @@ class MainBody extends Component {
         )
         objectNeighbourArray.push(temp);
       }
+      firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
       let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
 
       // console.log(processedSubjectNeighbours);
@@ -2184,6 +2156,7 @@ class MainBody extends Component {
           "tableHeader":tableHeader,
           "tableData":tableData,
           "keyColNeighbours":keyColNeighbours,
+          "firstDegNeighbours":firstDegNeighbours,
           "optionsMap":optionsMap
         }
       )
@@ -2354,6 +2327,7 @@ class MainBody extends Component {
                 "selectedClassAnnotation": this.state.selectedClassAnnotation,
                 "keyColIndex": this.state.keyColIndex,
                 "keyColNeighbours": this.state.keyColNeighbours,
+                "firstDegNeighbours": this.state.firstDegNeighbours,
                 "tableData": this.state.tableData,
                 "tableHeader": this.state.tableHeader,
                 "optionsMap": this.state.optionsMap,
@@ -2368,6 +2342,7 @@ class MainBody extends Component {
             selectedClassAnnotation: selectedClassAnnotation,
             keyColIndex: stateInfo.keyColIndex,
             keyColNeighbours: stateInfo.keyColNeighbours,
+            firstDegNeighbours: stateInfo.firstDegNeighbours,
             tableData: stateInfo.tableData,
             tableHeader: stateInfo.tableHeader,
             optionsMap: stateInfo.optionsMap,
@@ -2909,6 +2884,7 @@ class MainBody extends Component {
         selectedClassAnnotation: prevState.selectedClassAnnotation,
         keyColIndex: prevState.keyColIndex,
         keyColNeighbours: prevState.keyColNeighbours,
+        firstDegNeighbours: prevState.firstDegNeighbours,
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
         optionsMap: prevState.optionsMap,
@@ -3009,6 +2985,7 @@ class MainBody extends Component {
         keyEntryIndex: prevState.keyEntryIndex,
         keyColIndex: prevState.keyColIndex,
         keyColNeighbours: prevState.keyColNeighbours,
+        firstDegNeighbours: prevState.firstDegNeighbours,
         curActionInfo: prevState.curActionInfo,
         optionsMap: prevState.optionsMap,
         tabIndex: prevState.tabIndex,
