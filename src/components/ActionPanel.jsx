@@ -368,7 +368,6 @@ class ActionPanel extends Component {
                     e,
                     actionInfo.colIndex,
                     actionInfo.neighbourArray,
-                    actionInfo.numCols
                   )
                 }
               >
@@ -380,10 +379,8 @@ class ActionPanel extends Component {
                   this.props.sameNeighbourDiffCol(
                     e,
                     actionInfo.colIndex,
-                    actionInfo.neighbour,
-                    actionInfo.type,
+                    actionInfo.neighbourArray,
                     actionInfo.numCols,
-                    actionInfo.range
                   )
                 }
               >
