@@ -1060,7 +1060,7 @@ class MainBody extends Component {
     // console.log(longestColumnArray);
     let maxCount = Math.min(longestColumnArray.length, maxNeighbourCount);
     let remainNeighbourCount = maxCount - 1;
-    console.log(remainNeighbourCount);
+    // console.log(remainNeighbourCount);
 
     // tempObj stores the information passed to ActionPanel
     let tempObj = {};
@@ -1477,29 +1477,47 @@ class MainBody extends Component {
 
   // This function populates all neighbour with the same names in the same columns, if that neighbour has multiple occurences.
 
-  sameNeighbourOneCol(e, colIndex, neighbour, type, numCols) {
+  sameNeighbourOneCol(e, colIndex, neighbourArray, numCols) {
     // console.log(colIndex);
-    // console.log(neighbour);
-    // console.log(type);
+    // console.log(neighbourArray);
     // console.log(numCols);
 
     let tableData = _.cloneDeep(this.state.tableData);
-    let firstDegNeighbours = type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
 
-    for (let requiredLength = 2; requiredLength < numCols+2; ++requiredLength) {
-      // We loop through all rows
-      for (let i = 0; i < tableData.length; ++i) {
-        let dataArray = firstDegNeighbours[i][neighbour];
-        // If the following condition is met, we have to update this row (record)'s data and origin
-        if (dataArray !== undefined && dataArray.length >= requiredLength) {
-          // console.log(dataArray);
-          // Start here
-          let value = dataArray[requiredLength - 1];
-          tableData[i][colIndex].data = tableData[i][colIndex].data + ";" + value;
-          let updatedOrigin = tableData[i][colIndex].origin.slice();
-          updatedOrigin[updatedOrigin.length - 1] = updatedOrigin[updatedOrigin.length - 1] + ";" +value;
-          tableData[i][colIndex].origin = updatedOrigin;
+    // Outer loop loops over all rows in the table
+    for (let i = 0; i < tableData.length; ++i) {
+      // curColumnArray corresponds to the dataArray for each entry from the search column
+      let curColumnArray = [];
+      // we loop through the neighbourArray
+      for (let j = 0; j < neighbourArray.length; ++j) {
+        // For each neighbour in neighbourArray, we check to see if entries in search column have values for this neighbour
+        let curNeighbour = neighbourArray[j];
+        let firstDegNeighbours =
+          curNeighbour.type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
+        let curNeighbourData = firstDegNeighbours[i][curNeighbour.value];
+        // If yes, we want to concat those values with curColumnArray
+        if (curNeighbourData !== undefined) {
+          curColumnArray = curColumnArray.concat(curNeighbourData);
         }
+      }
+      // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
+      if (curColumnArray.length === 0) {
+        tableData[i][colIndex].data = "N/A";
+      }
+      // Otherwise, we have found at least one value. And we want to set up the data and origin. 
+      else {
+        // we first set the data for the cell using all values from curColumnArray (this is different from populateOtherColumn)
+        let curData = "";
+        for (let k = 0; k < curColumnArray.length; ++k) {
+          let dataToAdd = k > 0 ? ";" + curColumnArray[k] : curColumnArray[k];
+          curData+=dataToAdd;
+        }
+        tableData[i][colIndex].data = curData;
+        // we then set the origin for the cell
+        let originToAdd = createNeighbourText(neighbourArray) + ":" + curData;
+        let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
+        keyOrigin.push(originToAdd);
+        tableData[i][colIndex].origin = keyOrigin;
       }
     }
 

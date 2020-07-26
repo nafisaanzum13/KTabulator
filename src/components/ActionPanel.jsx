@@ -335,9 +335,6 @@ class ActionPanel extends Component {
       // In this case we give user a button to allow the population of a new column
       else if (actionInfo.task === "populateOtherColumn") {
         let neighbourArrayText = createNeighbourText(actionInfo.neighbourArray);
-        // console.log(actionInfo);
-        // Starting from here, let's construct the neighbourArrayText from neighbourArray
-        // add literal "OR" here.
         actionEle = (
           <div>
             <p>Fill this column with:</p>
@@ -358,14 +355,11 @@ class ActionPanel extends Component {
       } 
       // In this case we give user a button to allow the population of same neighbour
       else if (actionInfo.task === "populateSameNeighbour") {
-        let neighbourText =
-          actionInfo.type === "subject"
-            ? actionInfo.neighbour
-            : "is " + actionInfo.neighbour + " of";
+        let neighbourArrayText = createNeighbourText(actionInfo.neighbourArray);
         actionEle = (
           <div>
             <p>Add all other properties with name:</p>
-            <p><b>{neighbourText}</b> ?</p>
+            <p><b>{neighbourArrayText}</b> ?</p>
             <div className="row">
               <button
                 className="col-md-4"
@@ -373,8 +367,7 @@ class ActionPanel extends Component {
                   this.props.sameNeighbourOneCol(
                     e,
                     actionInfo.colIndex,
-                    actionInfo.neighbour,
-                    actionInfo.type,
+                    actionInfo.neighbourArray,
                     actionInfo.numCols
                   )
                 }
