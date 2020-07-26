@@ -506,8 +506,8 @@ class MainBody extends Component {
     if (e !== null) {
 
       // We first get the selectedOptions
-      let selectedOptions = e.slice();
-      console.log(selectedOptions);
+      let selectedOptions = _.cloneDeep(e);
+      // console.log(selectedOptions);
       tableHeader[colIndex] = selectedOptions;
 
       // This part deals with the selection of a key column header
@@ -536,7 +536,29 @@ class MainBody extends Component {
           let labelToAdd = i > 0 ? "&" + tableHeader[this.state.keyColIndex][i].label : tableHeader[this.state.keyColIndex][i].label;
           keyColLabel+=labelToAdd;
         }
-        console.log(keyColLabel);
+        // Then, since tableHeader[colIndex] is an array, we update all element's label from the array
+        for (let i = 0; i < selectedOptions.length; ++i) {
+          let ownLabel = tableHeader[colIndex][i].type === "subject" ? tableHeader[colIndex][i].value : "is " + tableHeader[colIndex][i].value + " of";
+          tableHeader[colIndex][i].label = ownLabel + "--" + keyColLabel;
+        }
+        // console.log(tableHeader);
+
+        // Now, we want to ask in ActionPanel whether user wants to populate the column based on the chosen column names
+        let tempObj = {};
+        tempObj["task"] = "populateOtherColumn";
+        tempObj["colIndex"] = colIndex;
+        tempObj["neighbourArray"] = [];
+        // Since neighbourArray is an array, let's push on selectedOptions one by one
+        for (let i = 0; i < selectedOptions.length; ++i) {
+          tempObj.neighbourArray.push(selectedOptions[i]);
+        }
+        // Because we are allowing multi-selects now, type and range are no long two single strings.
+        // Rather, their values can be figured out from neighbourArray
+        // console.log(tempObj);
+        this.setState({
+          tableHeader: tableHeader,
+          curActionInfo: tempObj,
+        })
       }
     }
 
@@ -805,9 +827,9 @@ class MainBody extends Component {
         firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
         let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
 
-        console.log(processedSubjectNeighbours);
-        console.log(processedObjectNeighbours);
-        console.log(firstDegNeighbours);
+        // console.log(processedSubjectNeighbours);
+        // console.log(processedObjectNeighbours);
+        // console.log(firstDegNeighbours);
 
         // we now concat subjectNeighbours and objectNeighbours together
         let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
@@ -948,138 +970,113 @@ class MainBody extends Component {
     return promiseArray;
   }
 
-  // populateOtherColumn(e, colIndex, neighbour, neighbourIndex, count, type, range) {
-  populateOtherColumn(e, colIndex, neighbour, type, range) {
-    // document.body.classList.add('waiting');
+  // document.body.classList.add('waiting');
 
-    // console.log(neighbourIndex);
+  // console.log(neighbourIndex);
 
-    // Support for "populateSameRange":
+  // Support for "populateSameRange":
 
-    // When the range is not equal to undefined, we want to ask user if they want to populate all other attributes from this range
-    // console.log(range);
+  // When the range is not equal to undefined, we want to ask user if they want to populate all other attributes from this range
+  // console.log(range);
 
-    // we need to make a number of queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
-    // let promiseArrayTwo = this.getOtherColPromiseTwo(neighbour, type); // this is for testing
-    // let promiseArray = this.getOtherColPromise(neighbour, type);
+  // we need to make a number of queries in the form of: dbr:somekeycolumnentry dbp:neighbour|dbo:neighbour somevar
+  // let promiseArrayTwo = this.getOtherColPromiseTwo(neighbour, type); // this is for testing
+  // let promiseArray = this.getOtherColPromise(neighbour, type);
 
-    // allPromiseReady(promiseArray).then((values) => {
-    // // allPromiseReady(promiseArrayTwo).then((testValues) => {
+  // allPromiseReady(promiseArray).then((values) => {
+  // // allPromiseReady(promiseArrayTwo).then((testValues) => {
 
-    // //   // Let's compare the different values we get from getOtherColPromise and getOtherColPromiseTwo
-    // //   console.log(values);
-    // //   console.log(testValues);
+  // //   // Let's compare the different values we get from getOtherColPromise and getOtherColPromiseTwo
+  // //   console.log(values);
+  // //   console.log(testValues);
 
-    // //   // Now we need to process the testValues
+  // //   // Now we need to process the testValues
 
-    // //   let pairArray = [];
+  // //   let pairArray = [];
 
-    // //   // First we removed the prefixes from resultArray
-    // //   for (let i=0; i<testValues[0].results.bindings.length; ++i) {
-    // //     pairArray.push(
-    // //       {
-    // //         "key":removePrefix(testValues[0].results.bindings[i].key.value),
-    // //         "value":removePrefix(testValues[0].results.bindings[i].val.value)
-    // //       }
-    // //     )
-    // //   }
-    // //   console.log(pairArray);
+  // //   // First we removed the prefixes from resultArray
+  // //   for (let i=0; i<testValues[0].results.bindings.length; ++i) {
+  // //     pairArray.push(
+  // //       {
+  // //         "key":removePrefix(testValues[0].results.bindings[i].key.value),
+  // //         "value":removePrefix(testValues[0].results.bindings[i].val.value)
+  // //       }
+  // //     )
+  // //   }
+  // //   console.log(pairArray);
 
-    // //   // Then we create a keyArray
-    // //   let keyArray = [];
+  // //   // Then we create a keyArray
+  // //   let keyArray = [];
 
-    // //   for (let i=0; i<this.state.tableData.length; ++i) {
-    // //     keyArray.push(this.state.tableData[i][this.state.keyColIndex].data);
-    // //   }
-    // //   console.log(keyArray);
+  // //   for (let i=0; i<this.state.tableData.length; ++i) {
+  // //     keyArray.push(this.state.tableData[i][this.state.keyColIndex].data);
+  // //   }
+  // //   console.log(keyArray);
+  populateOtherColumn(e, colIndex, neighbourArray) {
+
+    // console.log(colIndex);
+    // console.log(neighbourArray);
 
     let tableData = _.cloneDeep(this.state.tableData);
-    let firstDegNeighbours = type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
-    let longestDataArray = [];
+    let longestColumnArray = [];
     for (let i = 0; i < tableData.length; ++i) {
-      let dataArray = firstDegNeighbours[i][neighbour];
-      // console.log(dataArray);
-      // If dataArray is empty, this current entry in search column does not have this neighbour at all.
-      if (dataArray === undefined) {
+      // curColumnArray is the dataArray for each entry in search column, for all neighbours in neighbourArray.
+      let curColumnArray = [];
+      // We loop through the neighbourArray
+      for (let j = 0; j < neighbourArray.length; ++j) {
+        // For each neighbour in neighbourArray, we check to see if entries in search column have values for this neighbour
+        let curNeighbour = neighbourArray[j];
+        let firstDegNeighbours = 
+          curNeighbour.type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
+        let curNeighbourData = firstDegNeighbours[i][curNeighbour.value];
+        // If yes, we want to concat those values with curColumnArray
+        if (curNeighbourData !== undefined) {
+          curColumnArray = curColumnArray.concat(curNeighbourData);
+        }
+      }
+      // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
+      if (curColumnArray.length === 0) {
         tableData[i][colIndex].data = "N/A";
-      } 
-      // Otherwise, we have found at least one value. Let's use dataArray[0]
+      }
+      // Otherwise, we have found at least one value.
       else {
-        // we first set data for the cell
-        tableData[i][colIndex].data = dataArray[0];
-        // we then set origin for the cell. The origin depends on whether type is "subject" or "object"
-        let originToAdd = type === "subject" ? neighbour + ":" + dataArray[0] : "is " + neighbour + " of:" + dataArray[0];
+        // we first set the data for the cell using curColumnArray[0]
+        tableData[i][colIndex].data = curColumnArray[0];
+        // we then set origin for the cell. Need to use neighbourArray to get the correct text for the origin
+        let originToAdd = createNeighbourText(neighbourArray) + ":" + curColumnArray[0];
         let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
         keyOrigin.push(originToAdd);
         tableData[i][colIndex].origin = keyOrigin;
-        // If dataArray's length is longer than longestDataArray's length, we want to update it
-        if (dataArray.length > longestDataArray.length) {
-          longestDataArray = dataArray;
+        // console.log(keyOrigin)
+        // If curColumnArray's length is longer than longestColumnArray's length, we want to update it
+        if (curColumnArray.length > longestColumnArray.length) {
+          longestColumnArray = curColumnArray;
         }
       }
     }
-    // console.log(longestDataArray);
-    let maxCount = Math.min(longestDataArray.length, maxNeighbourCount);
-    let remainNeighbourCount = maxCount - 1;
+    // Now, we are done with updating tableData.
 
+    // We start setting up the content for the Action Panel.
+    // console.log(longestColumnArray);
+    let maxCount = Math.min(longestColumnArray.length, maxNeighbourCount);
+    let remainNeighbourCount = maxCount - 1;
     console.log(remainNeighbourCount);
-    
-    // Now we set up the content for ActionPanel
+
+    // tempObj stores the information passed to ActionPanel
     let tempObj = {};
 
-    // In this case, we give users option to populate duplicate neighbours
+    // If remainNeighbourCount is larger than 0, we give users the option to populate duplicate neighbours
     if (remainNeighbourCount > 0) {
       tempObj["task"] = "populateSameNeighbour";
       tempObj["colIndex"] = colIndex;
-      tempObj["neighbour"] = neighbour;
-      tempObj["type"] = type;
+      tempObj["neighbourArray"] = neighbourArray;
       tempObj["numCols"] = remainNeighbourCount;
-      if (range !== undefined) {
-        tempObj["range"] = range;
-      }
     }
-    // In this case, users are not populating column with duplicate names, but it has a range.
-    // We may need to ask user if they want to populate other columns from the same range
-    else if (range !== undefined) {
-      let siblingNeighbour = [];
-      // console.log("Range is "+range);
-      // console.log(this.state.keyColNeighbours);
-      for (let i = 0; i < this.state.keyColNeighbours.length; ++i) {
-        if (
-          this.state.keyColNeighbours[i].range === range &&
-          this.state.keyColNeighbours[i].value !== neighbour
-        ) {
-          siblingNeighbour.push(this.state.keyColNeighbours[i]);
-        }
-      }
-      // If we have found columns from the same range (other than the current neighbour),
-      console.log(siblingNeighbour);
-      // If sibling neighbour is non-empty, we give user the option to populate other columns from the same range.
-      if (siblingNeighbour.length > 0) {
-        // Let's do some string processing to improve UI clarity
-        let rangeLiteral = "";
-        if (range.includes("http://dbpedia.org/ontology/")) {
-          rangeLiteral = range.slice(28);
-        } else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
-          rangeLiteral = range.slice(33);
-        } else {
-          rangeLiteral = range;
-        }
-        tempObj["task"] = "populateSameRange";
-        tempObj["colIndex"] = colIndex;
-        tempObj["range"] = rangeLiteral;
-        // console.log(siblingNeighbour);
-        tempObj["siblingNeighbour"] = siblingNeighbour;
-      }
-      // Else, if we have NOT found anything from the same range, we tell user that they can populate more columns
-      else {
-        tempObj["task"] = "afterPopulateColumn";
-      }
-    }
-    // In this case, we tell users that they can populate more columns
+    // Else, this column has no multiple values. We simply tell users that they can populate more columns. 
     else {
       tempObj["task"] = "afterPopulateColumn";
     }
+
     // Support for undo: 
     // Let's save the previous state in an object
     let lastAction = "populateOtherColumn";
@@ -1095,6 +1092,110 @@ class MainBody extends Component {
       lastAction: lastAction,
       prevState: prevState,
     });
+
+
+    // let tableData = _.cloneDeep(this.state.tableData);
+    // let firstDegNeighbours = type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
+    // let longestDataArray = [];
+    // for (let i = 0; i < tableData.length; ++i) {
+    //   let dataArray = firstDegNeighbours[i][neighbour];
+    //   // console.log(dataArray);
+    //   // If dataArray is empty, this current entry in search column does not have this neighbour at all.
+    //   if (dataArray === undefined) {
+    //     tableData[i][colIndex].data = "N/A";
+    //   } 
+    //   // Otherwise, we have found at least one value. Let's use dataArray[0]
+    //   else {
+    //     // we first set data for the cell
+    //     tableData[i][colIndex].data = dataArray[0];
+    //     // we then set origin for the cell. The origin depends on whether type is "subject" or "object"
+    //     let originToAdd = type === "subject" ? neighbour + ":" + dataArray[0] : "is " + neighbour + " of:" + dataArray[0];
+    //     let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
+    //     keyOrigin.push(originToAdd);
+    //     tableData[i][colIndex].origin = keyOrigin;
+    //     // If dataArray's length is longer than longestDataArray's length, we want to update it
+    //     if (dataArray.length > longestDataArray.length) {
+    //       longestDataArray = dataArray;
+    //     }
+    //   }
+    // }
+    // // console.log(longestDataArray);
+    // let maxCount = Math.min(longestDataArray.length, maxNeighbourCount);
+    // let remainNeighbourCount = maxCount - 1;
+
+    // console.log(remainNeighbourCount);
+    
+    // // Now we set up the content for ActionPanel
+    // let tempObj = {};
+
+    // // In this case, we give users option to populate duplicate neighbours
+    // if (remainNeighbourCount > 0) {
+    //   tempObj["task"] = "populateSameNeighbour";
+    //   tempObj["colIndex"] = colIndex;
+    //   tempObj["neighbour"] = neighbour;
+    //   tempObj["type"] = type;
+    //   tempObj["numCols"] = remainNeighbourCount;
+    //   if (range !== undefined) {
+    //     tempObj["range"] = range;
+    //   }
+    // }
+    // // In this case, users are not populating column with duplicate names, but it has a range.
+    // // We may need to ask user if they want to populate other columns from the same range
+    // else if (range !== undefined) {
+    //   let siblingNeighbour = [];
+    //   // console.log("Range is "+range);
+    //   // console.log(this.state.keyColNeighbours);
+    //   for (let i = 0; i < this.state.keyColNeighbours.length; ++i) {
+    //     if (
+    //       this.state.keyColNeighbours[i].range === range &&
+    //       this.state.keyColNeighbours[i].value !== neighbour
+    //     ) {
+    //       siblingNeighbour.push(this.state.keyColNeighbours[i]);
+    //     }
+    //   }
+    //   // If we have found columns from the same range (other than the current neighbour),
+    //   console.log(siblingNeighbour);
+    //   // If sibling neighbour is non-empty, we give user the option to populate other columns from the same range.
+    //   if (siblingNeighbour.length > 0) {
+    //     // Let's do some string processing to improve UI clarity
+    //     let rangeLiteral = "";
+    //     if (range.includes("http://dbpedia.org/ontology/")) {
+    //       rangeLiteral = range.slice(28);
+    //     } else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
+    //       rangeLiteral = range.slice(33);
+    //     } else {
+    //       rangeLiteral = range;
+    //     }
+    //     tempObj["task"] = "populateSameRange";
+    //     tempObj["colIndex"] = colIndex;
+    //     tempObj["range"] = rangeLiteral;
+    //     // console.log(siblingNeighbour);
+    //     tempObj["siblingNeighbour"] = siblingNeighbour;
+    //   }
+    //   // Else, if we have NOT found anything from the same range, we tell user that they can populate more columns
+    //   else {
+    //     tempObj["task"] = "afterPopulateColumn";
+    //   }
+    // }
+    // // In this case, we tell users that they can populate more columns
+    // else {
+    //   tempObj["task"] = "afterPopulateColumn";
+    // }
+    // // Support for undo: 
+    // // Let's save the previous state in an object
+    // let lastAction = "populateOtherColumn";
+    // let prevState = 
+    //   {
+    //     "curActionInfo":this.state.curActionInfo,
+    //     "tableData":this.state.tableData,
+    //   };
+
+    // this.setState({
+    //   curActionInfo: tempObj,
+    //   tableData: tableData,
+    //   lastAction: lastAction,
+    //   prevState: prevState,
+    // });
   }
 
   // This function is a helper function that takes in 9 parameters:
@@ -4832,6 +4933,20 @@ function storeFirstDeg(neighbourArray) {
   } 
   // console.log(firstDegNeighbours);
   return firstDegNeighbours;
+}
+
+// This function creates neighbourArrayText from neighbourArray
+
+function createNeighbourText(neighbourArray) {
+  let neighbourArrayText = "";
+  for (let i = 0; i < neighbourArray.length; ++i) {
+    if (i > 0) {
+      neighbourArrayText+=" OR ";
+    }
+    let curNeighbourText = neighbourArray[i].type === "subject" ? neighbourArray[i].value : "is " + neighbourArray[i].value + " of";
+    neighbourArrayText+=curNeighbourText;
+  }
+  return neighbourArrayText;
 }
 
 

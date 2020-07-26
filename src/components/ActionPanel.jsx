@@ -334,24 +334,20 @@ class ActionPanel extends Component {
       } 
       // In this case we give user a button to allow the population of a new column
       else if (actionInfo.task === "populateOtherColumn") {
-        let neighbourText =
-          actionInfo.type === "subject"
-            ? actionInfo.neighbour
-            : "is " + actionInfo.neighbour + " of";
+        let neighbourArrayText = createNeighbourText(actionInfo.neighbourArray);
+        // console.log(actionInfo);
+        // Starting from here, let's construct the neighbourArrayText from neighbourArray
+        // add literal "OR" here.
         actionEle = (
           <div>
             <p>Fill this column with:</p>
-            <p><b>{neighbourText}</b> ?</p>
+            <p><b>{neighbourArrayText}</b> ?</p>
             <button
               onClick={(e) =>
                 this.props.populateOtherColumn(
                   e,
                   actionInfo.colIndex,
-                  actionInfo.neighbour,
-                  // actionInfo.neighbourIndex,
-                  // actionInfo.count,
-                  actionInfo.type,
-                  actionInfo.range
+                  actionInfo.neighbourArray,
                 )
               }
             >
@@ -652,4 +648,18 @@ function renderPreview(previewInfoArray) {
 function niceRender(str) {
   return str.replace(/_\(.*?\)/g, "")
             .replace(/_/g, " ");
+}
+
+// This function creates neighbourArrayText from neighbourArray
+
+function createNeighbourText(neighbourArray) {
+  let neighbourArrayText = "";
+  for (let i = 0; i < neighbourArray.length; ++i) {
+    if (i > 0) {
+      neighbourArrayText+=" OR ";
+    }
+    let curNeighbourText = neighbourArray[i].type === "subject" ? neighbourArray[i].value : "is " + neighbourArray[i].value + " of";
+    neighbourArrayText+=curNeighbourText;
+  }
+  return neighbourArrayText;
 }
