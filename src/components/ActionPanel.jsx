@@ -18,6 +18,7 @@ class ActionPanel extends Component {
     this.createPropertyArray = this.createPropertyArray.bind(this);
     this.createSiblingArray = this.createSiblingArray.bind(this);
     this.createTableArray = this.createTableArray.bind(this);
+    this.createRecommendArray = this.createRecommendArray.bind(this);
   }
 
   createTableArray(firstIndex, secondIndex) {
@@ -207,6 +208,12 @@ class ActionPanel extends Component {
         {propertyElement}
       </ul>
     );
+  }
+
+  createRecommendArray(recommendArray) {
+    // console.log(recommendArray);
+    let stringRecommend = [];
+    let semanticRecommend = [];
   }
 
   render() {
@@ -423,7 +430,7 @@ class ActionPanel extends Component {
       // In this case we give users an array of recommended neighbours to add to the table
       // Start here: create the array of buttons from actionInfo.recommendArray, and think about how to write the callback function.
       else if (actionInfo.task === "populateRecommendation") {
-        console.log(actionInfo.recommendArray);
+        this.createRecommendArray(actionInfo.recommendArray);
         actionEle = (
           <div>
             Start here
@@ -663,3 +670,4 @@ function createNeighbourText(neighbourArray) {
   }
   return neighbourArrayText;
 }
+

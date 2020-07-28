@@ -4098,10 +4098,15 @@ function findTableFromHTML(
   // We first get the column names of the table in the table panel, using this.state.tableHeader.
   // Note: the index starts from 1 because we don't care about the originURL column (column 0). ***
   let originCols = [];
+  // BUGFIX needs to be applied here. (Seems to be fixed)
+  console.log(tableHeader);
   for (let j = 1; j < tableHeader.length; ++j) {
-    originCols.push(tableHeader[j].value);
+    let curValue = ""
+    for (let k = 0; k < tableHeader[j].length; ++k) {
+      curValue+=tableHeader[j][k].value;
+    }
+    originCols.push(curValue);
   }
-  // console.log(originCols);
 
   // We now fetch all the tables from pageHTML (the current sibling page)
   let doc = new DOMParser().parseFromString(pageHTML, "text/html");
