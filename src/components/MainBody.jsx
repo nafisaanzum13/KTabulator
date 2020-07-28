@@ -14,7 +14,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 50;
 const initialColNum = 4;
-const initialRowNum = 30;
+const initialRowNum = 10;
 
 class MainBody extends Component {
   constructor(props) {
@@ -660,17 +660,20 @@ class MainBody extends Component {
 
     // Query we make if type is subject
 
-    // select ?p ?o ?range
+    // select ?p ?o ?range ?subPropertyOf
     // where {
     // dbr:Barack_Obama ?p ?o.
     // OPTIONAL {?p rdfs:range ?range}.
+    // OPTIONAL {?p rdfs:subPropertyOf ?subPropertyOf}.
     // }
 
     // Query we make if type is object
 
-    // select ?s ?p
+    // select ?s ?p ?range ?subPropertyOf
     // where {
-    // ?s ?p dbr:Barack_Obama
+    // ?s ?p dbr:Barack_Obama.
+    // OPTIONAL {?p rdfs:range ?range}.
+    // OPTIONAL {?p rdfs:subPropertyOf ?subPropertyOf}.
     // }
 
     let promiseArray = [];
@@ -688,15 +691,15 @@ class MainBody extends Component {
       let queryBody;
       if (type === "subject") {
         queryBody =
-          "select+%3Fp+%3Fo+%3Frange%0D%0Awhere+%7B%0D%0Adbr%3A" +
+          "select+%3Fp+%3Fo+%3Frange+%3FsubPropertyOf%0D%0Awhere+%7B%0D%0Adbr%3A" +
           cellValue +
-          "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0A%7D&";
+          "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3AsubPropertyOf+%3FsubPropertyOf%7D.%0D%0A%7D&";
       }
       else {
         queryBody = 
-          "select+%3Fs+%3Fp%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
+          "select+%3Fs+%3Fp+%3Frange+%3FsubPropertyOf%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
           cellValue +
-          "%0D%0A%7D&";
+          ".%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3AsubPropertyOf+%3FsubPropertyOf%7D.%0D%0A%7D&";
       }
       let queryURL = prefixURL + queryBody + suffixURL;
       let curPromise = fetchJSON(queryURL);
@@ -813,6 +816,9 @@ class MainBody extends Component {
         }
         firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
         let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+        // processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
+        addRecommendNeighbours(processedSubjectNeighbours);
+        // Need modification here
 
         // Then we deal with object neighbours, so valuesTwo
         let objectNeighbourArray = [];
@@ -826,6 +832,7 @@ class MainBody extends Component {
         }
         firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
         let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+        // Need modification here
 
         // console.log(processedSubjectNeighbours);
         // console.log(processedObjectNeighbours);
@@ -1893,6 +1900,7 @@ class MainBody extends Component {
       }
       firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
       let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+      // Need modification here
 
       // Then we deal with object neighbours, so valuesTwo
       let objectNeighbourArray = [];
@@ -1906,12 +1914,14 @@ class MainBody extends Component {
       }
       firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
       let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+      // Need modification here
 
       // console.log(processedSubjectNeighbours);
       // console.log(processedObjectNeighbours);
 
       // we now concat subjectNeighbours and objectNeighbours together
       let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
+
       let optionsMap = this.state.optionsMap.slice();
       for (let i = 0; i < optionsMap.length; ++i) {
         if (i !== colIndex) {
@@ -2219,6 +2229,7 @@ class MainBody extends Component {
       }
       firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
       let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+      // Need modification here
 
       // Then we deal with object neighbours, so valuesTwo
       let objectNeighbourArray = [];
@@ -2232,6 +2243,7 @@ class MainBody extends Component {
       }
       firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
       let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+      // Need modification here
 
       // console.log(processedSubjectNeighbours);
       // console.log(processedObjectNeighbours);
@@ -2628,7 +2640,6 @@ class MainBody extends Component {
     otherTableData = setUnionData(otherTableData);
     // console.log(otherTableData);
 
-    // Start from here. We just need to modify function tableConcat
     // console.log(colMapping);
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
@@ -3753,6 +3764,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
          || a.p.value.includes("wordnet")
          || a.p.value.includes("float")
          || a.p.value.includes("bbr")
+         || a.p.value === "http://dbpedia.org/property/alt"
          )
   );
 
@@ -3779,10 +3791,10 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
     valuesToAdd.push(type === "subject" ? removePrefix(processedBinding[0].o.value) : removePrefix(processedBinding[0].s.value))
 
     // we set range of neighbour ready to be added. "" if doesn't exist.
-    let neighbourRange = "";
-    if (processedBinding[0].range !== undefined) {
-      neighbourRange = processedBinding[0].range.value;
-    } 
+    let neighbourRange = processedBinding[0].range !== undefined ? processedBinding[0].range.value : "";
+
+    // we the subPropertyOf of neighbour ready to be added. "" if doesn't exist.
+    let neighbourSubPropertyOf = processedBinding[0].subPropertyOf !== undefined ? processedBinding[0].subPropertyOf.value : "";
     
     // We loop over processedBinding
     for (let i = 1; i < processedBinding.length; ++i) {
@@ -3810,24 +3822,32 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           let objCount = neighbourCount;
           // set data
           let objData = valuesToAdd;
+          // set range
+          let objRange = neighbourRange;
+          // set subPropertyOf
+          let objSubPropertyOf = neighbourSubPropertyOf;
 
           // Set object from all its attributes
-          let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount, "filledCount":1, "data":objData};
-          // Lastly, if the current type is "subject", we want to see if this neighbour has a range
-          if (type === "subject" && neighbourRange !== "") {
-            tempObj["range"] = neighbourRange;
-          }
+          let tempObj = {
+            "value":objValue, 
+            "label":objLabel, 
+            "type":objType, 
+            "count":objCount, 
+            "filledCount":1, 
+            "data":objData,
+            "range":objRange,
+            "subPropertyOf":objSubPropertyOf
+          };
           // we push this tempObj onto keyColNeighbours
           keyColNeighbours.push(tempObj)
         }
-        // Regardless of pushing or not, we now need to reset neighbourCount, neighbourToAdd, neighbourRange, and valuesToAdd
+        // Regardless of pushing or not, 
+        // we now need to reset neighbourCount, neighbourToAdd, neighbourRange, neighbourSubPropertyOf, and valuesToAdd
         neighbourCount = 1;
         neighbourToAdd = curNeighbour;
         valuesToAdd = [type === "subject" ? removePrefix(processedBinding[i].o.value) : removePrefix(processedBinding[i].s.value)];
-        neighbourRange = "";
-        if (processedBinding[i].range !== undefined) {
-          neighbourRange = processedBinding[i].range.value;
-        }
+        neighbourRange = processedBinding[i].range !== undefined ? processedBinding[i].range.value : "";
+        neighbourSubPropertyOf = processedBinding[i].subPropertyOf !== undefined ? processedBinding[i].subPropertyOf.value : "";
       }
     }
     // Now, after the loop is done, we need to do one more iteration to determine whether we want to add the last neighbour.
@@ -3845,13 +3865,22 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
       let objCount = neighbourCount;
       // set data
       let objData = valuesToAdd;
-      // Set object from all its attributes
+      // set range
+      let objRange = neighbourRange;
+      // set subPropertyOf
+      let objSubPropertyOf = neighbourSubPropertyOf;
 
-      let tempObj = {"value":objValue, "label":objLabel, "type":objType, "count":objCount, "filledCount":1, "data":objData};
-      // Lastly, if the current type is "subject", we want to see if this neighbour has a range
-      if (type === "subject" && neighbourRange !== "") {
-        tempObj["range"] = neighbourRange;
-      }
+      // Set object from all its attributes
+      let tempObj = {
+          "value":objValue, 
+          "label":objLabel, 
+          "type":objType, 
+          "count":objCount, 
+          "filledCount":1, 
+          "data":objData,
+          "range":objRange,
+          "subPropertyOf":objSubPropertyOf
+        };
       // we push this tempObj onto keyColNeighbours
       keyColNeighbours.push(tempObj)
     }
@@ -3905,6 +3934,7 @@ function updatePreviewInfo(resultsBinding, type) {
          || a.p.value.includes("wordnet")
          || a.p.value.includes("float")
          || a.p.value.includes("bbr")
+         || a.p.value === "http://dbpedia.org/property/alt"
          )
   );
 
@@ -4953,6 +4983,46 @@ function createNeighbourText(neighbourArray) {
     neighbourArrayText+=curNeighbourText;
   }
   return neighbourArrayText;
+}
+
+// This function add in the recommendNeighbours to objects in processedNeighbours.
+// It takes in processedSubject(object)Neighbours, and returns the updated version.
+
+// For each element from processedNeighbours, we want to add an attribute called recommendNeighbours
+// recommendNeighbours is an array of objects with three attributes
+// 1) value:        value of the recommend attribute
+// 2) type:         type of the recommend attribute
+// 3) relation:     how the recommend attribute is related to the original attribute: string, range, or subPropertyOf
+
+function addRecommendNeighbours(processedNeighbours) {
+  // console.log(processedNeighbours);
+
+  // To do this, we need to a double loop over the processedNeighbours
+  for (let i = 0; i < processedNeighbours.length; ++i) {
+
+    // Initialize the recommendNeighbours array
+    let recommendNeighbours = [];
+    
+    for (let j = 0; j < processedNeighbours.length; ++j) {
+      // We consider three types of matching
+
+      // 1st type is String Similarity: if X is a substring of Y, or Y is a substring of X 
+      if ((processedNeighbours[i].value.includes(processedNeighbours[j].value) || processedNeighbours[j].value.includes(processedNeighbours[i].value)) 
+          &&
+          (i !== j)) {
+        recommendNeighbours.push(
+          {
+            "value": processedNeighbours[j].value,
+            "type": processedNeighbours[j].type
+          }
+        )
+      }
+
+      // 2nd type is range: 
+    }
+    // console.log("Current neighbour is "+processedNeighbours[i].value);
+    // if (recommendNeighbours.length > 0) {console.log(recommendNeighbours);}
+  }
 }
 
 
