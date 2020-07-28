@@ -554,7 +554,7 @@ class MainBody extends Component {
         }
         // Because we are allowing multi-selects now, type and range are no long two single strings.
         // Rather, their values can be figured out from neighbourArray
-        // console.log(tempObj);
+        console.log(tempObj);
         this.setState({
           tableHeader: tableHeader,
           curActionInfo: tempObj,
@@ -816,8 +816,7 @@ class MainBody extends Component {
         }
         firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
         let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
-        // processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
-        addRecommendNeighbours(processedSubjectNeighbours);
+        processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
         // Need modification here
 
         // Then we deal with object neighbours, so valuesTwo
@@ -832,6 +831,7 @@ class MainBody extends Component {
         }
         firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
         let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+        processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
         // Need modification here
 
         // console.log(processedSubjectNeighbours);
@@ -1474,7 +1474,7 @@ class MainBody extends Component {
 
   sameNeighbourOneCol(e, colIndex, neighbourArray) {
     // console.log(colIndex);
-    // console.log(neighbourArray);
+    console.log(neighbourArray);
     // console.log(numCols);
 
     let tableData = _.cloneDeep(this.state.tableData);
@@ -1487,14 +1487,18 @@ class MainBody extends Component {
       for (let j = 0; j < neighbourArray.length; ++j) {
         // For each neighbour in neighbourArray, we check to see if entries in search column have values for this neighbour
         let curNeighbour = neighbourArray[j];
+        console.log(curNeighbour.value);
         let firstDegNeighbours =
           curNeighbour.type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
         let curNeighbourData = firstDegNeighbours[i][curNeighbour.value];
+        console.log(firstDegNeighbours);
         // If yes, we want to concat those values with curColumnArray
         if (curNeighbourData !== undefined) {
+          console.log(curNeighbourData);
           curColumnArray = curColumnArray.concat(curNeighbourData);
         }
       }
+      console.log(curColumnArray);
       // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
       if (curColumnArray.length === 0) {
         tableData[i][colIndex].data = "N/A";
@@ -1506,6 +1510,8 @@ class MainBody extends Component {
         for (let k = 0; k < curColumnArray.length; ++k) {
           let dataToAdd = k > 0 ? ";" + curColumnArray[k] : curColumnArray[k];
           curData+=dataToAdd;
+          // console.log("Data to add is "+dataToAdd);
+          // console.log("Current data is "+curData);
         }
         tableData[i][colIndex].data = curData;
         // we then set the origin for the cell
@@ -1900,6 +1906,7 @@ class MainBody extends Component {
       }
       firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
       let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+      processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
       // Need modification here
 
       // Then we deal with object neighbours, so valuesTwo
@@ -1914,6 +1921,7 @@ class MainBody extends Component {
       }
       firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
       let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+      processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
       // Need modification here
 
       // console.log(processedSubjectNeighbours);
@@ -2229,6 +2237,7 @@ class MainBody extends Component {
       }
       firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
       let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+      processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
       // Need modification here
 
       // Then we deal with object neighbours, so valuesTwo
@@ -2243,6 +2252,7 @@ class MainBody extends Component {
       }
       firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
       let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+      processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
       // Need modification here
 
       // console.log(processedSubjectNeighbours);
@@ -3768,6 +3778,15 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
          )
   );
 
+  // We then do some filtering based on subPropertyOf.
+  // Because of our observation, we only want to keep entries whose subPropertyOf attribute is from the DUL dataset.
+  // processedBinding = processedBinding.filter(a => a.subPropertyOf === undefined || a.subPropertyOf.value.includes("DUL.owl"));
+  processedBinding = processedBinding.filter(function(a) {
+    if (a.subPropertyOf !== undefined) {
+      return a.subPropertyOf.value.includes("DUL.owl");
+    }
+    return true;
+  })
 
   // we then sort the resultsBinding by p.value.slice(28)
   processedBinding = processedBinding.sort((a, b) =>
@@ -4963,11 +4982,16 @@ function storeFirstDeg(neighbourArray) {
   for (let i = 0; i < neighbourArrayCopy.length; ++i) {
     let tempObj = {};
     for (let j = 0; j < neighbourArrayCopy[i].length; ++j) {
-      tempObj[neighbourArrayCopy[i][j].value] = neighbourArrayCopy[i][j].data;
+      // The following line creates a deduped version of neighbourArrayCopy[i][j].data, since some bug seems to exist in DBpedia
+      let dedupedData = _.uniq(neighbourArrayCopy[i][j].data.slice())
+      tempObj[neighbourArrayCopy[i][j].value] = dedupedData;
+      // console.log(neighbourArrayCopy[i][j].data.slice());
+      // console.log(_.uniq(neighbourArrayCopy[i][j].data.slice()));
+      // tempObj[neighbourArrayCopy[i][j].value] = neighbourArrayCopy[i][j].data;
     }
     firstDegNeighbours.push(tempObj);
   } 
-  // console.log(firstDegNeighbours);
+  console.log(firstDegNeighbours);
   return firstDegNeighbours;
 }
 
@@ -4992,10 +5016,11 @@ function createNeighbourText(neighbourArray) {
 // recommendNeighbours is an array of objects with three attributes
 // 1) value:        value of the recommend attribute
 // 2) type:         type of the recommend attribute
-// 3) relation:     how the recommend attribute is related to the original attribute: string, range, or subPropertyOf
+// 3) relation:     how the recommend attribute is related to the original attribute: string, or semantic
 
-function addRecommendNeighbours(processedNeighbours) {
+function addRecommendNeighbours(processedNeighboursCopy) {
   // console.log(processedNeighbours);
+  let processedNeighbours = _.cloneDeep(processedNeighboursCopy);
 
   // To do this, we need to a double loop over the processedNeighbours
   for (let i = 0; i < processedNeighbours.length; ++i) {
@@ -5004,25 +5029,43 @@ function addRecommendNeighbours(processedNeighbours) {
     let recommendNeighbours = [];
     
     for (let j = 0; j < processedNeighbours.length; ++j) {
-      // We consider three types of matching
+      // We only look at cases where i !== j
+      if (i !== j) {
+        // We consider three types of matching
 
-      // 1st type is String Similarity: if X is a substring of Y, or Y is a substring of X 
-      if ((processedNeighbours[i].value.includes(processedNeighbours[j].value) || processedNeighbours[j].value.includes(processedNeighbours[i].value)) 
-          &&
-          (i !== j)) {
-        recommendNeighbours.push(
-          {
-            "value": processedNeighbours[j].value,
-            "type": processedNeighbours[j].type
-          }
-        )
+        // 1st type is String Similarity: if X is a substring of Y, or Y is a substring of X 
+        if (processedNeighbours[i].value.includes(processedNeighbours[j].value) || processedNeighbours[j].value.includes(processedNeighbours[i].value)) {
+          recommendNeighbours.push(
+            {
+              "value": processedNeighbours[j].value,
+              "type": processedNeighbours[j].type,
+              "relation": "string"
+            }
+          )
+        }
+
+        // 2nd type is semantic: if X and Y has the same range, or same subPropertyOf 
+        if ((processedNeighbours[i].range === processedNeighbours[j].range && processedNeighbours[i].range !== "") ||
+            (processedNeighbours[i].subPropertyOf === processedNeighbours[j].subPropertyOf && processedNeighbours[i].subPropertyOf !== "")) {
+          recommendNeighbours.push(
+            {
+              "value": processedNeighbours[j].value,
+              "type": processedNeighbours[j].type,
+              "relation": "semantic"
+            }
+          )
+        }
       }
-
-      // 2nd type is range: 
     }
+    // We take a look at the recommendNeighbours
     // console.log("Current neighbour is "+processedNeighbours[i].value);
     // if (recommendNeighbours.length > 0) {console.log(recommendNeighbours);}
+
+    // Now, we create the recommendNeighbours attributes for the current element in processedNeighbours
+    processedNeighbours[i]["recommendNeighbours"] = recommendNeighbours;
   }
+  // console.log(processedNeighbours);
+  return processedNeighbours;
 }
 
 
