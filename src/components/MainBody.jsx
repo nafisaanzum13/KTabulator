@@ -130,7 +130,7 @@ class MainBody extends Component {
     this.getTableStates = this.getTableStates.bind(this);
     this.sameNeighbourDiffCol = this.sameNeighbourDiffCol.bind(this);
     this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
-    this.populateSameRange = this.populateSameRange.bind(this);
+    // this.populateSameRange = this.populateSameRange.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextDeleteColumn = this.contextDeleteColumn.bind(this);
     this.contextSetColumn = this.contextSetColumn.bind(this);
@@ -554,7 +554,7 @@ class MainBody extends Component {
         }
         // Because we are allowing multi-selects now, type and range are no long two single strings.
         // Rather, their values can be figured out from neighbourArray
-        console.log(tempObj);
+        // console.log(tempObj);
         this.setState({
           tableHeader: tableHeader,
           curActionInfo: tempObj,
@@ -1069,6 +1069,9 @@ class MainBody extends Component {
     let remainNeighbourCount = maxCount - 1;
     // console.log(remainNeighbourCount);
 
+    let recommendArray = createRecommendArray(neighbourArray);
+    // console.log(recommendArray);
+
     // tempObj stores the information passed to ActionPanel
     let tempObj = {};
 
@@ -1079,7 +1082,12 @@ class MainBody extends Component {
       tempObj["neighbourArray"] = neighbourArray;
       tempObj["numCols"] = remainNeighbourCount;
     }
-    // Else, this column has no multiple values. We simply tell users that they can populate more columns. 
+    // Else, this column has no multiple values. Let's check if we can make some suggestions.
+    else if (recommendArray.length > 0) {
+      tempObj["task"] = "populateRecommendation";
+      tempObj["recommendArray"] = recommendArray; 
+    }
+    // In this case, we have no suggestions to make, so We simply tell users that they can populate more columns. 
     else {
       tempObj["task"] = "afterPopulateColumn";
     }
@@ -1217,6 +1225,7 @@ class MainBody extends Component {
   // 6) tableData:                   original tableData
   // 7) optionsMap:                  original optionsMap
   // 8) selectedClassAnnotation:     original selectedClassAnnotation
+  // 9) fillSuggestion:              optional parameter. When true, decrement requiredLength in code by 1.
 
   // and returns an object with 5 values:
   // 1) tableHeader:                tableHeader after modification
@@ -1441,9 +1450,16 @@ class MainBody extends Component {
     //   tempObj["task"] = "afterPopulateColumn";
     // }
 
-    // Let's ignore range for now
+    // Now we set up the obj for Action Panel
     let tempObj = {};
-    tempObj["task"] = "afterPopulateColumn";
+    let recommendArray = createRecommendArray(neighbourArray);
+    if (recommendArray.length > 0) {
+      tempObj["task"] = "populateRecommendation";
+      tempObj["recommendArray"] = recommendArray; 
+    }
+    else {
+      tempObj["task"] = "afterPopulateColumn";
+    }
 
     // Support for undo: 
     // Let's save the previous state in an object
@@ -1474,7 +1490,7 @@ class MainBody extends Component {
 
   sameNeighbourOneCol(e, colIndex, neighbourArray) {
     // console.log(colIndex);
-    console.log(neighbourArray);
+    // console.log(neighbourArray);
     // console.log(numCols);
 
     let tableData = _.cloneDeep(this.state.tableData);
@@ -1487,18 +1503,18 @@ class MainBody extends Component {
       for (let j = 0; j < neighbourArray.length; ++j) {
         // For each neighbour in neighbourArray, we check to see if entries in search column have values for this neighbour
         let curNeighbour = neighbourArray[j];
-        console.log(curNeighbour.value);
+        // console.log(curNeighbour.value);
         let firstDegNeighbours =
           curNeighbour.type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
         let curNeighbourData = firstDegNeighbours[i][curNeighbour.value];
-        console.log(firstDegNeighbours);
+        // console.log(firstDegNeighbours);
         // If yes, we want to concat those values with curColumnArray
         if (curNeighbourData !== undefined) {
-          console.log(curNeighbourData);
+          // console.log(curNeighbourData);
           curColumnArray = curColumnArray.concat(curNeighbourData);
         }
       }
-      console.log(curColumnArray);
+      // console.log(curColumnArray);
       // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
       if (curColumnArray.length === 0) {
         tableData[i][colIndex].data = "N/A";
@@ -1522,6 +1538,17 @@ class MainBody extends Component {
       }
     }
 
+    // Now we set up the obj for Action Panel
+    let tempObj = {};
+    let recommendArray = createRecommendArray(neighbourArray);
+    if (recommendArray.length > 0) {
+      tempObj["task"] = "populateRecommendation";
+      tempObj["recommendArray"] = recommendArray; 
+    }
+    else {
+      tempObj["task"] = "afterPopulateColumn";
+    }
+
     // Support for undo: 
     let lastAction = "sameNeighbourOneCol";
     let prevState = 
@@ -1531,72 +1558,72 @@ class MainBody extends Component {
       };
 
     this.setState({
-      curActionInfo: {"task":"afterPopulateColumn"},
+      curActionInfo: tempObj,
       tableData: tableData,
       lastAction: lastAction,
       prevState: prevState,
     });
   }
 
-  // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
-  // This function should use addAllNeighbour as a helper function
-  populateSameRange(e, colIndex, range, siblingNeighbour) {
+  // // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
+  // // This function should use addAllNeighbour as a helper function
+  // populateSameRange(e, colIndex, range, siblingNeighbour) {
 
-    // console.log("Column index is "+colIndex);
-    // console.log("Range is "+range);
-    // console.log("Sibling neighbours are: ");
-    // console.log(siblingNeighbour);
+  //   // console.log("Column index is "+colIndex);
+  //   // console.log("Range is "+range);
+  //   // console.log("Sibling neighbours are: ");
+  //   // console.log(siblingNeighbour);
 
-    // first we fetch the initial state of tableHeader, tableData, optionsMap, selectedClassAnnotation, keyColIndex, and curColIndex
-    let tempHeader = this.state.tableHeader;
-    let tempData = this.state.tableData;
-    let tempOptions = this.state.optionsMap;
-    let tempAnnotation = this.state.selectedClassAnnotation;
-    let tempKeyColIndex = this.state.keyColIndex;
-    let curColIndex = colIndex;
+  //   // first we fetch the initial state of tableHeader, tableData, optionsMap, selectedClassAnnotation, keyColIndex, and curColIndex
+  //   let tempHeader = this.state.tableHeader;
+  //   let tempData = this.state.tableData;
+  //   let tempOptions = this.state.optionsMap;
+  //   let tempAnnotation = this.state.selectedClassAnnotation;
+  //   let tempKeyColIndex = this.state.keyColIndex;
+  //   let curColIndex = colIndex;
 
-    for (let i = 0; i < siblingNeighbour.length; ++i) {
-      let newState = this.addAllNeighbour(curColIndex,
-                                          siblingNeighbour[i].value,
-                                          "subject",
-                                          siblingNeighbour[i].count,
-                                          tempKeyColIndex,
-                                          tempHeader,
-                                          tempData,
-                                          tempOptions,
-                                          tempAnnotation,
-                                          true);
-      curColIndex+=siblingNeighbour[i].count;
-      tempHeader = newState.tableHeader;
-      tempData = newState.tableData;
-      tempOptions = newState.optionsMap;
-      tempAnnotation = newState.selectedClassAnnotation;
-      tempKeyColIndex = newState.keyColIndex;
-    }
+  //   for (let i = 0; i < siblingNeighbour.length; ++i) {
+  //     let newState = this.addAllNeighbour(curColIndex,
+  //                                         siblingNeighbour[i].value,
+  //                                         "subject",
+  //                                         siblingNeighbour[i].count,
+  //                                         tempKeyColIndex,
+  //                                         tempHeader,
+  //                                         tempData,
+  //                                         tempOptions,
+  //                                         tempAnnotation,
+  //                                         true);
+  //     curColIndex+=siblingNeighbour[i].count;
+  //     tempHeader = newState.tableHeader;
+  //     tempData = newState.tableData;
+  //     tempOptions = newState.optionsMap;
+  //     tempAnnotation = newState.selectedClassAnnotation;
+  //     tempKeyColIndex = newState.keyColIndex;
+  //   }
 
-    // Support for undo: 
-    let lastAction = "populateSameRange";
-    let prevState = 
-      {
-        "curActionInfo":this.state.curActionInfo,
-        "tableData":this.state.tableData,
-        "tableHeader":this.state.tableHeader,
-        "optionsMap":this.state.optionsMap,
-        "selectedClassAnnotation":this.state.selectedClassAnnotation,
-        "keyColIndex":this.state.keyColIndex,
-      };
+  //   // Support for undo: 
+  //   let lastAction = "populateSameRange";
+  //   let prevState = 
+  //     {
+  //       "curActionInfo":this.state.curActionInfo,
+  //       "tableData":this.state.tableData,
+  //       "tableHeader":this.state.tableHeader,
+  //       "optionsMap":this.state.optionsMap,
+  //       "selectedClassAnnotation":this.state.selectedClassAnnotation,
+  //       "keyColIndex":this.state.keyColIndex,
+  //     };
 
-    this.setState({
-      curActionInfo:{"task":"afterPopulateColumn"},
-      tableData:tempData,
-      tableHeader:tempHeader,
-      optionsMap:tempOptions,
-      selectedClassAnnotation:tempAnnotation,
-      keyColIndex:tempKeyColIndex,
-      lastAction:lastAction,
-      prevState:prevState,
-    })
-  }
+  //   this.setState({
+  //     curActionInfo:{"task":"afterPopulateColumn"},
+  //     tableData:tempData,
+  //     tableHeader:tempHeader,
+  //     optionsMap:tempOptions,
+  //     selectedClassAnnotation:tempAnnotation,
+  //     keyColIndex:tempKeyColIndex,
+  //     lastAction:lastAction,
+  //     prevState:prevState,
+  //   })
+  // }
 
   // The following function adds a new column to the table, to the right of the context-menu clicked column.
   // In here, let's also set tabIndex to 0.
@@ -1877,7 +1904,7 @@ class MainBody extends Component {
 
     document.body.classList.add('waiting');
 
-    // Start working from here: code here should largely be similar to what we have in populateKeyColumn
+    // Code here should largely be similar to what we have in populateKeyColumn
 
     let tableData = _.cloneDeep(this.state.tableData);
 
@@ -3581,7 +3608,7 @@ class MainBody extends Component {
                     populateOtherColumn={this.populateOtherColumn}
                     sameNeighbourDiffCol={this.sameNeighbourDiffCol}
                     sameNeighbourOneCol={this.sameNeighbourOneCol}
-                    populateSameRange={this.populateSameRange}
+                    // populateSameRange={this.populateSameRange}
                     // Folloiwng states are passed to "startTable"
                     handleStartTable={this.handleStartTable}
                     propertyNeighbours={this.state.propertyNeighbours}
@@ -4991,7 +5018,7 @@ function storeFirstDeg(neighbourArray) {
     }
     firstDegNeighbours.push(tempObj);
   } 
-  console.log(firstDegNeighbours);
+  // console.log(firstDegNeighbours);
   return firstDegNeighbours;
 }
 
@@ -5066,6 +5093,32 @@ function addRecommendNeighbours(processedNeighboursCopy) {
   }
   // console.log(processedNeighbours);
   return processedNeighbours;
+}
+
+// The following function creates the list of recommend attributes passed to the ActionPanel.
+
+// It takes in one parameter: neighbourArray
+// returns an array: recommendArray
+
+function createRecommendArray(neighbourArray) {
+  // We create the recommendArray variable using a simple rule:
+  // It should be union of recommendNeighbours of all neighbours from neighbourArray, minus the neighbours from neighbourArray
+  let recommendArray = [];
+
+  // First we run a loop to take the union of recommendNeighbours
+  for (let i = 0; i < neighbourArray.length; ++i) {
+    recommendArray = recommendArray.concat(neighbourArray[i].recommendNeighbours);
+  }
+  // We then remove recommendations that are completely duplicated
+  recommendArray = _.uniqBy(recommendArray, function(x) {
+    return x.value || x.type || x.relation;
+  });
+  // We then remove recommendations that are already in neighbourArray
+  recommendArray = _.differenceBy(recommendArray, neighbourArray, function(x) {
+    return x.value || x.type;
+  });
+  // console.log(recommendArray);
+  return recommendArray;
 }
 
 

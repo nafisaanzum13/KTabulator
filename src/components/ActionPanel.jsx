@@ -420,6 +420,16 @@ class ActionPanel extends Component {
           </div>
         );
       } 
+      // In this case we give users an array of recommended neighbours to add to the table
+      // Start here: create the array of buttons from actionInfo.recommendArray, and think about how to write the callback function.
+      else if (actionInfo.task === "populateRecommendation") {
+        console.log(actionInfo.recommendArray);
+        actionEle = (
+          <div>
+            Start here
+          </div>
+        )
+      }
       // In this case we display the origin of selected cell
       else if (actionInfo.task === "contextCellOrigin") {
         actionEle = (
