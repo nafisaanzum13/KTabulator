@@ -1086,6 +1086,7 @@ class MainBody extends Component {
     // Else, this column has no multiple values. Let's check if we can make some suggestions.
     else if (recommendArray.length > 0) {
       tempObj["task"] = "populateRecommendation";
+      tempObj["colIndex"] = colIndex;
       tempObj["recommendArray"] = recommendArray; 
     }
     // In this case, we have no suggestions to make, so We simply tell users that they can populate more columns. 
@@ -1226,7 +1227,8 @@ class MainBody extends Component {
   // 6) tableData:                   original tableData
   // 7) optionsMap:                  original optionsMap
   // 8) selectedClassAnnotation:     original selectedClassAnnotation
-  // 9) fillSuggestion:              optional parameter. When true, decrement requiredLength in code by 1.
+
+  // 9) fillRecommendation:              When true, decrement requiredLength in code by 1.
 
   // and returns an object with 5 values:
   // 1) tableHeader:                tableHeader after modification
@@ -1244,6 +1246,7 @@ class MainBody extends Component {
     tableData,
     optionsMap,
     selectedClassAnnotation,
+    fillRecommendation
   ) {
     // Let's first check if all the variables are as expected
 
@@ -1300,9 +1303,30 @@ class MainBody extends Component {
     for (let j = 0; j < colIndex + 1; ++j) {
       tableHeaderUpdated.push(tableHeader[j]);
     }
-    // some modification needs to be made here
+    // Now we decide what the newly pushed tableHeader should look like
+    let newTableHeader;
+    // If we are not populating new suggestions, we simply use tableHeader[colIndex]
+    if (fillRecommendation === false) {
+      newTableHeader = tableHeader[colIndex];
+    }
+    // else, it is an length one array of object. Object has 2 properties: value and label
+    else {
+      // We need to figure out what this label is
+      let keyColLabel = "";
+      for (let i = 0; i < tableHeader[keyColIndex].length; ++i) {
+        let labelToAdd = i > 0 ? "&" + tableHeader[keyColIndex][i].label : tableHeader[keyColIndex][i].label;
+        keyColLabel+=labelToAdd;
+      }
+      let ownLabel = neighbourArray[0].type === "subject" ? neighbourArray[0].value : "is " + neighbourArray[0].value + " of";
+      newTableHeader = [
+        {
+          "value" : neighbourArray[0].value,
+          "label" : ownLabel + "--" + keyColLabel
+        }
+      ]
+    }
     for (let j = 0; j < numCols; ++j) {
-      tableHeaderUpdated.push(tableHeader[colIndex]);
+      tableHeaderUpdated.push(newTableHeader);
     }
     for (let k = colIndex + 1; k < colNum; ++k) {
       tableHeaderUpdated.push(tableHeader[k]);
@@ -1359,7 +1383,7 @@ class MainBody extends Component {
       // console.log(curColumnArray);
       for (let curCol = colIndex + 1; curCol < colIndex + 1 + numCols; ++curCol) {
         // Starting value for requiredLength is 2
-        let requiredLength = curCol - colIndex + 1;
+        let requiredLength = fillRecommendation === true ? curCol - colIndex : curCol - colIndex + 1;
         // If curColumnArray's length does not meet the required length, we simply set data to N/A
         if (curColumnArray.length < requiredLength) {
           tableDataUpdated[i][curCol].data = "N/A";
@@ -1400,8 +1424,6 @@ class MainBody extends Component {
 
   sameNeighbourDiffCol(e,colIndex,neighbourArray,numCols) {
 
-    // console.log(range);
-
     let newState = this.addAllNeighbour(colIndex,
                                         neighbourArray,
                                         numCols,
@@ -1409,53 +1431,16 @@ class MainBody extends Component {
                                         this.state.tableHeader,
                                         this.state.tableData,
                                         this.state.optionsMap,
-                                        this.state.selectedClassAnnotation);
+                                        this.state.selectedClassAnnotation,
+                                        false);
     // console.log(newState);
-
-    // // Let's also create the object we need for populateSameRange
-    // // Note: the following code is identical to what we have in populateOtherColumn
-    // let tempObj = {};
-    // let siblingNeighbour = [];
-    // // console.log("Range is "+range);
-    // // console.log(this.state.keyColNeighbours);
-    // for (let i=0;i<this.state.keyColNeighbours.length;++i) {
-    //   if (range !== undefined
-    //       &&this.state.keyColNeighbours[i].range === range 
-    //       && this.state.keyColNeighbours[i].value !== neighbour) {
-    //     siblingNeighbour.push(this.state.keyColNeighbours[i]);
-    //   }
-    // }
-    
-    // // Now we need to determine what goes in the Action Panel
-
-    // // If we have found columns from the same range (other than the current neighbour), 
-    // // we give user the option to populate other columns from the same range.
-    // if (siblingNeighbour.length > 0) {
-    //   // Let's do some string processing to improve UI clarity
-    //   let rangeLiteral = "";
-    //   if (range.includes("http://dbpedia.org/ontology/")) {
-    //     rangeLiteral = range.slice(28);
-    //   } else if (range.includes("http://www.w3.org/2001/XMLSchema#")) {
-    //     rangeLiteral = range.slice(33);
-    //   } else {
-    //     rangeLiteral = range;
-    //   }
-    //   tempObj["task"] = "populateSameRange";
-    //   tempObj["colIndex"] = colIndex+numCols;  // Small change here: we need to adjust the position of the column index
-    //   tempObj["range"] = rangeLiteral;
-    //   // console.log(siblingNeighbour);
-    //   tempObj["siblingNeighbour"] = siblingNeighbour;
-    // }
-    // // In this case, we tell user that they can populate more columns
-    // else {
-    //   tempObj["task"] = "afterPopulateColumn";
-    // }
 
     // Now we set up the obj for Action Panel
     let tempObj = {};
     let recommendArray = createRecommendArray(neighbourArray);
     if (recommendArray.length > 0) {
       tempObj["task"] = "populateRecommendation";
+      tempObj["colIndex"] = colIndex + numCols;
       tempObj["recommendArray"] = recommendArray; 
     }
     else {
@@ -1544,6 +1529,7 @@ class MainBody extends Component {
     let recommendArray = createRecommendArray(neighbourArray);
     if (recommendArray.length > 0) {
       tempObj["task"] = "populateRecommendation";
+      tempObj["colIndex"] = colIndex;
       tempObj["recommendArray"] = recommendArray; 
     }
     else {
@@ -1627,9 +1613,50 @@ class MainBody extends Component {
   // }
 
   // The following function populates one recommendation neighbour
-  populateRecommendation(e, value, type) {
-    console.log(value);
-    console.log(type);
+  populateRecommendation(e, colIndex, neighbourArray) {
+    console.log(colIndex);
+    console.log(neighbourArray);
+    let numCols = 0;
+    // We need to figure out what numCols should be, based on firstDegNeighbours
+    let firstDegNeighbours = neighbourArray[0].type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
+    for (let i = 0; i < firstDegNeighbours.length; ++i) {
+      let neighbourData = firstDegNeighbours[i][neighbourArray[0].value];
+      if (neighbourData !== undefined && neighbourData.length > numCols) {
+        numCols = neighbourData.length;
+      }
+    }
+    console.log(numCols);
+    // At this stage, we have gathered all the parameters needed for addAllNeighbours
+    let newState = this.addAllNeighbour(colIndex,
+                                        neighbourArray,
+                                        numCols,
+                                        this.state.keyColIndex,
+                                        this.state.tableHeader,
+                                        this.state.tableData,
+                                        this.state.optionsMap,
+                                        this.state.selectedClassAnnotation,
+                                        true);
+    // console.log(newState);
+
+    // Support for undo:
+    let lastAction = "populateRecommendation";
+    let prevState = 
+      {
+        "tableData":this.state.tableData,
+        "tableHeader":this.state.tableHeader,
+        "optionsMap":this.state.optionsMap,
+        "selectedClassAnnotation":this.state.selectedClassAnnotation,
+        "keyColIndex":this.state.keyColIndex,
+      };
+    this.setState({
+      tableData:newState.tableData,
+      tableHeader:newState.tableHeader,
+      optionsMap:newState.optionsMap,
+      selectedClassAnnotation:newState.selectedClassAnnotation,
+      keyColIndex:newState.keyColIndex,
+      lastAction: lastAction,
+      prevState: prevState,
+    })
   }
 
   // The following function adds a new column to the table, to the right of the context-menu clicked column.
@@ -5053,9 +5080,10 @@ function createNeighbourText(neighbourArray) {
 // It takes in processedSubject(object)Neighbours, and returns the updated version.
 
 // For each element from processedNeighbours, we want to add an attribute called recommendNeighbours
-// recommendNeighbours is an array of objects with three attributes
+// recommendNeighbours is an array of objects with four attributes
 // 1) value:        value of the recommend attribute
 // 2) type:         type of the recommend attribute
+// 3) count:        max count of the recommend attribute
 // 3) relation:     how the recommend attribute is related to the original attribute: string, or semantic
 
 function addRecommendNeighbours(processedNeighboursCopy) {

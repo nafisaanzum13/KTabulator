@@ -210,19 +210,25 @@ class ActionPanel extends Component {
     );
   }
 
-  createRecommendArray(recommendArray) {
+  createRecommendArray(colIndex, recommendArray) {
     // console.log(recommendArray);
     let stringRecommend = [];
     let semanticRecommend = [];
     // stringRecommend and semanticRecommend are both HTML elements that should be constructed from recommend array
     for (let i = 0; i < recommendArray.length; ++i) {
+      let neighbourArray = [
+        {
+          "value":recommendArray[i].value,
+          "type":recommendArray[i].type
+        }
+      ]
       if (recommendArray[i].relation === "string") {
         stringRecommend.push(
           <div>
             <Button
               onClick={(e) => this.props.populateRecommendation(e,
-                                                                recommendArray[i].value,
-                                                                recommendArray[i].type)}>
+                                                                colIndex,
+                                                                neighbourArray)}>
               add {recommendArray[i].value}
             </Button>
           </div>
@@ -233,8 +239,8 @@ class ActionPanel extends Component {
           <div>
             <Button
               onClick={(e) => this.props.populateRecommendation(e,
-                                                                recommendArray[i].value,
-                                                                recommendArray[i].type)}>
+                                                                colIndex,
+                                                                neighbourArray)}>
               add {recommendArray[i].value}
             </Button>
           </div>
@@ -470,7 +476,7 @@ class ActionPanel extends Component {
       // In this case we give users an array of recommended neighbours to add to the table
       // Start here: create the array of buttons from actionInfo.recommendArray, and think about how to write the callback function.
       else if (actionInfo.task === "populateRecommendation") {
-        let recommendArray = this.createRecommendArray(actionInfo.recommendArray);
+        let recommendArray = this.createRecommendArray(actionInfo.colIndex, actionInfo.recommendArray);
         actionEle = (
           <div>
             {recommendArray}
