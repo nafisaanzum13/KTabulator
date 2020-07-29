@@ -214,6 +214,46 @@ class ActionPanel extends Component {
     // console.log(recommendArray);
     let stringRecommend = [];
     let semanticRecommend = [];
+    // stringRecommend and semanticRecommend are both HTML elements that should be constructed from recommend array
+    for (let i = 0; i < recommendArray.length; ++i) {
+      if (recommendArray[i].relation === "string") {
+        stringRecommend.push(
+          <div>
+            <Button
+              onClick={(e) => this.props.populateRecommendation(e,
+                                                                recommendArray[i].value,
+                                                                recommendArray[i].type)}>
+              add {recommendArray[i].value}
+            </Button>
+          </div>
+        )
+      }
+      else {
+        semanticRecommend.push(
+          <div>
+            <Button
+              onClick={(e) => this.props.populateRecommendation(e,
+                                                                recommendArray[i].value,
+                                                                recommendArray[i].type)}>
+              add {recommendArray[i].value}
+            </Button>
+          </div>
+        )
+      }
+    }
+    let returnEle = 
+      <div>
+        <div>
+          <p>String similarity recommendations:</p>
+          {stringRecommend}
+        </div>
+        <br />
+        <div>
+          <p>Semantic similarity recommendations:</p>
+          {semanticRecommend}
+        </div>
+      </div>
+    return returnEle;
   }
 
   render() {
@@ -430,10 +470,10 @@ class ActionPanel extends Component {
       // In this case we give users an array of recommended neighbours to add to the table
       // Start here: create the array of buttons from actionInfo.recommendArray, and think about how to write the callback function.
       else if (actionInfo.task === "populateRecommendation") {
-        this.createRecommendArray(actionInfo.recommendArray);
+        let recommendArray = this.createRecommendArray(actionInfo.recommendArray);
         actionEle = (
           <div>
-            Start here
+            {recommendArray}
           </div>
         )
       }

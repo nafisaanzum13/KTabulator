@@ -131,6 +131,7 @@ class MainBody extends Component {
     this.sameNeighbourDiffCol = this.sameNeighbourDiffCol.bind(this);
     this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
     // this.populateSameRange = this.populateSameRange.bind(this);
+    this.populateRecommendation = this.populateRecommendation.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextDeleteColumn = this.contextDeleteColumn.bind(this);
     this.contextSetColumn = this.contextSetColumn.bind(this);
@@ -1624,6 +1625,12 @@ class MainBody extends Component {
   //     prevState:prevState,
   //   })
   // }
+
+  // The following function populates one recommendation neighbour
+  populateRecommendation(e, value, type) {
+    console.log(value);
+    console.log(type);
+  }
 
   // The following function adds a new column to the table, to the right of the context-menu clicked column.
   // In here, let's also set tabIndex to 0.
@@ -3609,6 +3616,7 @@ class MainBody extends Component {
                     sameNeighbourDiffCol={this.sameNeighbourDiffCol}
                     sameNeighbourOneCol={this.sameNeighbourOneCol}
                     // populateSameRange={this.populateSameRange}
+                    populateRecommendation={this.populateRecommendation}
                     // Folloiwng states are passed to "startTable"
                     handleStartTable={this.handleStartTable}
                     propertyNeighbours={this.state.propertyNeighbours}
@@ -4099,7 +4107,7 @@ function findTableFromHTML(
   // Note: the index starts from 1 because we don't care about the originURL column (column 0). ***
   let originCols = [];
   // BUGFIX needs to be applied here. (Seems to be fixed)
-  console.log(tableHeader);
+  // console.log(tableHeader);
   for (let j = 1; j < tableHeader.length; ++j) {
     let curValue = ""
     for (let k = 0; k < tableHeader[j].length; ++k) {
