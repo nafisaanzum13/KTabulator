@@ -308,29 +308,63 @@ class MainBody extends Component {
   handleStartSubject(e, taskSelected) {
 
     if (taskSelected === "startSubject") {
-      // Since the starting task is"startSubject", we set the URL to be the first cell in the table
-      const subject = decodeURIComponent(this.state.urlPasted.slice(30)); // add a decodeURIComponent here
+      
+      // Change the cursor since we are making a fetch request
+      document.body.classList.add('waiting');
+
+      // Since the starting task is "startSubject", we set the URL to be the first cell in the table
+      const subject = decodeURIComponent(this.state.urlPasted.slice(30)); 
       let tableData = _.cloneDeep(this.state.tableData);
       tableData[0][0].data = subject;
 
-      // Adding support for undo:
-      let lastAction = "handleStartSubject";
-      let prevState = 
-        {
-          "usecaseSelected":this.state.usecaseSelected,
-          "tableData":this.state.tableData,
-          "tabIndex":this.state.tabIndex,
-          "curActionInfo":this.state.curActionInfo,
-        };
+      // Let's run some queries here to fetch some first degree properties 
 
-      this.setState({
-        usecaseSelected: taskSelected,
-        tableData: tableData,
-        lastAction: lastAction,
-        prevState: prevState,
-        curActionInfo: {"task":"afterStartSubject"},
-        tabIndex: 0,
-      });
+      // The query we will run is simply as follows
+      // select ?p ?o
+      // where {
+      // dbr:Barack_Obama ?p ?o.
+      // }
+
+      let prefixURL = 
+      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURL = 
+        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBody = 
+        "select+%3Fp+%3Fo%0D%0Awhere+%7B%0D%0Adbr%3A" + 
+        regexReplace(subject) +
+        "+%3Fp+%3Fo.%0D%0A%7D&";
+      let queryURL = prefixURL + queryBody + suffixURL;
+      
+      let promiseArray = [fetchJSON(queryURL)]
+      
+      allPromiseReady(promiseArray).then((values) => {
+
+        console.log(values[0].results.bindings);
+
+        // Now we need to write the helper function that processes this resultsBinding
+
+        // Adding support for undo:
+        let lastAction = "handleStartSubject";
+        let prevState = 
+          {
+            "usecaseSelected":this.state.usecaseSelected,
+            "tableData":this.state.tableData,
+            "tabIndex":this.state.tabIndex,
+            "curActionInfo":this.state.curActionInfo,
+          };
+        
+        // Check the cursor back because we are done with the function
+        document.body.classList.remove('waiting');
+
+        this.setState({
+          usecaseSelected: taskSelected,
+          tableData: tableData,
+          lastAction: lastAction,
+          prevState: prevState,
+          curActionInfo: {"task":"afterStartSubject"}, // we need to change this here. Need to pass something similar to the previewInfo to ActionInfo
+          tabIndex: 0,
+        });
+      })
     } 
   }
 
@@ -5080,10 +5114,9 @@ function createNeighbourText(neighbourArray) {
 // It takes in processedSubject(object)Neighbours, and returns the updated version.
 
 // For each element from processedNeighbours, we want to add an attribute called recommendNeighbours
-// recommendNeighbours is an array of objects with four attributes
+// recommendNeighbours is an array of objects with three attributes
 // 1) value:        value of the recommend attribute
 // 2) type:         type of the recommend attribute
-// 3) count:        max count of the recommend attribute
 // 3) relation:     how the recommend attribute is related to the original attribute: string, or semantic
 
 function addRecommendNeighbours(processedNeighboursCopy) {
