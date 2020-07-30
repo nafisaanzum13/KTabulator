@@ -327,9 +327,14 @@ class ActionPanel extends Component {
       const actionInfo = this.props.curActionInfo;
       // In this case we ask users to select a column header for the first column
       if (actionInfo.task === "afterStartSubject") {
+        // console.log(this.props.firstColChecked);
         actionEle = (
           <FirstColSelection
             firstColSelection={this.props.firstColSelection}
+            firstColChecked={this.props.firstColChecked}
+            toggleNeighbourSelection={this.props.toggleNeighbourSelection}
+            tableHeader={this.props.tableHeader}
+            latestCheckedIndex={this.props.latestCheckedIndex}
           />
         )
       }

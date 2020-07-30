@@ -35,7 +35,7 @@ class MainBody extends Component {
     for (let j = 0; j < initialColNum; ++j) {
       let emptyOptions = [];
       optionsMap.push(emptyOptions);
-      tableHeader.push("");
+      tableHeader.push([]);
     }
     this.state = {
       // states below are general states used throughout the app
@@ -62,15 +62,19 @@ class MainBody extends Component {
       // 3) type:   string that's either "subject" or "object". Storing whether the current option is ?s or ?o with respect to key column. Can be empty.
       // 4) range:  string storing the rdfs:range of the current option.
       tableHeader: tableHeader,
-      firstColSelection: [],
       tableData: tableData, // 2D array of objects storing the table data (not including the table headers).
       optionsMap: optionsMap, // 2D array storing the options map
       keyColNeighbours: [], // 1D array storing the neighbours of the key column
       // An object with two attributes: subject and object
       // Subject and Object are both 1D arrays 
       // - Length tableData.length
-      // - Each element is an object with multiple objects. Ex: {birthdate:[1998-01-01], almaMater:[a, b, c]}
+      // - Each element is an object with multiple attributes. Ex: {birthdate:[1998-01-01], almaMater:[a, b, c]}
       firstDegNeighbours: [],
+
+      // states below are useful for first column header selection
+      firstColSelection: [],   // 1D array of objects storing information about the starting subject's neighbours
+      firstColChecked: [],     // 1D array of booleans storing whether a neighbour of the starting subject is selected or not
+      latestCheckedIndex: -1,  // index storing the most recent index that has just been toggled. Initially -1.
 
       // states below are useful for startTable
       originTableArray: [], // 1D array storing all tables found on pasted URL
@@ -173,6 +177,9 @@ class MainBody extends Component {
     this.cancelJoin = this.cancelJoin.bind(this);
     this.selectJoinColumn = this.selectJoinColumn.bind(this);
     this.runJoin = this.runJoin.bind(this);
+
+    // functions below are for first column selection
+    this.toggleNeighbourSelection = this.toggleNeighbourSelection.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -342,9 +349,15 @@ class MainBody extends Component {
       
       allPromiseReady(promiseArray).then((values) => {
 
-        // console.log(values[0].results.bindings);
+        // We set up the firstColSelection and firstColChecked states here
         let firstColSelection = updateFirstColSelection(values[0].results.bindings);
+        let firstColChecked = [];
+        // Initially, firstColChecked is all false
+        for (let i = 0; i < firstColSelection.length; ++i) {
+          firstColChecked.push(false);
+        }
         // console.log(firstColSelection);
+        // console.log(firstColChecked);
 
         // We create the InfoObject needed for Action Panel
         let tempObj = {
@@ -360,6 +373,7 @@ class MainBody extends Component {
             "tabIndex":this.state.tabIndex,
             "curActionInfo":this.state.curActionInfo,
             "firstColSelection":this.state.firstColSelection,
+            "firstColChecked":this.state.firstColChecked,
           };
         
         // Check the cursor back because we are done with the function
@@ -369,6 +383,7 @@ class MainBody extends Component {
           usecaseSelected: taskSelected,
           tableData: tableData,
           firstColSelection: firstColSelection,
+          firstColChecked: firstColChecked,
           lastAction: lastAction,
           prevState: prevState,
           curActionInfo: tempObj,
@@ -376,6 +391,69 @@ class MainBody extends Component {
         });
       })
     } 
+  }
+
+  // This function handles the toggling of the starting subject's neighbours
+  // If toggled ON, we want to add to tableHeader[0]'s array
+  // Else, we remove it.
+  // And based on this new tableHeader[0], we create the suggestions text.
+  // Also, we store this toggledIndex, so that we can display the suggestion text at the right location.
+  // Obviously, we need to update this.state.firstColChecked array.
+
+  toggleNeighbourSelection(e, index) {
+    // console.log("Toggled index is "+index);
+    
+    // We first create a copy of firstColChecked and tableHeader 
+    let firstColChecked = this.state.firstColChecked.slice();
+    let tableHeader = this.state.tableHeader.slice();
+    // console.log(tableHeader);
+
+    // We create a copy of this.state.firstColSelection[index]
+    let toggledNeighbour = _.cloneDeep(this.state.firstColSelection[index]);
+    // If we are toggling the current neighbour ON, we want to push it to tableHeader[0]
+    if (firstColChecked[index] === false) {
+      tableHeader[0].push(toggledNeighbour);
+    }
+    // Else, we want to remove it from tableHeader[0]. Note: it must currently be on tableHeader[0]
+    else {
+      for (let i = 0; i < tableHeader[0].length; ++i) {
+        let curNeighbour = tableHeader[0][i];
+        // If we have found that curNeighbour is exactly the same as toggledNeighbour, we remove it from tableHeader[0]
+        if (
+            toggledNeighbour.pValue === curNeighbour.pValue &&
+            toggledNeighbour.pDataset === curNeighbour.pDataset &&
+            toggledNeighbour.oValue === curNeighbour.oValue &&
+            toggledNeighbour.oType === curNeighbour.oType
+          ) {
+          tableHeader[0].splice(i, 1);
+          break;
+        }
+      }
+    }
+
+    // Now we deal with latestCheckedIndex
+    let latestCheckedIndex = this.state.latestCheckedIndex;
+    // If, at this stage, tableHeader[0] is empty, we set lastestCheckedIndex back to -1
+    if (tableHeader[0].length === 0) {
+      latestCheckedIndex = -1;
+    }
+    else {
+      latestCheckedIndex = index;
+    }
+
+    // Check if we have all the correct values.
+    // console.log(tableHeader);
+    // console.log(latestCheckedIndex);
+  
+    // We handle the toggling here
+    firstColChecked[index] = !firstColChecked[index];
+
+    // Lastly, we make the state changes
+    this.setState({
+      firstColChecked:firstColChecked,
+      tableHeader:tableHeader,
+      latestCheckedIndex:latestCheckedIndex,
+    })
   }
 
   // This function handles manually changing cell in a table
@@ -3095,6 +3173,7 @@ class MainBody extends Component {
         usecaseSelected: prevState.usecaseSelected,
         tableData: prevState.tableData,
         firstColSelection: prevState.firstColSelection,
+        firstColChecked: prevState.firstColChecked,
         tabIndex: prevState.tabIndex,
         curActionInfo: prevState.curActionInfo,
         lastAction: "",
@@ -3714,6 +3793,10 @@ class MainBody extends Component {
                     handleJoinTable={this.handleJoinTable}
                     // Following states are for first column's header selection
                     firstColSelection={this.state.firstColSelection}
+                    firstColChecked={this.state.firstColChecked}
+                    toggleNeighbourSelection={this.toggleNeighbourSelection}
+                    tableHeader={this.state.tableHeader}
+                    latestCheckedIndex={this.state.latestCheckedIndex}
                   />
                 </div>
               </div>
@@ -4196,11 +4279,14 @@ function updateFirstColSelection(resultsBinding) {
 
   // Now we need to loop over the processedBinding, and create an array of objects. 
   // This array should have length equal to processedBinding.length.
-  // Each object should have 4 attributes.
+  // Each object should have 6 attributes.
   // 1) pValue: value of predicate
   // 2) pDataset: which dataset does this predicate belong to (one of dbo, dbp, and dct)
   // 3) oValue: value of object
   // 4) oType: datatype of object, such as "http://www.w3.org/2001/XMLSchema#date". This can be empty.
+
+  // 5) value: same as pValue: historical code
+  // 6) label: same as pValue: historical code
 
   let firstColSelection = [];
 
@@ -4212,7 +4298,9 @@ function updateFirstColSelection(resultsBinding) {
           "pValue":"category",
           "pDataset":"dct",
           "oValue":processedBinding[i].o.value.slice(37),
-          "oType":""
+          "oType":"",
+          "value":"category",
+          "label":"category",
         }
       )
     }
@@ -4223,7 +4311,9 @@ function updateFirstColSelection(resultsBinding) {
           "pValue":processedBinding[i].p.value.slice(28),
           "pDataset":processedBinding[i].p.value.includes("property") ? "dbp" : "dbo",
           "oValue":removePrefix(processedBinding[i].o.value),
-          "oType":processedBinding[i].o.datatype === undefined ? "" : processedBinding[i].o.datatype
+          "oType":processedBinding[i].o.datatype === undefined ? "" : processedBinding[i].o.datatype,
+          "value":processedBinding[i].p.value.slice(28),
+          "label":processedBinding[i].p.value.slice(28),
         }
       )
     }
