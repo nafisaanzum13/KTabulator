@@ -10,6 +10,7 @@ import TableSelection from "./TableSelection";
 // The two following lines are for range sliders
 // import RangeSlider from "react-bootstrap-range-slider";
 // import "react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
+import FirstColSelection from "./FirstColSelection";
 
 class ActionPanel extends Component {
   constructor(props) {
@@ -210,6 +211,7 @@ class ActionPanel extends Component {
     );
   }
 
+  // This function creates the HTML element for recommend array
   createRecommendArray(colIndex, recommendArray) {
     // console.log(recommendArray);
     let stringRecommend = [];
@@ -326,21 +328,13 @@ class ActionPanel extends Component {
       // In this case we ask users to select a column header for the first column
       if (actionInfo.task === "afterStartSubject") {
         actionEle = (
-          <div>
-            <p className="suggestion-text">
-              Fill the <b>first column header</b> by choosing from its <b>dropdown menu</b>
-            </p>
-            <br />
-            <p>
-              (If multiple categories are selected from the dropdown menu, <br />
-              the first column will be filled by entities belonging to the <b>intersection</b> of all categories.)  
-            </p>
-          </div>
+          <FirstColSelection
+            firstColSelection={this.props.firstColSelection}
+          />
         )
       }
       // In this case, we tell users they can keep wrangling by selecting column header for empty columns
       else if (actionInfo.task === "afterPopulateColumn") {
-        // start here
         actionEle = (
           <div>
             Fill an <b>empty column header</b> by choosing from its <b>dropdown menu</b>
@@ -663,8 +657,12 @@ class ActionPanel extends Component {
     }
     return (
       <div>
-        {titleEle}
-        {wrapperEle}
+        <div>
+          {titleEle}
+        </div>
+        <div>
+          {wrapperEle}
+        </div>
       </div>
     );
   }

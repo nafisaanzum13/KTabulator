@@ -62,6 +62,7 @@ class MainBody extends Component {
       // 3) type:   string that's either "subject" or "object". Storing whether the current option is ?s or ?o with respect to key column. Can be empty.
       // 4) range:  string storing the rdfs:range of the current option.
       tableHeader: tableHeader,
+      firstColSelection: [],
       tableData: tableData, // 2D array of objects storing the table data (not including the table headers).
       optionsMap: optionsMap, // 2D array storing the options map
       keyColNeighbours: [], // 1D array storing the neighbours of the key column
@@ -325,6 +326,8 @@ class MainBody extends Component {
       // dbr:Barack_Obama ?p ?o.
       // }
 
+      // Note: we are not taking account of the object neighbours. Subject neighbours only.
+
       let prefixURL = 
       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
       let suffixURL = 
@@ -339,9 +342,14 @@ class MainBody extends Component {
       
       allPromiseReady(promiseArray).then((values) => {
 
-        console.log(values[0].results.bindings);
+        // console.log(values[0].results.bindings);
+        let firstColSelection = updateFirstColSelection(values[0].results.bindings);
+        // console.log(firstColSelection);
 
-        // Now we need to write the helper function that processes this resultsBinding
+        // We create the InfoObject needed for Action Panel
+        let tempObj = {
+          "task":"afterStartSubject",
+        };
 
         // Adding support for undo:
         let lastAction = "handleStartSubject";
@@ -351,6 +359,7 @@ class MainBody extends Component {
             "tableData":this.state.tableData,
             "tabIndex":this.state.tabIndex,
             "curActionInfo":this.state.curActionInfo,
+            "firstColSelection":this.state.firstColSelection,
           };
         
         // Check the cursor back because we are done with the function
@@ -359,9 +368,10 @@ class MainBody extends Component {
         this.setState({
           usecaseSelected: taskSelected,
           tableData: tableData,
+          firstColSelection: firstColSelection,
           lastAction: lastAction,
           prevState: prevState,
-          curActionInfo: {"task":"afterStartSubject"}, // we need to change this here. Need to pass something similar to the previewInfo to ActionInfo
+          curActionInfo: tempObj,
           tabIndex: 0,
         });
       })
@@ -3084,6 +3094,7 @@ class MainBody extends Component {
       this.setState({
         usecaseSelected: prevState.usecaseSelected,
         tableData: prevState.tableData,
+        firstColSelection: prevState.firstColSelection,
         tabIndex: prevState.tabIndex,
         curActionInfo: prevState.curActionInfo,
         lastAction: "",
@@ -3676,7 +3687,6 @@ class MainBody extends Component {
                     populateOtherColumn={this.populateOtherColumn}
                     sameNeighbourDiffCol={this.sameNeighbourDiffCol}
                     sameNeighbourOneCol={this.sameNeighbourOneCol}
-                    // populateSameRange={this.populateSameRange}
                     populateRecommendation={this.populateRecommendation}
                     // Folloiwng states are passed to "startTable"
                     handleStartTable={this.handleStartTable}
@@ -3702,6 +3712,8 @@ class MainBody extends Component {
                     showJoinTables={this.state.showJoinTables}
                     toggleUnionJoin={this.toggleUnionJoin}
                     handleJoinTable={this.handleJoinTable}
+                    // Following states are for first column's header selection
+                    firstColSelection={this.state.firstColSelection}
                   />
                 </div>
               </div>
@@ -3871,6 +3883,10 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
          || a.p.value.includes("float")
          || a.p.value.includes("bbr")
          || a.p.value === "http://dbpedia.org/property/alt"
+         || a.p.value === "http://dbpedia.org/property/by"
+         || a.p.value === "http://dbpedia.org/property/onlinebooks"
+         || a.p.value === "http://dbpedia.org/property/signature"
+         || a.p.value === "http://dbpedia.org/property/video"
          )
   );
 
@@ -4010,9 +4026,9 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
 // This helper function is designed to process the result bindings passed from contextCellPreview.
 // It should share some similarity with updateKeyColNeighbours
 
-// It taks two parameters:
-//  2) array "resultsBinding", storing the returned result of queryURL from Virtuoso
-//  3) string "type", either "subject" or "object"
+// It takes two parameters:
+//  1) array "resultsBinding", storing the returned result of queryURL from Virtuoso
+//  2) string "type", either "subject" or "object"
 
 // It returns previewInfoArray, a list of objects used to display a cell's preview info
 // This object has two properties:
@@ -4050,6 +4066,10 @@ function updatePreviewInfo(resultsBinding, type) {
          || a.p.value.includes("float")
          || a.p.value.includes("bbr")
          || a.p.value === "http://dbpedia.org/property/alt"
+         || a.p.value === "http://dbpedia.org/property/by"
+         || a.p.value === "http://dbpedia.org/property/onlinebooks"
+         || a.p.value === "http://dbpedia.org/property/signature"
+         || a.p.value === "http://dbpedia.org/property/video"
          )
   );
 
@@ -4103,6 +4123,114 @@ function updatePreviewInfo(resultsBinding, type) {
   }
   return previewInfoArray;
 }
+
+// This function processes the resultsBinding passed from handleStartSubject, to create the info needed for Action Panel.
+// It should share some similarity with updatePreviewInfo
+
+// It takes one parameter:
+// 1) array "resultsBinding", storing the returned result of queryURL from Virtuoso
+// Note: "type" parameter is not needed, since we are not dealing with object neighbours
+
+function updateFirstColSelection(resultsBinding) {
+
+  // we first filter out those in resultsBinding according to three criterias
+  // Note: the second criteria is a bit different from updateKeyColNeighbours and updatePreviewInfo
+
+  // 1) p.value.slice(28).length must > 1
+  // 2) p.value must include "ontology", "property", or "dc/terms/subject" (so it is one of dbo:XXXX, dbp:XXXX, or dct:subject)
+  // 3) p.value must not include certain strings (which likely correspond to meaningless attributes)
+
+  let processedBinding = resultsBinding.filter(
+    a => a.p.value.slice(28).length > 1 
+         &&
+         (a.p.value.includes("ontology") 
+         || a.p.value.includes("property")
+         || a.p.value.includes("dc/terms/subject")
+         ) 
+         &&
+         !(a.p.value.includes("wikiPage") 
+         || a.p.value.includes("align") 
+         || a.p.value.includes("abstract") 
+         || a.p.value.includes("caption") 
+         || a.p.value.includes("image") 
+         || a.p.value.includes("width") 
+         || a.p.value.includes("thumbnail") 
+         || a.p.value.includes("blank")
+         || a.p.value.includes("fec")
+         || a.p.value.includes("viaf")
+         || a.p.value.includes("soundRecording")
+         || a.p.value.includes("votesmart")
+         || a.p.value.includes("wordnet")
+         || a.p.value.includes("float")
+         || a.p.value.includes("bbr")
+         || a.p.value === "http://dbpedia.org/property/alt"
+         || a.p.value === "http://dbpedia.org/property/by"
+         || a.p.value === "http://dbpedia.org/property/onlinebooks"
+         || a.p.value === "http://dbpedia.org/property/signature"
+         || a.p.value === "http://dbpedia.org/property/video"
+         )
+  );
+  
+  // We then sort the processedBinding by the following criteria:
+  // 1) dct:subjects should show up at the top of the list
+  // 2) ther sort by p.value
+
+  // Since a customized sort is a bit hard to write, let's break this array into two, sort each one, then concat them back together
+  let dctArray = [];
+  let dbopArray = [];
+  for (let i = 0; i < processedBinding.length; ++i) {
+    if (processedBinding[i].p.value === "http://purl.org/dc/terms/subject") {
+      dctArray.push(processedBinding[i]);
+    }
+    else {
+      dbopArray.push(processedBinding[i]);
+    }
+  }
+
+  dctArray.sort((a, b) => (a.o.value.slice(37) < b.o.value.slice(37) ? -1 : 1));
+  dbopArray.sort((a, b) => (a.p.value.slice(28) < b.p.value.slice(28) ? -1 : 1));
+
+  processedBinding = dctArray.concat(dbopArray);
+
+  // console.log(processedBinding);
+
+  // Now we need to loop over the processedBinding, and create an array of objects. 
+  // This array should have length equal to processedBinding.length.
+  // Each object should have 4 attributes.
+  // 1) pValue: value of predicate
+  // 2) pDataset: which dataset does this predicate belong to (one of dbo, dbp, and dct)
+  // 3) oValue: value of object
+  // 4) oType: datatype of object, such as "http://www.w3.org/2001/XMLSchema#date". This can be empty.
+
+  let firstColSelection = [];
+
+  for (let i = 0; i < processedBinding.length; ++i) {
+    // First case: current neighbour is from dct:subject
+    if (processedBinding[i].p.value === "http://purl.org/dc/terms/subject") {
+      firstColSelection.push(
+        {
+          "pValue":"category",
+          "pDataset":"dct",
+          "oValue":processedBinding[i].o.value.slice(37),
+          "oType":""
+        }
+      )
+    }
+    // Second case: current neighbour is from dbo or dbp
+    else {
+      firstColSelection.push(
+        {
+          "pValue":processedBinding[i].p.value.slice(28),
+          "pDataset":processedBinding[i].p.value.includes("property") ? "dbp" : "dbo",
+          "oValue":removePrefix(processedBinding[i].o.value),
+          "oType":processedBinding[i].o.datatype === undefined ? "" : processedBinding[i].o.datatype
+        }
+      )
+    }
+  }
+  return firstColSelection;
+}
+
 
 // This function takes in the clean data for the first table, clean data for the second table, and colMapping between these two tables
 // And returns the unioned clean data for the first table
