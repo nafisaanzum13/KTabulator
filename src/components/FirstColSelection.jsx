@@ -12,38 +12,72 @@ class FirstColSelection extends Component {
     console.log(this.props.tableHeader);
     console.log(this.props.latestCheckedIndex);
 
+    let populateEle = null;
+
+    // If tableHeader[0] is not empty, we have to create the populateText and populateEle
+    if (this.props.latestCheckedIndex !== -1 && this.props.tableHeader[0].length > 0) {
+      let populateText = "Populate first column with entities that";
+      for (let i = 0; i < this.props.tableHeader[0].length; ++i) {
+        let curText = i > 0 ? ", and" : "";
+        if (this.props.tableHeader[0][i].pDataset === "dct") {
+          curText = curText + " are " + niceRender(this.props.tableHeader[0][i].oValue);
+        }
+        else {
+          curText = curText + " have " + this.props.tableHeader[0][i].pValue + "=" + niceRender(this.props.tableHeader[0][i].oValue);
+        }
+        populateText+=curText;
+      }
+      populateText+="?";
+      populateEle = 
+        <div>
+          <p>
+            <b>
+              {populateText}
+            </b>
+          </p>
+        </div>
+    }
+
     let returnEle = [];
     // We loop over the firstColSelection array, and push on the neede radio checkbox and textual information
     for (let i = 0; i < this.props.firstColSelection.length; ++i) {
+      // additionEle is basically a copy of populateEle
+      let additionEle = i === this.props.latestCheckedIndex ? populateEle: null;
       if (this.props.firstColSelection[i].pValue === "category") {
         returnEle.push(
           <div>
-            <p>
-              <input
-                type="checkbox"
-                checked={this.props.firstColChecked[i]}
-                onChange={(e) => this.props.toggleNeighbourSelection(e, i)}
-              />
-              {'\u00A0'}{'\u00A0'}
-              {niceRender(this.props.firstColSelection[i].oValue)}
-            </p>
+            <div>
+              <p>
+                <input
+                  type="checkbox"
+                  checked={this.props.firstColChecked[i]}
+                  onChange={(e) => this.props.toggleNeighbourSelection(e, i)}
+                />
+                {'\u00A0'}{'\u00A0'}
+                {niceRender(this.props.firstColSelection[i].oValue)}
+              </p>
+            </div>
+            {additionEle}
           </div>
         )
       }
       else {
         returnEle.push(
           <div>
-            <p>
-              <input
-                type="checkbox"
-                checked={this.props.firstColChecked[i]}
-                onChange={(e) => this.props.toggleNeighbourSelection(e, i)}
-              />
-              {'\u00A0'}{'\u00A0'}
-              {this.props.firstColSelection[i].pValue}
-              {":"}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}
-              {niceRender(this.props.firstColSelection[i].oValue)}
-            </p>
+            <div>
+              <p>
+                <input
+                  type="checkbox"
+                  checked={this.props.firstColChecked[i]}
+                  onChange={(e) => this.props.toggleNeighbourSelection(e, i)}
+                />
+                {'\u00A0'}{'\u00A0'}
+                {this.props.firstColSelection[i].pValue}
+                {":"}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}
+                {niceRender(this.props.firstColSelection[i].oValue)}
+              </p>
+            </div>
+            {additionEle}
           </div>
         )
       }
