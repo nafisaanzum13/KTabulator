@@ -838,169 +838,172 @@ class MainBody extends Component {
   // Note: we need to do some modification here. Instead of having a fixed number of entries in the key column,
   // Let's make it more flexible. (but also pose a limit, so we don't get way too many entries)
 
-  populateKeyColumn(e, colIndex, neighbour) {
-    document.body.classList.add('waiting');
-    // Let's first take a look at neighbour passed in
-    // console.log(neighbour);
-    // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
-    // We also need to fetch the neighbours of this key column, both using the key column entries as subject and object
+  populateKeyColumn(e, colIndex, neighbourArray) {
+    // document.body.classList.add('waiting');
+    // Let's first take a look at parameters passed in
+    // console.log(colIndex);
+    // console.log(neighbourArray);
 
-    // Since we need to make multiple (three) queries, we make a promise array
-    let promiseArray = [];
+    let queryURL = keyQueryGen(neighbourArray)
+    console.log(queryURL);
 
-    // Below is the first query we will make.
-    // This query populates the first columns.
-    // Note: since neighbour is now an array instead of a single value (as we are allowing multiselects), we need to adjust our query
-    // let prefixURLOne = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    // let suffixURLOne = "%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    // let queryBodyOne = "SELECT+%3Fsomevar+%0D%0AWHERE+%7B%0D%0A%09%3Fsomevar+dct%3Asubject+dbc%3A"
-    //                     +regexReplace(neighbour)
-    //                     +".%0D%0A%7D%0D%0ALIMIT+"+emptyEntryCount;
-    let prefixURLOne =
-      "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // Let's create a helper function to generate the query text.
+    // // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
+    // // We also need to fetch the neighbours of this key column, both using the key column entries as subject and object
+
+    // // Since we need to make multiple (three) queries, we make a promise array
+    // let promiseArray = [];
+
+    // // Below is the first query we will make.
+    // // This query populates the first columns.
+
+    // let prefixURLOne =
+    //   "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    // // let suffixURLOne =
+    // //   "%0D%0A%7D+%0D%0Alimit+" +
+    // //   emptyEntryCount +
+    // //   "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     // let suffixURLOne =
-    //   "%0D%0A%7D+%0D%0Alimit+" +
-    //   emptyEntryCount +
+    //   "%0D%0A%7D+%0D%0A" +
     //   "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let suffixURLOne =
-      "%0D%0A%7D+%0D%0A" +
-      "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    let queryBodyOne = "select+%3Fsomevar%0D%0Awhere+%7B";
-    // We are using a loop here because multi-select is possible
-    for (let i = 0; i < neighbour.length; ++i) {
-      // We need to adjust the appending text, based on whether we are adding a dct neighbour or rdf neighbour
-      if (neighbour[i].dataset === "dct") {
-        queryBodyOne =
-          queryBodyOne +
-          "%0D%0A+++++++%3Fsomevar+dct%3Asubject+dbc%3A" +
-          regexReplace(neighbour[i].value) +
-          ".";
-      }
-      else if (neighbour[i].dataset === "rdf") {
-        queryBodyOne =
-          queryBodyOne +
-          "%0D%0A+++++++%3Fsomevar+rdf%3Atype+dbo%3A" +
-          regexReplace(neighbour[i].value) +
-          ".";
-      }
-      else {
-        let errorMsg = 
-          "We cannot find attribute "
-          +neighbour[i].value
-          +" in DBpedia. Remove this attribute and try again.";
-        alert(errorMsg);
-        document.body.classList.remove('waiting');
-        return;
-      }
-    }
-    let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
-    let keyColPromise = fetchJSON(queryURLOne);
-    promiseArray.push(keyColPromise);
+    // let queryBodyOne = "select+%3Fsomevar%0D%0Awhere+%7B";
+    // // We are using a loop here because multi-select is possible
+    // for (let i = 0; i < neighbour.length; ++i) {
+    //   // We need to adjust the appending text, based on whether we are adding a dct neighbour or rdf neighbour
+    //   if (neighbour[i].dataset === "dct") {
+    //     queryBodyOne =
+    //       queryBodyOne +
+    //       "%0D%0A+++++++%3Fsomevar+dct%3Asubject+dbc%3A" +
+    //       regexReplace(neighbour[i].value) +
+    //       ".";
+    //   }
+    //   else if (neighbour[i].dataset === "rdf") {
+    //     queryBodyOne =
+    //       queryBodyOne +
+    //       "%0D%0A+++++++%3Fsomevar+rdf%3Atype+dbo%3A" +
+    //       regexReplace(neighbour[i].value) +
+    //       ".";
+    //   }
+    //   else {
+    //     let errorMsg = 
+    //       "We cannot find attribute "
+    //       +neighbour[i].value
+    //       +" in DBpedia. Remove this attribute and try again.";
+    //     alert(errorMsg);
+    //     document.body.classList.remove('waiting');
+    //     return;
+    //   }
+    // }
+    // let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
+    // let keyColPromise = fetchJSON(queryURLOne);
+    // promiseArray.push(keyColPromise);
 
-    allPromiseReady(promiseArray).then((values) => {
-      // let's first work with the first promise result: fill in table data with the entities we have fetched
+    // allPromiseReady(promiseArray).then((values) => {
+    //   // let's first work with the first promise result: fill in table data with the entities we have fetched
 
-      // This part sets the data for each cell
-      let tableData = _.cloneDeep(this.state.tableData);
+    //   // console.log(values[0].results.bindings);
 
-      if (this.state.tableHeader[0][0].value !== "OriginURL") {
-        tableData = setFirstColumnData(
-          values[0].results.bindings,
-          tableData,
-          this.state.tableHeader,
-          colIndex
-        )
-      }
+    //   // This part sets the data for each cell
+    //   let tableData = _.cloneDeep(this.state.tableData);
 
-      // console.log(tableData);
+    //   if (this.state.tableHeader[0][0].value !== "OriginURL") {
+    //     tableData = setFirstColumnData(
+    //       values[0].results.bindings,
+    //       tableData,
+    //       this.state.tableHeader,
+    //       colIndex
+    //     )
+    //   }
 
-      // We need to make modification here: find neighbours of a column, instead of neighbours of a cell
-      // To do this, we need to use this tableData to ask more queries (number of queires is equal to tableData.length)
-      let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", colIndex);
-      let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", colIndex);
-      allPromiseReady(promiseArrayOne).then((valuesOne) => {
-      allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+    //   // console.log(tableData);
 
-        // console.log(valuesOne);
-        // console.log(valuesTwo);
+    //   // We need to make modification here: find neighbours of a column, instead of neighbours of a cell
+    //   // To do this, we need to use this tableData to ask more queries (number of queires is equal to tableData.length)
+    //   let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", colIndex);
+    //   let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", colIndex);
+    //   allPromiseReady(promiseArrayOne).then((valuesOne) => {
+    //   allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
-        // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
-        let firstDegNeighbours = {};
+    //     // console.log(valuesOne);
+    //     // console.log(valuesTwo);
 
-        // First we deal with subject neighbours, so valuesOne
-        let subjectNeighbourArray = [];
-        for (let i = 0; i < valuesOne.length; ++i) {
-          let temp = updateKeyColNeighbours(
-            [],
-            valuesOne[i].results.bindings,
-            "subject"
-          )
-          subjectNeighbourArray.push(temp);
-        }
-        firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
-        let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
-        processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
-        // Need modification here
+    //     // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
+    //     let firstDegNeighbours = {};
 
-        // Then we deal with object neighbours, so valuesTwo
-        let objectNeighbourArray = [];
-        for (let i = 0; i < valuesTwo.length; ++i) {
-          let temp = updateKeyColNeighbours(
-            [],
-            valuesTwo[i].results.bindings,
-            "object"
-          )
-          objectNeighbourArray.push(temp);
-        }
-        firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
-        let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
-        processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
-        // Need modification here
+    //     // First we deal with subject neighbours, so valuesOne
+    //     let subjectNeighbourArray = [];
+    //     for (let i = 0; i < valuesOne.length; ++i) {
+    //       let temp = updateKeyColNeighbours(
+    //         [],
+    //         valuesOne[i].results.bindings,
+    //         "subject"
+    //       )
+    //       subjectNeighbourArray.push(temp);
+    //     }
+    //     firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
+    //     let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+    //     processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
+    //     // Need modification here
 
-        // console.log(processedSubjectNeighbours);
-        // console.log(processedObjectNeighbours);
-        // console.log(firstDegNeighbours);
+    //     // Then we deal with object neighbours, so valuesTwo
+    //     let objectNeighbourArray = [];
+    //     for (let i = 0; i < valuesTwo.length; ++i) {
+    //       let temp = updateKeyColNeighbours(
+    //         [],
+    //         valuesTwo[i].results.bindings,
+    //         "object"
+    //       )
+    //       objectNeighbourArray.push(temp);
+    //     }
+    //     firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
+    //     let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+    //     processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
+    //     // Need modification here
 
-        // we now concat subjectNeighbours and objectNeighbours together
-        let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
+    //     // console.log(processedSubjectNeighbours);
+    //     // console.log(processedObjectNeighbours);
+    //     // console.log(firstDegNeighbours);
 
-        // console.log(keyColNeighbours);
+    //     // we now concat subjectNeighbours and objectNeighbours together
+    //     let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
 
-        let optionsMap = this.state.optionsMap.slice();
-        for (let i = 0; i < optionsMap.length; ++i) {
-          if (i !== colIndex) {
-            optionsMap[i] = keyColNeighbours;
-          }
-        }
+    //     // console.log(keyColNeighbours);
 
-        // Support for undo: 
-        // Let's save the previous state in an object
-        let lastAction = "populateKeyColumn";
-        let prevState = 
-          {
-            "keyColIndex":this.state.keyColIndex,
-            "keyColNeighbours":this.state.keyColNeighbours,
-            "firstDegNeighbours":this.state.firstDegNeighbours,
-            "curActionInfo":this.state.curActionInfo,
-            "tableData":this.state.tableData,
-            "optionsMap":this.state.optionsMap
-          };
+    //     let optionsMap = this.state.optionsMap.slice();
+    //     for (let i = 0; i < optionsMap.length; ++i) {
+    //       if (i !== colIndex) {
+    //         optionsMap[i] = keyColNeighbours;
+    //       }
+    //     }
 
-        document.body.classList.remove('waiting');
+    //     // Support for undo: 
+    //     // Let's save the previous state in an object
+    //     let lastAction = "populateKeyColumn";
+    //     let prevState = 
+    //       {
+    //         "keyColIndex":this.state.keyColIndex,
+    //         "keyColNeighbours":this.state.keyColNeighbours,
+    //         "firstDegNeighbours":this.state.firstDegNeighbours,
+    //         "curActionInfo":this.state.curActionInfo,
+    //         "tableData":this.state.tableData,
+    //         "optionsMap":this.state.optionsMap
+    //       };
 
-        this.setState({
-          keyColIndex: colIndex,
-          keyColNeighbours: keyColNeighbours,
-          firstDegNeighbours: firstDegNeighbours,
-          curActionInfo: {"task":"afterPopulateColumn"},
-          tableData: tableData,
-          optionsMap: optionsMap,
-          lastAction: lastAction,
-          prevState: prevState,
-        });
-      })
-      })
-    });
+    //     document.body.classList.remove('waiting');
+
+    //     this.setState({
+    //       keyColIndex: colIndex,
+    //       keyColNeighbours: keyColNeighbours,
+    //       firstDegNeighbours: firstDegNeighbours,
+    //       curActionInfo: {"task":"afterPopulateColumn"},
+    //       tableData: tableData,
+    //       optionsMap: optionsMap,
+    //       lastAction: lastAction,
+    //       prevState: prevState,
+    //     });
+    //   })
+    //   })
+    // });
   }
 
   // // TEST FUNCTION----------------------------------------------------
@@ -4271,7 +4274,44 @@ function updateFirstColSelection(resultsBinding) {
   }
 
   dctArray.sort((a, b) => (a.o.value.slice(37) < b.o.value.slice(37) ? -1 : 1));
+
+  // We want to sort dbop array by the following rules
+  // Those that are dbr (so without a datatype) shows up higher
+  // Then those with a smaller count shows up higher
+  // Then alphabetical order.
+
+  // The following code gets the count for each property(or neighbour)
   dbopArray.sort((a, b) => (a.p.value.slice(28) < b.p.value.slice(28) ? -1 : 1));
+  dbopArray[0].p.count = getPCount(dbopArray[0].p.value, dbopArray);
+  for (let i = 1; i < dbopArray.length; ++i) {
+    let prevNeighbour = dbopArray[i-1];
+    let curNeighbour = dbopArray[i];
+    if (prevNeighbour.p.value === curNeighbour.p.value) {
+      curNeighbour.p.count = prevNeighbour.p.count;
+    }
+    else {
+      curNeighbour.p.count = getPCount(dbopArray[i].p.value, dbopArray);
+    }
+  }
+
+  // The following code sorts the array
+  dbopArray.sort(function (a, b) {
+    if (a.o.datatype === undefined && b.o.datatype !== undefined) {
+      return -1;
+    }
+    else if (b.o.datatype === undefined && a.o.datatype !== undefined) {
+      return 1;
+    }
+    else {
+      if (a.p.count === b.p.count) {
+        return a.p.value.slice(28) < b.p.value.slice(28) ? -1 : 1;
+      }
+      else {
+        return a.p.count < b.p.count ? -1 : 1;
+      }
+    }
+  });
+  // console.log(dbopArray);
 
   processedBinding = dctArray.concat(dbopArray);
 
@@ -5413,4 +5453,117 @@ function createRecommendArray(neighbourArray) {
   return recommendArray;
 }
 
+// The following function is a helper function for sorting used in updateFirstColSelection.
+
+function getPCount(str, myArray) {
+  let count = 0;
+  for (let i = 0; i < myArray.length; ++i) {
+    if (myArray[i].p.value === str) {
+      ++count
+    }
+  }
+  return count;
+}
+
+// The following function scans through a string, and changes all " " to "+"
+
+function blankToPlus(str) {
+  return str.replace(/\s/g, "+");
+}
+
+// The following function generates queryURL needed for Virtuoso, using information from neighbourArray (or tableHeader[0])
+
+function keyQueryGen(neighbourArray) {
+
+  // Following boolean is for error detection
+  let error = false;
+
+  // Following is a complete query.
+
+  // select ?somevar
+  // where {
+  // ?somevar dct:subject dbc:Obama_family.
+  // ?somevar dbp:district "13"^^<http://www.w3.org/2001/XMLSchema#integer>.
+  // ?somevar dbo:birthPlace dbr:Hawaii.
+  // ?somevar dbp:name "Barack Obama"^^<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>.
+  // ?somevar dbo:activeYearsEndDate "2004-11-04"^^<http://www.w3.org/2001/XMLSchema#date>.
+  // }
+
+  let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+  let suffixURL = "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+  let queryBody = "select+%3Fsomevar%0D%0Awhere+%7B";
+  for (let i = 0; i < neighbourArray.length; ++i) {
+    // There are 5 cases that we have to deal with in total
+    let textToAdd = ""
+    // Case 1: dct (%0D%0A%3Fsomevar+dct%3Asubject+dbc%3AObama_family.)
+    if (neighbourArray[i].pDataset === "dct") {
+      textToAdd = 
+        "%0D%0A%3Fsomevar+dct%3Asubject+dbc%3A" 
+        + regexReplace(neighbourArray[i].oValue) 
+        + ".";
+    }
+    // Case 2: oType is date (%0D%0A%3Fsomevar+dbo%3AactiveYearsEndDate+%222004-11-04%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E.)
+    else if (neighbourArray[i].oType === "http://www.w3.org/2001/XMLSchema#date") {
+      textToAdd = 
+        "%0D%0A%3Fsomevar+" 
+        + neighbourArray[i].pDataset
+        + "%3A"
+        + regexReplace(neighbourArray[i].pValue)
+        + "+%22"
+        + neighbourArray[i].oValue // Note no regexReplace here because it's in quotes
+        + "%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E.";
+    }
+    // Case 3: oType is integer (%0D%0A%3Fsomevar+dbp%3Adistrict+%2213%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23integer%3E.)
+    else if (neighbourArray[i].oType === "http://www.w3.org/2001/XMLSchema#integer") {
+      textToAdd = 
+        "%0D%0A%3Fsomevar+"
+        + neighbourArray[i].pDataset
+        + "%3A"
+        + regexReplace(neighbourArray[i].pValue)
+        + "+%22"
+        + neighbourArray[i].oValue // Note no regexReplace here because it's in quotes
+        + "%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23integer%3E.";
+    }
+    // Case 4: oType is string literal (%0D%0A%3Fsomevar+dbp%3Aname+%22Barack+Obama%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23langString%3E.)
+    else if (neighbourArray[i].oType === "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString") {
+      textToAdd = 
+        "%0D%0A%3Fsomevar+"
+        + neighbourArray[i].pDataset
+        + "%3A"
+        + regexReplace(neighbourArray[i].pValue)
+        + "+%22"
+        + blankToPlus(neighbourArray[i].oValue) // Note no regexReplace here, but blankToPlus is needed
+        + "%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23langString%3E.";
+    }
+    // Case 5: oType is "", in this case the object value is some dbr
+    else if (neighbourArray[i].oType === "") {
+      textToAdd = 
+        "%0D%0A%3Fsomevar+"
+        + neighbourArray[i].pDataset
+        + "%3A"
+        + regexReplace(neighbourArray[i].pValue)
+        + "+dbr%3A"
+        + regexReplace(neighbourArray[i].oValue)
+        + ".";
+    }
+    // Otherwise, we have run into some error potentially
+    else {
+      error = true;
+    }
+    queryBody+=textToAdd;
+  }
+  // Finally we add in the last bit of text to queryBody
+  queryBody+="%0D%0A%7D%0D%0A&";
+
+  // Create the queryURL and take a look
+  let queryURL = prefixURL + queryBody + suffixURL;
+  
+  // We now return. If error is true, we return error, else, we return queryURL
+  if (error === true) {
+    return "ERROR";
+  }
+  else {
+    return queryURL;
+  }
+}
 

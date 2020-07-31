@@ -9,8 +9,8 @@ class FirstColSelection extends Component {
   }
 
   createFirstColSelection() {
-    console.log(this.props.tableHeader);
-    console.log(this.props.latestCheckedIndex);
+    // console.log(this.props.tableHeader);
+    // console.log(this.props.latestCheckedIndex);
 
     let populateEle = null;
 
@@ -34,6 +34,7 @@ class FirstColSelection extends Component {
             <b>
               {populateText}
             </b>
+            <button onClick={(e) => this.props.populateKeyColumn(e, 0, this.props.tableHeader[0])}>Okay</button>
           </p>
         </div>
     }

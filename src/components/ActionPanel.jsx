@@ -335,6 +335,7 @@ class ActionPanel extends Component {
             toggleNeighbourSelection={this.props.toggleNeighbourSelection}
             tableHeader={this.props.tableHeader}
             latestCheckedIndex={this.props.latestCheckedIndex}
+            populateKeyColumn={this.props.populateKeyColumn}
           />
         )
       }
