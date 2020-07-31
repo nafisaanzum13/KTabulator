@@ -839,171 +839,133 @@ class MainBody extends Component {
   // Let's make it more flexible. (but also pose a limit, so we don't get way too many entries)
 
   populateKeyColumn(e, colIndex, neighbourArray) {
-    // document.body.classList.add('waiting');
     // Let's first take a look at parameters passed in
     // console.log(colIndex);
     // console.log(neighbourArray);
 
+    // Let's create a helper function to generate the query text.
     let queryURL = keyQueryGen(neighbourArray)
     console.log(queryURL);
 
-    // Let's create a helper function to generate the query text.
-    // // We will populate this column based on query: ?p dct:subject dbc:Presidents_of_United_States
-    // // We also need to fetch the neighbours of this key column, both using the key column entries as subject and object
+    // If queryURL is error, we have encountered some previously unseen datatypes. In this case we just print an error.
+    if (queryURL === "ERROR") {
+      alert("Unsupported datatype in selected neighbours. Please select some other neighbours.")
+    }
 
-    // // Since we need to make multiple (three) queries, we make a promise array
-    // let promiseArray = [];
+    // Else we run the body of the funnction
 
-    // // Below is the first query we will make.
-    // // This query populates the first columns.
+    else {
+      document.body.classList.add('waiting');
 
-    // let prefixURLOne =
-    //   "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    // // let suffixURLOne =
-    // //   "%0D%0A%7D+%0D%0Alimit+" +
-    // //   emptyEntryCount +
-    // //   "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    // let suffixURLOne =
-    //   "%0D%0A%7D+%0D%0A" +
-    //   "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    // let queryBodyOne = "select+%3Fsomevar%0D%0Awhere+%7B";
-    // // We are using a loop here because multi-select is possible
-    // for (let i = 0; i < neighbour.length; ++i) {
-    //   // We need to adjust the appending text, based on whether we are adding a dct neighbour or rdf neighbour
-    //   if (neighbour[i].dataset === "dct") {
-    //     queryBodyOne =
-    //       queryBodyOne +
-    //       "%0D%0A+++++++%3Fsomevar+dct%3Asubject+dbc%3A" +
-    //       regexReplace(neighbour[i].value) +
-    //       ".";
-    //   }
-    //   else if (neighbour[i].dataset === "rdf") {
-    //     queryBodyOne =
-    //       queryBodyOne +
-    //       "%0D%0A+++++++%3Fsomevar+rdf%3Atype+dbo%3A" +
-    //       regexReplace(neighbour[i].value) +
-    //       ".";
-    //   }
-    //   else {
-    //     let errorMsg = 
-    //       "We cannot find attribute "
-    //       +neighbour[i].value
-    //       +" in DBpedia. Remove this attribute and try again.";
-    //     alert(errorMsg);
-    //     document.body.classList.remove('waiting');
-    //     return;
-    //   }
-    // }
-    // let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
-    // let keyColPromise = fetchJSON(queryURLOne);
-    // promiseArray.push(keyColPromise);
+      let promiseArray = [fetchJSON(queryURL)];
 
-    // allPromiseReady(promiseArray).then((values) => {
-    //   // let's first work with the first promise result: fill in table data with the entities we have fetched
-
-    //   // console.log(values[0].results.bindings);
-
-    //   // This part sets the data for each cell
-    //   let tableData = _.cloneDeep(this.state.tableData);
-
-    //   if (this.state.tableHeader[0][0].value !== "OriginURL") {
-    //     tableData = setFirstColumnData(
-    //       values[0].results.bindings,
-    //       tableData,
-    //       this.state.tableHeader,
-    //       colIndex
-    //     )
-    //   }
-
-    //   // console.log(tableData);
-
-    //   // We need to make modification here: find neighbours of a column, instead of neighbours of a cell
-    //   // To do this, we need to use this tableData to ask more queries (number of queires is equal to tableData.length)
-    //   let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", colIndex);
-    //   let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", colIndex);
-    //   allPromiseReady(promiseArrayOne).then((valuesOne) => {
-    //   allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
-
-    //     // console.log(valuesOne);
-    //     // console.log(valuesTwo);
-
-    //     // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
-    //     let firstDegNeighbours = {};
-
-    //     // First we deal with subject neighbours, so valuesOne
-    //     let subjectNeighbourArray = [];
-    //     for (let i = 0; i < valuesOne.length; ++i) {
-    //       let temp = updateKeyColNeighbours(
-    //         [],
-    //         valuesOne[i].results.bindings,
-    //         "subject"
-    //       )
-    //       subjectNeighbourArray.push(temp);
-    //     }
-    //     firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
-    //     let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
-    //     processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
-    //     // Need modification here
-
-    //     // Then we deal with object neighbours, so valuesTwo
-    //     let objectNeighbourArray = [];
-    //     for (let i = 0; i < valuesTwo.length; ++i) {
-    //       let temp = updateKeyColNeighbours(
-    //         [],
-    //         valuesTwo[i].results.bindings,
-    //         "object"
-    //       )
-    //       objectNeighbourArray.push(temp);
-    //     }
-    //     firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
-    //     let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
-    //     processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
-    //     // Need modification here
-
-    //     // console.log(processedSubjectNeighbours);
-    //     // console.log(processedObjectNeighbours);
-    //     // console.log(firstDegNeighbours);
-
-    //     // we now concat subjectNeighbours and objectNeighbours together
-    //     let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
-
-    //     // console.log(keyColNeighbours);
-
-    //     let optionsMap = this.state.optionsMap.slice();
-    //     for (let i = 0; i < optionsMap.length; ++i) {
-    //       if (i !== colIndex) {
-    //         optionsMap[i] = keyColNeighbours;
-    //       }
-    //     }
-
-    //     // Support for undo: 
-    //     // Let's save the previous state in an object
-    //     let lastAction = "populateKeyColumn";
-    //     let prevState = 
-    //       {
-    //         "keyColIndex":this.state.keyColIndex,
-    //         "keyColNeighbours":this.state.keyColNeighbours,
-    //         "firstDegNeighbours":this.state.firstDegNeighbours,
-    //         "curActionInfo":this.state.curActionInfo,
-    //         "tableData":this.state.tableData,
-    //         "optionsMap":this.state.optionsMap
-    //       };
-
-    //     document.body.classList.remove('waiting');
-
-    //     this.setState({
-    //       keyColIndex: colIndex,
-    //       keyColNeighbours: keyColNeighbours,
-    //       firstDegNeighbours: firstDegNeighbours,
-    //       curActionInfo: {"task":"afterPopulateColumn"},
-    //       tableData: tableData,
-    //       optionsMap: optionsMap,
-    //       lastAction: lastAction,
-    //       prevState: prevState,
-    //     });
-    //   })
-    //   })
-    // });
+      allPromiseReady(promiseArray).then((values) => {
+        // let's first work with the first promise result: fill in table data with the entities we have fetched
+  
+        // console.log(values[0].results.bindings);
+  
+        // This part sets the data for each cell
+        let tableData = _.cloneDeep(this.state.tableData);
+  
+        if (this.state.tableHeader[0][0].value !== "OriginURL") {
+          tableData = setFirstColumnData(
+            values[0].results.bindings,
+            tableData,
+            this.state.tableHeader,
+            colIndex
+          )
+        }
+  
+        // console.log(tableData);
+  
+        // We need to make modification here: find neighbours of a column, instead of neighbours of a cell
+        // To do this, we need to use this tableData to ask more queries (number of queires is equal to tableData.length)
+        let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", colIndex);
+        let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", colIndex);
+        allPromiseReady(promiseArrayOne).then((valuesOne) => {
+        allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+  
+          // console.log(valuesOne);
+          // console.log(valuesTwo);
+  
+          // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
+          let firstDegNeighbours = {};
+  
+          // First we deal with subject neighbours, so valuesOne
+          let subjectNeighbourArray = [];
+          for (let i = 0; i < valuesOne.length; ++i) {
+            let temp = updateKeyColNeighbours(
+              [],
+              valuesOne[i].results.bindings,
+              "subject"
+            )
+            subjectNeighbourArray.push(temp);
+          }
+          firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
+          let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+          processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
+          // Need modification here
+  
+          // Then we deal with object neighbours, so valuesTwo
+          let objectNeighbourArray = [];
+          for (let i = 0; i < valuesTwo.length; ++i) {
+            let temp = updateKeyColNeighbours(
+              [],
+              valuesTwo[i].results.bindings,
+              "object"
+            )
+            objectNeighbourArray.push(temp);
+          }
+          firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
+          let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+          processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
+          // Need modification here
+  
+          // console.log(processedSubjectNeighbours);
+          // console.log(processedObjectNeighbours);
+          // console.log(firstDegNeighbours);
+  
+          // we now concat subjectNeighbours and objectNeighbours together
+          let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
+  
+          // console.log(keyColNeighbours);
+  
+          let optionsMap = this.state.optionsMap.slice();
+          for (let i = 0; i < optionsMap.length; ++i) {
+            if (i !== colIndex) {
+              optionsMap[i] = keyColNeighbours;
+            }
+          }
+  
+          // Support for undo: 
+          // Let's save the previous state in an object
+          let lastAction = "populateKeyColumn";
+          let prevState = 
+            {
+              "keyColIndex":this.state.keyColIndex,
+              "keyColNeighbours":this.state.keyColNeighbours,
+              "firstDegNeighbours":this.state.firstDegNeighbours,
+              "curActionInfo":this.state.curActionInfo,
+              "tableData":this.state.tableData,
+              "optionsMap":this.state.optionsMap
+            };
+  
+          document.body.classList.remove('waiting');
+  
+          this.setState({
+            keyColIndex: colIndex,
+            keyColNeighbours: keyColNeighbours,
+            firstDegNeighbours: firstDegNeighbours,
+            curActionInfo: {"task":"afterPopulateColumn"},
+            tableData: tableData,
+            optionsMap: optionsMap,
+            lastAction: lastAction,
+            prevState: prevState,
+          });
+        })
+        })
+      });
+    }
   }
 
   // // TEST FUNCTION----------------------------------------------------
@@ -1750,7 +1712,7 @@ class MainBody extends Component {
         numCols = neighbourData.length;
       }
     }
-    console.log(numCols);
+    // console.log(numCols);
     // At this stage, we have gathered all the parameters needed for addAllNeighbours
     let newState = this.addAllNeighbour(colIndex,
                                         neighbourArray,
@@ -1763,6 +1725,9 @@ class MainBody extends Component {
                                         true);
     // console.log(newState);
 
+    let curActionInfo = _.cloneDeep(this.state.curActionInfo);
+    curActionInfo["colIndex"]+=numCols;
+
     // Support for undo:
     let lastAction = "populateRecommendation";
     let prevState = 
@@ -1772,6 +1737,7 @@ class MainBody extends Component {
         "optionsMap":this.state.optionsMap,
         "selectedClassAnnotation":this.state.selectedClassAnnotation,
         "keyColIndex":this.state.keyColIndex,
+        "curActionInfo":this.state.curActionInfo,
       };
     this.setState({
       tableData:newState.tableData,
@@ -1779,6 +1745,7 @@ class MainBody extends Component {
       optionsMap:newState.optionsMap,
       selectedClassAnnotation:newState.selectedClassAnnotation,
       keyColIndex:newState.keyColIndex,
+      curActionInfo:curActionInfo,
       lastAction: lastAction,
       prevState: prevState,
     })
@@ -4340,7 +4307,7 @@ function updateFirstColSelection(resultsBinding) {
           "oValue":processedBinding[i].o.value.slice(37),
           "oType":"",
           "value":"category",
-          "label":"category",
+          "label":"category:"+processedBinding[i].o.value.slice(37),
         }
       )
     }
@@ -4353,7 +4320,7 @@ function updateFirstColSelection(resultsBinding) {
           "oValue":removePrefix(processedBinding[i].o.value),
           "oType":processedBinding[i].o.datatype === undefined ? "" : processedBinding[i].o.datatype,
           "value":processedBinding[i].p.value.slice(28),
-          "label":processedBinding[i].p.value.slice(28),
+          "label":processedBinding[i].p.value.slice(28)+":"+removePrefix(processedBinding[i].o.value),
         }
       )
     }
@@ -5535,7 +5502,18 @@ function keyQueryGen(neighbourArray) {
         + blankToPlus(neighbourArray[i].oValue) // Note no regexReplace here, but blankToPlus is needed
         + "%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23langString%3E.";
     }
-    // Case 5: oType is "", in this case the object value is some dbr
+    // Case 5: oType is nonnegative integer
+    else if (neighbourArray[i].oType === "http://www.w3.org/2001/XMLSchema#nonNegativeInteger") {
+      textToAdd = 
+        "%0D%0A%3Fsomevar+"
+        + neighbourArray[i].pDataset
+        + "%3A"
+        + regexReplace(neighbourArray[i].pValue)
+        + "+%22"
+        + neighbourArray[i].oValue // Note no regexReplace here because it's in quotes
+        + "%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23nonNegativeInteger%3E.";
+    }
+    // Case 6: oType is "", in this case the object value is some dbr
     else if (neighbourArray[i].oType === "") {
       textToAdd = 
         "%0D%0A%3Fsomevar+"
@@ -5548,6 +5526,7 @@ function keyQueryGen(neighbourArray) {
     }
     // Otherwise, we have run into some error potentially
     else {
+      console.log(neighbourArray[i].oType);
       error = true;
     }
     queryBody+=textToAdd;
