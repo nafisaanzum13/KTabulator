@@ -224,6 +224,7 @@ class ActionPanel extends Component {
           "type":recommendArray[i].type
         }
       ]
+      let recommendText = recommendArray[i].type === "subject" ? recommendArray[i].value: "is " + recommendArray[i].value + " of";
       if (recommendArray[i].relation === "string") {
         stringRecommend.push(
           <div>
@@ -231,7 +232,7 @@ class ActionPanel extends Component {
               onClick={(e) => this.props.populateRecommendation(e,
                                                                 colIndex,
                                                                 neighbourArray)}>
-              add {recommendArray[i].value}
+              add {recommendText}
             </Button>
           </div>
         )
@@ -243,7 +244,7 @@ class ActionPanel extends Component {
               onClick={(e) => this.props.populateRecommendation(e,
                                                                 colIndex,
                                                                 neighbourArray)}>
-              add {recommendArray[i].value}
+              add {recommendText}
             </Button>
           </div>
         )

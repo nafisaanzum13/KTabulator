@@ -9,21 +9,35 @@ class FirstColSelection extends Component {
   }
 
   createFirstColSelection() {
-    // console.log(this.props.tableHeader);
-    // console.log(this.props.latestCheckedIndex);
+    let latestCheckedIndex = this.props.latestCheckedIndex;
+    let firstColSelection = this.props.firstColSelection;
+    let firstColChecked = this.props.firstColChecked;
 
     let populateEle = null;
 
-    // If tableHeader[0] is not empty, we have to create the populateText and populateEle
-    if (this.props.latestCheckedIndex !== -1 && this.props.tableHeader[0].length > 0) {
+    let selectedNeighbours = [];
+    // Start here. We will create the selectedNeighbours array from this.props.firstColSelection and this.props.firstColChecked
+    if (firstColChecked.length !== firstColSelection.length) {
+      alert("Some error exists");
+    }
+    for (let i = 0; i < firstColChecked.length; ++i) {
+      if (firstColChecked[i] === true) {
+        selectedNeighbours.push(firstColSelection[i]);
+      }
+    }
+
+    console.log(selectedNeighbours);
+
+    // If selectedNeighbours is not empty, we have to create the populateText and populateEle
+    if (latestCheckedIndex !== -1 && selectedNeighbours.length > 0) {
       let populateText = "Populate first column with entities that";
-      for (let i = 0; i < this.props.tableHeader[0].length; ++i) {
+      for (let i = 0; i < selectedNeighbours.length; ++i) {
         let curText = i > 0 ? ", and" : "";
-        if (this.props.tableHeader[0][i].pDataset === "dct") {
-          curText = curText + " are " + niceRender(this.props.tableHeader[0][i].oValue);
+        if (selectedNeighbours[i].pDataset === "dct") {
+          curText = curText + " are " + niceRender(selectedNeighbours[i].oValue);
         }
         else {
-          curText = curText + " have " + this.props.tableHeader[0][i].pValue + "=" + niceRender(this.props.tableHeader[0][i].oValue);
+          curText = curText + " have " + selectedNeighbours[i].pValue + "=" + niceRender(selectedNeighbours[i].oValue);
         }
         populateText+=curText;
       }
@@ -34,28 +48,28 @@ class FirstColSelection extends Component {
             <b>
               {populateText}
             </b>
-            <button onClick={(e) => this.props.populateKeyColumn(e, 0, this.props.tableHeader[0])}>Okay</button>
+            <button onClick={(e) => this.props.populateKeyColumn(e, 0, selectedNeighbours)}>Okay</button>
           </p>
         </div>
     }
 
     let returnEle = [];
     // We loop over the firstColSelection array, and push on the neede radio checkbox and textual information
-    for (let i = 0; i < this.props.firstColSelection.length; ++i) {
+    for (let i = 0; i < firstColSelection.length; ++i) {
       // additionEle is basically a copy of populateEle
-      let additionEle = i === this.props.latestCheckedIndex ? populateEle: null;
-      if (this.props.firstColSelection[i].pValue === "category") {
+      let additionEle = i === latestCheckedIndex ? populateEle: null;
+      if (firstColSelection[i].pValue === "category") {
         returnEle.push(
           <div>
             <div>
               <p>
                 <input
                   type="checkbox"
-                  checked={this.props.firstColChecked[i]}
+                  checked={firstColChecked[i]}
                   onChange={(e) => this.props.toggleNeighbourSelection(e, i)}
                 />
                 {'\u00A0'}{'\u00A0'}
-                {niceRender(this.props.firstColSelection[i].oValue)}
+                {niceRender(firstColSelection[i].oValue)}
               </p>
             </div>
             {additionEle}
@@ -69,13 +83,13 @@ class FirstColSelection extends Component {
               <p>
                 <input
                   type="checkbox"
-                  checked={this.props.firstColChecked[i]}
+                  checked={firstColChecked[i]}
                   onChange={(e) => this.props.toggleNeighbourSelection(e, i)}
                 />
                 {'\u00A0'}{'\u00A0'}
-                {this.props.firstColSelection[i].pValue}
+                {firstColSelection[i].pValue}
                 {":"}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}
-                {niceRender(this.props.firstColSelection[i].oValue)}
+                {niceRender(firstColSelection[i].oValue)}
               </p>
             </div>
             {additionEle}

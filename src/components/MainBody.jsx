@@ -14,7 +14,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 50;
 const initialColNum = 4;
-const initialRowNum = 10;
+const initialRowNum = 20;
 
 class MainBody extends Component {
   constructor(props) {
@@ -74,6 +74,8 @@ class MainBody extends Component {
       // states below are useful for first column header selection
       firstColSelection: [],   // 1D array of objects storing information about the starting subject's neighbours
       firstColChecked: [],     // 1D array of booleans storing whether a neighbour of the starting subject is selected or not
+      firstColFilled: false,   // boolean indicating whether the first column has been filled. 
+                               // Will be set to true and remain that way after calling populateKeyColumn. 
       latestCheckedIndex: -1,  // index storing the most recent index that has just been toggled. Initially -1.
 
       // states below are useful for startTable
@@ -405,41 +407,43 @@ class MainBody extends Component {
     
     // We first create a copy of firstColChecked and tableHeader 
     let firstColChecked = this.state.firstColChecked.slice();
-    let tableHeader = this.state.tableHeader.slice();
+    // let tableHeader = this.state.tableHeader.slice();
     // console.log(tableHeader);
 
+    // Start here, instead of manipulating things in tableHeader[0], let's craete
+
     // We create a copy of this.state.firstColSelection[index]
-    let toggledNeighbour = _.cloneDeep(this.state.firstColSelection[index]);
-    // If we are toggling the current neighbour ON, we want to push it to tableHeader[0]
-    if (firstColChecked[index] === false) {
-      tableHeader[0].push(toggledNeighbour);
-    }
-    // Else, we want to remove it from tableHeader[0]. Note: it must currently be on tableHeader[0]
-    else {
-      for (let i = 0; i < tableHeader[0].length; ++i) {
-        let curNeighbour = tableHeader[0][i];
-        // If we have found that curNeighbour is exactly the same as toggledNeighbour, we remove it from tableHeader[0]
-        if (
-            toggledNeighbour.pValue === curNeighbour.pValue &&
-            toggledNeighbour.pDataset === curNeighbour.pDataset &&
-            toggledNeighbour.oValue === curNeighbour.oValue &&
-            toggledNeighbour.oType === curNeighbour.oType
-          ) {
-          tableHeader[0].splice(i, 1);
-          break;
-        }
-      }
-    }
+    // let toggledNeighbour = _.cloneDeep(this.state.firstColSelection[index]);
+    // // If we are toggling the current neighbour ON, we want to push it to tableHeader[0]
+    // if (firstColChecked[index] === false) {
+    //   tableHeader[0].push(toggledNeighbour);
+    // }
+    // // Else, we want to remove it from tableHeader[0]. Note: it must currently be on tableHeader[0]
+    // else {
+    //   for (let i = 0; i < tableHeader[0].length; ++i) {
+    //     let curNeighbour = tableHeader[0][i];
+    //     // If we have found that curNeighbour is exactly the same as toggledNeighbour, we remove it from tableHeader[0]
+    //     if (
+    //         toggledNeighbour.pValue === curNeighbour.pValue &&
+    //         toggledNeighbour.pDataset === curNeighbour.pDataset &&
+    //         toggledNeighbour.oValue === curNeighbour.oValue &&
+    //         toggledNeighbour.oType === curNeighbour.oType
+    //       ) {
+    //       tableHeader[0].splice(i, 1);
+    //       break;
+    //     }
+    //   }
+    // }
 
     // Now we deal with latestCheckedIndex
-    let latestCheckedIndex = this.state.latestCheckedIndex;
-    // If, at this stage, tableHeader[0] is empty, we set lastestCheckedIndex back to -1
-    if (tableHeader[0].length === 0) {
-      latestCheckedIndex = -1;
-    }
-    else {
-      latestCheckedIndex = index;
-    }
+    let latestCheckedIndex = index;
+    // // If, at this stage, tableHeader[0] is empty, we set lastestCheckedIndex back to -1
+    // if (tableHeader[0].length === 0) {
+    //   latestCheckedIndex = -1;
+    // }
+    // else {
+    //   latestCheckedIndex = index;
+    // }
 
     // Check if we have all the correct values.
     // console.log(tableHeader);
@@ -451,7 +455,7 @@ class MainBody extends Component {
     // Lastly, we make the state changes
     this.setState({
       firstColChecked:firstColChecked,
-      tableHeader:tableHeader,
+      // tableHeader:tableHeader,
       latestCheckedIndex:latestCheckedIndex,
     })
   }
@@ -840,8 +844,8 @@ class MainBody extends Component {
 
   populateKeyColumn(e, colIndex, neighbourArray) {
     // Let's first take a look at parameters passed in
-    // console.log(colIndex);
-    // console.log(neighbourArray);
+    console.log(colIndex);
+    console.log(neighbourArray);
 
     // Let's create a helper function to generate the query text.
     let queryURL = keyQueryGen(neighbourArray)
@@ -863,15 +867,20 @@ class MainBody extends Component {
         // let's first work with the first promise result: fill in table data with the entities we have fetched
   
         // console.log(values[0].results.bindings);
+
+        // We set the tableHeader[0] here, from a deep copy of tableHeader
+        // tableHeader[0] should be set as neighbourArray
+        let tableHeader = _.cloneDeep(this.state.tableHeader);
+        tableHeader[0] = neighbourArray;
   
         // This part sets the data for each cell
         let tableData = _.cloneDeep(this.state.tableData);
   
-        if (this.state.tableHeader[0][0].value !== "OriginURL") {
+        if (this.state.tableHeader[0].length === 0) {
           tableData = setFirstColumnData(
             values[0].results.bindings,
             tableData,
-            this.state.tableHeader,
+            tableHeader,
             colIndex
           )
         }
@@ -947,7 +956,9 @@ class MainBody extends Component {
               "firstDegNeighbours":this.state.firstDegNeighbours,
               "curActionInfo":this.state.curActionInfo,
               "tableData":this.state.tableData,
-              "optionsMap":this.state.optionsMap
+              "tableHeader":this.state.tableHeader,
+              "optionsMap":this.state.optionsMap,
+              "firstColFilled":this.state.firstColFilled,
             };
   
           document.body.classList.remove('waiting');
@@ -958,6 +969,8 @@ class MainBody extends Component {
             firstDegNeighbours: firstDegNeighbours,
             curActionInfo: {"task":"afterPopulateColumn"},
             tableData: tableData,
+            tableHeader: tableHeader,
+            firstColFilled: true,
             optionsMap: optionsMap,
             lastAction: lastAction,
             prevState: prevState,
@@ -3180,6 +3193,8 @@ class MainBody extends Component {
         firstDegNeighbours: prevState.firstDegNeighbours,
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        firstColFilled: prevState.firstColFilled,
         optionsMap: prevState.optionsMap,
         lastAction: "",
       })
@@ -3722,8 +3737,10 @@ class MainBody extends Component {
                     contextCellPreview={this.contextCellPreview}
                     contextOpenLink={this.contextOpenLink}
                     contextSortColumn={this.contextSortColumn}
-                    // Folloiwng states are useful for column filter
+                    // Following states are useful for column filter
                     openFilter={this.openFilter}
+                    // Following states control the conditional render of the table
+                    firstColFilled={this.state.firstColFilled}
                   />
                 </div>
                 <div className="col-md-5 small-padding action-panel">
@@ -5360,7 +5377,9 @@ function addRecommendNeighbours(processedNeighboursCopy) {
         // We consider three types of matching
 
         // 1st type is String Similarity: if X is a substring of Y, or Y is a substring of X 
-        if (processedNeighbours[i].value.includes(processedNeighbours[j].value) || processedNeighbours[j].value.includes(processedNeighbours[i].value)) {
+        let upperStrOne = processedNeighbours[i].value.toUpperCase();
+        let upperStrTwo = processedNeighbours[j].value.toUpperCase();
+        if (upperStrOne.includes(upperStrTwo) || upperStrTwo.includes(upperStrOne)) {
           recommendNeighbours.push(
             {
               "value": processedNeighbours[j].value,

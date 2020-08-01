@@ -17,6 +17,7 @@ class TablePanel extends Component {
   // And convert them into HTML for the super table
 
   createSuperTable() {
+    console.log("Has first column been filled? " + this.props.firstColFilled);
     // console.log(this.props.tableData);
     const rowNum = this.props.tableData.length;
     const colNum = this.props.tableData[0].length;
@@ -27,8 +28,19 @@ class TablePanel extends Component {
     let tempRow = [];
     for (let colIndex = 0; colIndex < colNum; ++colIndex) {
       let tempHeader;
-      // This part deals with the key column headers
-      if (colIndex === this.props.keyColIndex) {
+      // This part deals with the column 0 
+      if (colIndex === 0) {
+        tempHeader = (
+          <th className="table-head">
+            <div
+              className="super-header-div"
+            >
+            </div>
+          </th>
+        )
+      }
+      // This part deals with key columns that are not column 0
+      else if (colIndex === this.props.keyColIndex) {
         // let multiAllowed = colIndex === 0 ? true : false;
         tempHeader = (
           <th className="table-head">
