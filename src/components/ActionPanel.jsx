@@ -326,18 +326,34 @@ class ActionPanel extends Component {
     // Case 2: Task has been selected. curActionInfo is not null, meaning we have to display some task in ActionPanel
     else if (this.props.curActionInfo !== null) {
       const actionInfo = this.props.curActionInfo;
-      // In this case we ask users to select a column header for the first column
+      // Case 2.1: Users have selected "Create Table from subject".
+      // We ask users to select a column header for the first column.
       if (actionInfo.task === "afterStartSubject") {
-        // console.log(this.props.firstColChecked);
         actionEle = (
           <FirstColSelection
             firstColSelection={this.props.firstColSelection}
             firstColChecked={this.props.firstColChecked}
+            firstColFilled={this.props.firstColFilled}
             toggleNeighbourSelection={this.props.toggleNeighbourSelection}
             tableHeader={this.props.tableHeader}
             latestCheckedIndex={this.props.latestCheckedIndex}
             populateKeyColumn={this.props.populateKeyColumn}
           />
+        )
+      }
+      // Case 2.2: Users have click on the PLUS icon on first column's header.
+      // We ask users if they want to add more entities to the first column.
+      else if (actionInfo.task === "plusClicked") {
+        // Start here
+        actionEle = (
+          <div>
+            <p>Add more entities to the first column?</p>
+            <button
+              onClick={() => this.props.addToFirstCol()}
+            >
+              OK
+            </button>
+          </div>
         )
       }
       // In this case, we tell users they can keep wrangling by selecting column header for empty columns
@@ -475,7 +491,6 @@ class ActionPanel extends Component {
         );
       } 
       // In this case we give users an array of recommended neighbours to add to the table
-      // Start here: create the array of buttons from actionInfo.recommendArray, and think about how to write the callback function.
       else if (actionInfo.task === "populateRecommendation") {
         let recommendArray = this.createRecommendArray(actionInfo.colIndex, actionInfo.recommendArray);
         actionEle = (

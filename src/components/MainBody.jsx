@@ -14,7 +14,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 50;
 const initialColNum = 4;
-const initialRowNum = 20;
+const initialRowNum = 10;
 
 class MainBody extends Component {
   constructor(props) {
@@ -182,6 +182,8 @@ class MainBody extends Component {
 
     // functions below are for first column selection
     this.toggleNeighbourSelection = this.toggleNeighbourSelection.bind(this);
+    this.handlePlusClick = this.handlePlusClick.bind(this);
+    this.addToFirstCol = this.addToFirstCol.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -410,8 +412,6 @@ class MainBody extends Component {
     // let tableHeader = this.state.tableHeader.slice();
     // console.log(tableHeader);
 
-    // Start here, instead of manipulating things in tableHeader[0], let's craete
-
     // We create a copy of this.state.firstColSelection[index]
     // let toggledNeighbour = _.cloneDeep(this.state.firstColSelection[index]);
     // // If we are toggling the current neighbour ON, we want to push it to tableHeader[0]
@@ -458,6 +458,20 @@ class MainBody extends Component {
       // tableHeader:tableHeader,
       latestCheckedIndex:latestCheckedIndex,
     })
+  }
+
+  // This function is a simple function that creates an object and passes to Action Panel
+  handlePlusClick() {
+    this.setState({
+      curActionInfo:{"task":"plusClicked"},
+    })
+  }
+
+  // This function handles when users want to add more entities to the first column
+  addToFirstCol() {
+    // We need to make the Action Panel display FirstColSelection component again.
+    // Before doing so, we need to first clear out this.state.firstColChecked, and this.state.latestCheckedIndex
+    // So that we do not have information carried over from the previous first column selection.
   }
 
   // This function handles manually changing cell in a table
@@ -809,11 +823,7 @@ class MainBody extends Component {
     let suffixURL =
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     for (let i = 0; i < tableData.length; ++i) {
-      let cellValue = regexReplace(tableData[i][colIndex].data);
-      // N/A's will block the search, let's replace it with some string that does not block the search
-      if (cellValue === "N/A") {
-        cellValue = "NONEXISTINGSTRING";
-      }
+      let cellValue = tableData[i][colIndex].data === "N/A" ? "NONEXISTINGSTRING" : regexReplace(tableData[i][colIndex].data);
       // console.log(cellValue);
       let queryBody;
       if (type === "subject") {
@@ -3741,6 +3751,7 @@ class MainBody extends Component {
                     openFilter={this.openFilter}
                     // Following states control the conditional render of the table
                     firstColFilled={this.state.firstColFilled}
+                    handlePlusClick = {this.handlePlusClick}
                   />
                 </div>
                 <div className="col-md-5 small-padding action-panel">
@@ -3781,9 +3792,11 @@ class MainBody extends Component {
                     // Following states are for first column's header selection
                     firstColSelection={this.state.firstColSelection}
                     firstColChecked={this.state.firstColChecked}
+                    firstColFilled={this.state.firstColFilled}
                     toggleNeighbourSelection={this.toggleNeighbourSelection}
                     tableHeader={this.state.tableHeader}
                     latestCheckedIndex={this.state.latestCheckedIndex}
+                    addToFirstCol={this.addToFirstCol}
                   />
                 </div>
               </div>

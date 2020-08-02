@@ -16,7 +16,7 @@ class FirstColSelection extends Component {
     let populateEle = null;
 
     let selectedNeighbours = [];
-    // Start here. We will create the selectedNeighbours array from this.props.firstColSelection and this.props.firstColChecked
+    // We will create the selectedNeighbours array from this.props.firstColSelection and this.props.firstColChecked
     if (firstColChecked.length !== firstColSelection.length) {
       alert("Some error exists");
     }
@@ -42,6 +42,7 @@ class FirstColSelection extends Component {
         populateText+=curText;
       }
       populateText+="?";
+      // console.log(this.props.firstColFilled);
       populateEle = 
         <div>
           <p>

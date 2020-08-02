@@ -3,7 +3,7 @@ import React, { Component } from "react";
 // import Tooltip from '@atlaskit/tooltip';
 import Select from "react-select";
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaPlus } from "react-icons/fa";
 
 class TablePanel extends Component {
   constructor(props) {
@@ -17,7 +17,7 @@ class TablePanel extends Component {
   // And convert them into HTML for the super table
 
   createSuperTable() {
-    console.log("Has first column been filled? " + this.props.firstColFilled);
+    // console.log("Has first column been filled? " + this.props.firstColFilled);
     // console.log(this.props.tableData);
     const rowNum = this.props.tableData.length;
     const colNum = this.props.tableData[0].length;
@@ -25,17 +25,33 @@ class TablePanel extends Component {
     let table = [];
 
     // This part creates the table header row
+    // Start here: we want to adjust what we render as first column's TH, depends on this.props.firstColFilled
     let tempRow = [];
     for (let colIndex = 0; colIndex < colNum; ++colIndex) {
       let tempHeader;
       // This part deals with the column 0 
       if (colIndex === 0) {
+        let plusButton = null;
+        if (this.props.firstColFilled === true) {
+          plusButton = 
+            <div>
+              <button
+                className="btn btn-default"
+                title="Add more entities"
+              >
+                <FaPlus
+                  onClick={() => this.props.handlePlusClick()}
+                />
+              </button>
+            </div>
+        }
         tempHeader = (
           <th className="table-head">
             <div
               className="super-header-div"
             >
             </div>
+            {plusButton}
           </th>
         )
       }
