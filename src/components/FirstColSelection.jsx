@@ -30,7 +30,9 @@ class FirstColSelection extends Component {
 
     // If selectedNeighbours is not empty, we have to create the populateText and populateEle
     if (latestCheckedIndex !== -1 && selectedNeighbours.length > 0) {
-      let populateText = "Populate first column with entities that";
+      let populateText = 
+        this.props.firstColFilled === false ? "Populate first column with entities that"
+        : "Add to first column with entities that";
       for (let i = 0; i < selectedNeighbours.length; ++i) {
         let curText = i > 0 ? ", and" : "";
         if (selectedNeighbours[i].pDataset === "dct") {
@@ -42,14 +44,19 @@ class FirstColSelection extends Component {
         populateText+=curText;
       }
       populateText+="?";
-      // console.log(this.props.firstColFilled);
+      // We conditionally create the button element
+      // If firstColFilled is false, we want to run populateKeyColumn
+      // Otherwise, we want to run addKeyColumn
+      let buttonEle = 
+        this.props.firstColFilled === false ? <button onClick={(e) => this.props.populateKeyColumn(e, 0, selectedNeighbours)}>Okay</button>
+        : <button onClick={(e) => this.props.confirmAddFirstCol(e, selectedNeighbours)}>Okay</button>;
       populateEle = 
         <div>
           <p>
             <b>
               {populateText}
             </b>
-            <button onClick={(e) => this.props.populateKeyColumn(e, 0, selectedNeighbours)}>Okay</button>
+            {buttonEle}
           </p>
         </div>
     }

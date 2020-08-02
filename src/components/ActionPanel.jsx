@@ -338,6 +338,7 @@ class ActionPanel extends Component {
             tableHeader={this.props.tableHeader}
             latestCheckedIndex={this.props.latestCheckedIndex}
             populateKeyColumn={this.props.populateKeyColumn}
+            confirmAddFirstCol={this.props.confirmAddFirstCol}
           />
         )
       }

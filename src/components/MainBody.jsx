@@ -184,6 +184,7 @@ class MainBody extends Component {
     this.toggleNeighbourSelection = this.toggleNeighbourSelection.bind(this);
     this.handlePlusClick = this.handlePlusClick.bind(this);
     this.addToFirstCol = this.addToFirstCol.bind(this);
+    this.confirmAddFirstCol = this.confirmAddFirstCol.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -472,6 +473,27 @@ class MainBody extends Component {
     // We need to make the Action Panel display FirstColSelection component again.
     // Before doing so, we need to first clear out this.state.firstColChecked, and this.state.latestCheckedIndex
     // So that we do not have information carried over from the previous first column selection.
+
+    // First we update firstColChecked
+    let firstColCheckedUpdated = [];
+    for (let i = 0; i < this.state.firstColChecked.length; ++i) {
+      firstColCheckedUpdated.push(false);
+    }
+
+    // Then we reset latestCheckedIndex
+    let latestCheckedIndexUpdated = -1;
+
+    // We now set up tempObj for Action Panel
+    let tempObj = {
+      "task":"afterStartSubject",
+    };
+
+    // Finallym we set the states.
+    this.setState({
+      firstColChecked:firstColCheckedUpdated,
+      latestCheckedIndex:latestCheckedIndexUpdated,
+      curActionInfo:tempObj,
+    })
   }
 
   // This function handles manually changing cell in a table
@@ -859,7 +881,7 @@ class MainBody extends Component {
 
     // Let's create a helper function to generate the query text.
     let queryURL = keyQueryGen(neighbourArray)
-    console.log(queryURL);
+    // console.log(queryURL);
 
     // If queryURL is error, we have encountered some previously unseen datatypes. In this case we just print an error.
     if (queryURL === "ERROR") {
@@ -876,7 +898,7 @@ class MainBody extends Component {
       allPromiseReady(promiseArray).then((values) => {
         // let's first work with the first promise result: fill in table data with the entities we have fetched
   
-        // console.log(values[0].results.bindings);
+        console.log(values[0].results.bindings);
 
         // We set the tableHeader[0] here, from a deep copy of tableHeader
         // tableHeader[0] should be set as neighbourArray
@@ -949,13 +971,6 @@ class MainBody extends Component {
   
           // console.log(keyColNeighbours);
   
-          let optionsMap = this.state.optionsMap.slice();
-          for (let i = 0; i < optionsMap.length; ++i) {
-            if (i !== colIndex) {
-              optionsMap[i] = keyColNeighbours;
-            }
-          }
-  
           // Support for undo: 
           // Let's save the previous state in an object
           let lastAction = "populateKeyColumn";
@@ -967,7 +982,6 @@ class MainBody extends Component {
               "curActionInfo":this.state.curActionInfo,
               "tableData":this.state.tableData,
               "tableHeader":this.state.tableHeader,
-              "optionsMap":this.state.optionsMap,
               "firstColFilled":this.state.firstColFilled,
             };
   
@@ -981,13 +995,117 @@ class MainBody extends Component {
             tableData: tableData,
             tableHeader: tableHeader,
             firstColFilled: true,
-            optionsMap: optionsMap,
             lastAction: lastAction,
             prevState: prevState,
           });
         })
         })
       });
+    }
+  }
+
+  // This function adds more entities to the first column.
+  // It should be similar to populateKeyColumn, with some differences
+
+  confirmAddFirstCol(e, neighbourArray) {
+    // console.log(neighbourArray);
+    let queryURL = keyQueryGen(neighbourArray);
+
+    if (queryURL === "ERROR") {
+      alert("Unsupported datatype in selected neighbours. Please select some other neighbours.");
+    }
+    else {
+      document.body.classList.add("waiting");
+
+      let promiseArray = [fetchJSON(queryURL)];
+
+      allPromiseReady(promiseArray).then((values) => {
+        // console.log(values[0].results.bindings);
+        // Now we append the new query results to tableData
+        let numNewRows = Math.min(values[0].results.bindings.length, initialRowNum);
+        let tableData = [];
+        // We first push on numNewRows number of rows, while setting up data and origin
+        for (let i = 0; i < numNewRows; ++i) {
+          let tempRow = [];
+          for (let j = 0; j < initialColNum; ++j) {
+            if (j === 0) {
+              tempRow.push({
+                data: values[0].results.bindings[i].somevar.value.slice(28),
+                origin: [values[0].results.bindings[i].somevar.value.slice(28)]
+              })
+            }
+            else {
+              tempRow.push({ data: "", origin: []});
+            }
+          }
+          tableData.push(tempRow);
+        }
+        // We concat this.state.tableData and tableData together, and dedup by first column's data
+        tableData = _.cloneDeep(this.state.tableData).concat(tableData);
+        tableData = _.uniqBy(tableData, function(x) {return x[0].data;});
+        // console.log(tableData);
+
+        // Now, we move on to update firstDegNeighbours and keyColNeighbours
+        let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", 0);
+        let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", 0);
+        allPromiseReady(promiseArrayOne).then((valuesOne) => {
+        allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+  
+          // console.log(valuesOne);
+          // console.log(valuesTwo);
+  
+          // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
+          let firstDegNeighbours = {};
+  
+          // First we deal with subject neighbours, so valuesOne
+          let subjectNeighbourArray = [];
+          for (let i = 0; i < valuesOne.length; ++i) {
+            let temp = updateKeyColNeighbours(
+              [],
+              valuesOne[i].results.bindings,
+              "subject"
+            )
+            subjectNeighbourArray.push(temp);
+          }
+          firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
+          let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+          processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
+  
+          // Then we deal with object neighbours, so valuesTwo
+          let objectNeighbourArray = [];
+          for (let i = 0; i < valuesTwo.length; ++i) {
+            let temp = updateKeyColNeighbours(
+              [],
+              valuesTwo[i].results.bindings,
+              "object"
+            )
+            objectNeighbourArray.push(temp);
+          }
+          firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
+          let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+          processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
+          // Need modification here
+  
+          // console.log(processedSubjectNeighbours);
+          // console.log(processedObjectNeighbours);
+  
+          // we now concat subjectNeighbours and objectNeighbours together
+          let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
+  
+          // console.log(keyColNeighbours);
+          // console.log(firstDegNeighbours);
+
+          document.body.classList.remove('waiting');
+  
+          this.setState({
+            keyColNeighbours: keyColNeighbours,
+            firstDegNeighbours: firstDegNeighbours,
+            curActionInfo: {"task":"afterPopulateColumn"},
+            tableData: tableData,
+          });
+        })
+        })
+      })
     }
   }
 
@@ -3797,6 +3915,7 @@ class MainBody extends Component {
                     tableHeader={this.state.tableHeader}
                     latestCheckedIndex={this.state.latestCheckedIndex}
                     addToFirstCol={this.addToFirstCol}
+                    confirmAddFirstCol={this.confirmAddFirstCol}
                   />
                 </div>
               </div>
@@ -5261,15 +5380,8 @@ function setFirstColumnData(resultsBinding, tableData, tableHeader, colIndex) {
 
   // second part sets the origin for each cell
   for (let i = 0; i < rowNum; ++i) {
-    // We need to process the tableHeader[colIndex] array to get the correct text for origin
-    let labelText = "";
-    for (let j = 0; j < tableHeader[colIndex].length; ++j) {
-      if (j > 0) {
-        labelText += "&";
-      }
-      labelText += tableHeader[colIndex][j].value;
-    }
-    let tempOrigin = labelText + ":" + tableData[i][colIndex].data;
+    // For the first column, let's just use its data as the origin
+    let tempOrigin = tableData[i][colIndex].data;
     tableData[i][colIndex].origin.push(tempOrigin);
   }
 
