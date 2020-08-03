@@ -76,7 +76,12 @@ class MainBody extends Component {
       firstColChecked: [],     // 1D array of booleans storing whether a neighbour of the starting subject is selected or not
       firstColFilled: false,   // boolean indicating whether the first column has been filled. 
                                // Will be set to true and remain that way after calling populateKeyColumn. 
-      latestCheckedIndex: -1,  // index storing the most recent index that has just been toggled. Initially -1.
+      keyCheckedIndex: -1,  // index storing the most recent index that has just been toggled for the first column. Initially -1.
+
+      // states below are useful for other column header selection
+      otherColSelection: [],    // 1D array of objects storing information about the search column's neighbours
+      otherColChecked: [],      // 1D array of booleans storing whether a neighbour of the search column is selected or not
+      otherCheckedIndex: -1,    // index storing the most recent index that has just been toggled for a non-first column. Initially -1.
 
       // states below are useful for startTable
       originTableArray: [], // 1D array storing all tables found on pasted URL
@@ -410,45 +415,13 @@ class MainBody extends Component {
     
     // We first create a copy of firstColChecked and tableHeader 
     let firstColChecked = this.state.firstColChecked.slice();
-    // let tableHeader = this.state.tableHeader.slice();
-    // console.log(tableHeader);
 
-    // We create a copy of this.state.firstColSelection[index]
-    // let toggledNeighbour = _.cloneDeep(this.state.firstColSelection[index]);
-    // // If we are toggling the current neighbour ON, we want to push it to tableHeader[0]
-    // if (firstColChecked[index] === false) {
-    //   tableHeader[0].push(toggledNeighbour);
-    // }
-    // // Else, we want to remove it from tableHeader[0]. Note: it must currently be on tableHeader[0]
-    // else {
-    //   for (let i = 0; i < tableHeader[0].length; ++i) {
-    //     let curNeighbour = tableHeader[0][i];
-    //     // If we have found that curNeighbour is exactly the same as toggledNeighbour, we remove it from tableHeader[0]
-    //     if (
-    //         toggledNeighbour.pValue === curNeighbour.pValue &&
-    //         toggledNeighbour.pDataset === curNeighbour.pDataset &&
-    //         toggledNeighbour.oValue === curNeighbour.oValue &&
-    //         toggledNeighbour.oType === curNeighbour.oType
-    //       ) {
-    //       tableHeader[0].splice(i, 1);
-    //       break;
-    //     }
-    //   }
-    // }
-
-    // Now we deal with latestCheckedIndex
-    let latestCheckedIndex = index;
-    // // If, at this stage, tableHeader[0] is empty, we set lastestCheckedIndex back to -1
-    // if (tableHeader[0].length === 0) {
-    //   latestCheckedIndex = -1;
-    // }
-    // else {
-    //   latestCheckedIndex = index;
-    // }
+    // Now we deal with keyCheckedIndex
+    let keyCheckedIndex = index;
 
     // Check if we have all the correct values.
     // console.log(tableHeader);
-    // console.log(latestCheckedIndex);
+    // console.log(keyCheckedIndex);
   
     // We handle the toggling here
     firstColChecked[index] = !firstColChecked[index];
@@ -457,7 +430,7 @@ class MainBody extends Component {
     this.setState({
       firstColChecked:firstColChecked,
       // tableHeader:tableHeader,
-      latestCheckedIndex:latestCheckedIndex,
+      keyCheckedIndex:keyCheckedIndex,
     })
   }
 
@@ -471,7 +444,7 @@ class MainBody extends Component {
   // This function handles when users want to add more entities to the first column
   addToFirstCol() {
     // We need to make the Action Panel display FirstColSelection component again.
-    // Before doing so, we need to first clear out this.state.firstColChecked, and this.state.latestCheckedIndex
+    // Before doing so, we need to first clear out this.state.firstColChecked, and this.state.keyCheckedIndex
     // So that we do not have information carried over from the previous first column selection.
 
     // First we update firstColChecked
@@ -480,8 +453,8 @@ class MainBody extends Component {
       firstColCheckedUpdated.push(false);
     }
 
-    // Then we reset latestCheckedIndex
-    let latestCheckedIndexUpdated = -1;
+    // Then we reset keyCheckedIndex
+    let keyCheckedIndexUpdated = -1;
 
     // We now set up tempObj for Action Panel
     let tempObj = {
@@ -491,7 +464,7 @@ class MainBody extends Component {
     // Finallym we set the states.
     this.setState({
       firstColChecked:firstColCheckedUpdated,
-      latestCheckedIndex:latestCheckedIndexUpdated,
+      keyCheckedIndex:keyCheckedIndexUpdated,
       curActionInfo:tempObj,
     })
   }
@@ -579,84 +552,86 @@ class MainBody extends Component {
     }
   }
 
-  // This function updates the options for selections when we click on selection for non-key column
+  // This function updates the options for selections when we want to open selection for non-key column
   // based on cells already filled in this column, and the cells in the key column
   // aka: Michelle Obama is Barack Obama' wife
 
-  // If no cells is filled in this column, this function doesn't do anything.
-  // If this column is completely filled, this function doesn't do anything either.
+  // It needs to update Action Panel to display the correct content.
+
+  // If this column is empty or completely filled, it will just pass keyColNeighbours to Action Panel.
 
   getOtherOptions(e, colIndex) {
 
-    if (colIndex !== this.state.keyColIndex) {
-      // first we want to check if this column is all-empty, or all filled
-      let colEmpty = true;
-      let colFilled = true;
-      let nonEmptyInfo = [];
-      for (let i = 0; i < this.state.tableData.length; ++i) {
-        // If some data is not "", that means this column is not empty
-        if (this.state.tableData[i][colIndex].data !== "") {
-          colEmpty = false;
-          nonEmptyInfo.push([i, this.state.tableData[i][colIndex].data]);
-        }
-        // If some data is "", that means this column is not filled
-        else {
-          colFilled = false;
-        }
-      }
-      // We only want to update the options if the column is non-empty, and not completely filled.
-      // Make sure to modify this relation here to include only dbo and dbp
-      if (colEmpty === false && colFilled === false) {
-        let prefixURL =
-          "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-        let suffixURL =
-          "%0D%0A%7D%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-        let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B";
-        for (let i = 0; i < nonEmptyInfo.length; ++i) {
-          let curKeySubject = regexReplace(
-            this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex]
-              .data
-          );
-          let curEnteredSubject = regexReplace(nonEmptyInfo[i][1]);
-          queryBody +=
-            "%0D%0A++++++++dbr%3A" +
-            curKeySubject +
-            "+%3Fsomevar+dbr%3A" +
-            curEnteredSubject +
-            ".";
-        }
-        let queryURL = prefixURL + queryBody + suffixURL;
-        let promiseArray = [];
-        promiseArray.push(fetchJSON(queryURL));
-        allPromiseReady(promiseArray).then((values) => {
-          let myJson = values[0];
-          let otherColOptions = [];
-          for (let i = 0; i < myJson.results.bindings.length; ++i) {
-            let tempObj = {};
-            let neighbour = myJson.results.bindings[i].somevar.value.slice(
-              28
-            );
-            tempObj["label"] = neighbour;
-            tempObj["value"] = neighbour;
-            tempObj["type"] = "subject"; // for now we only allow the subject search
-            otherColOptions.push(tempObj);
-          }
-          let optionsMap = this.state.optionsMap.slice();
-          optionsMap[colIndex] = otherColOptions;
-          this.setState({
-            optionsMap: optionsMap,
-          });
-        });
-      } 
-      // If this non-key column is empty or filled completely, we just use keyColNeighbours for the list of options
-      else {
-        let optionsMap = this.state.optionsMap.slice();
-        optionsMap[colIndex] = this.state.keyColNeighbours;
-        this.setState({
-          optionsMap: optionsMap,
-        });
-      }
-    }
+    console.log("Column index clicked is "+colIndex);
+
+    // if (colIndex !== this.state.keyColIndex) {
+    //   // first we want to check if this column is all-empty, or all filled
+    //   let colEmpty = true;
+    //   let colFilled = true;
+    //   let nonEmptyInfo = [];
+    //   for (let i = 0; i < this.state.tableData.length; ++i) {
+    //     // If some data is not "", that means this column is not empty
+    //     if (this.state.tableData[i][colIndex].data !== "") {
+    //       colEmpty = false;
+    //       nonEmptyInfo.push([i, this.state.tableData[i][colIndex].data]);
+    //     }
+    //     // If some data is "", that means this column is not filled
+    //     else {
+    //       colFilled = false;
+    //     }
+    //   }
+    //   // We only want to get specialized options if the column is non-empty, and not completely filled.
+    //   if (colEmpty === false && colFilled === false) {
+    //     let prefixURL =
+    //       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+    //     let suffixURL =
+    //       "%0D%0A%7D%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+    //     let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B";
+    //     for (let i = 0; i < nonEmptyInfo.length; ++i) {
+    //       let curKeySubject = regexReplace(
+    //         this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex]
+    //           .data
+    //       );
+    //       let curEnteredSubject = regexReplace(nonEmptyInfo[i][1]);
+    //       queryBody +=
+    //         "%0D%0A++++++++dbr%3A" +
+    //         curKeySubject +
+    //         "+%3Fsomevar+dbr%3A" +
+    //         curEnteredSubject +
+    //         ".";
+    //     }
+    //     let queryURL = prefixURL + queryBody + suffixURL;
+    //     let promiseArray = [];
+    //     promiseArray.push(fetchJSON(queryURL));
+    //     allPromiseReady(promiseArray).then((values) => {
+    //       let myJson = values[0];
+    //       let otherColOptions = [];
+    //       for (let i = 0; i < myJson.results.bindings.length; ++i) {
+    //         let tempObj = {};
+    //         let neighbour = myJson.results.bindings[i].somevar.value.slice(
+    //           28
+    //         );
+    //         tempObj["label"] = neighbour;
+    //         tempObj["value"] = neighbour;
+    //         tempObj["type"] = "subject"; // for now we only allow the subject search
+    //         otherColOptions.push(tempObj);
+    //       }
+    //       // let optionsMap = this.state.optionsMap.slice();
+    //       // optionsMap[colIndex] = otherColOptions;
+    //       // this.setState({
+    //       //   optionsMap: optionsMap,
+    //       // });
+    //     });
+    //   } 
+    //   // If this non-key column is empty or filled completely, we just use keyColNeighbours for the list of options
+    //   else {
+    //     // let optionsMap = this.state.optionsMap.slice();
+    //     // optionsMap[colIndex] = this.state.keyColNeighbours;
+    //     // this.setState({
+    //     //   optionsMap: optionsMap,
+    //     // });
+    //   }
+    // }
   }
 
   // This function handles the the selection of a column header.
@@ -3856,7 +3831,6 @@ class MainBody extends Component {
                     onCellChange={this.cellChange}
                     selectColHeader={this.selectColHeader}
                     getKeyOptions={this.getKeyOptions}
-                    getOtherOptions={this.getOtherOptions}
                     optionsMap={this.state.optionsMap}
                     contextAddColumn={this.contextAddColumn}
                     contextDeleteColumn={this.contextDeleteColumn}
@@ -3867,9 +3841,11 @@ class MainBody extends Component {
                     contextSortColumn={this.contextSortColumn}
                     // Following states are useful for column filter
                     openFilter={this.openFilter}
-                    // Following states control the conditional render of the table
+                    // Following states control the render of first column header
                     firstColFilled={this.state.firstColFilled}
-                    handlePlusClick = {this.handlePlusClick}
+                    handlePlusClick={this.handlePlusClick}
+                    // Following states control the render of other column header
+                    getOtherOptions={this.getOtherOptions}
                   />
                 </div>
                 <div className="col-md-5 small-padding action-panel">
@@ -3913,7 +3889,7 @@ class MainBody extends Component {
                     firstColFilled={this.state.firstColFilled}
                     toggleNeighbourSelection={this.toggleNeighbourSelection}
                     tableHeader={this.state.tableHeader}
-                    latestCheckedIndex={this.state.latestCheckedIndex}
+                    keyCheckedIndex={this.state.keyCheckedIndex}
                     addToFirstCol={this.addToFirstCol}
                     confirmAddFirstCol={this.confirmAddFirstCol}
                   />

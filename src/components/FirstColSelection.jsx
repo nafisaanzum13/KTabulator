@@ -9,7 +9,7 @@ class FirstColSelection extends Component {
   }
 
   createFirstColSelection() {
-    let latestCheckedIndex = this.props.latestCheckedIndex;
+    let keyCheckedIndex = this.props.keyCheckedIndex;
     let firstColSelection = this.props.firstColSelection;
     let firstColChecked = this.props.firstColChecked;
 
@@ -29,7 +29,7 @@ class FirstColSelection extends Component {
     console.log(selectedNeighbours);
 
     // If selectedNeighbours is not empty, we have to create the populateText and populateEle
-    if (latestCheckedIndex !== -1 && selectedNeighbours.length > 0) {
+    if (keyCheckedIndex !== -1 && selectedNeighbours.length > 0) {
       let populateText = 
         this.props.firstColFilled === false ? "Populate first column with entities that"
         : "Add to first column with entities that";
@@ -65,7 +65,7 @@ class FirstColSelection extends Component {
     // We loop over the firstColSelection array, and push on the neede radio checkbox and textual information
     for (let i = 0; i < firstColSelection.length; ++i) {
       // additionEle is basically a copy of populateEle
-      let additionEle = i === latestCheckedIndex ? populateEle: null;
+      let additionEle = i === keyCheckedIndex ? populateEle: null;
       if (firstColSelection[i].pValue === "category") {
         returnEle.push(
           <div>

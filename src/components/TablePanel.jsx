@@ -1,9 +1,9 @@
 import React, { Component } from "react";
 // import TableSelection from "../components/TableSelection";
 // import Tooltip from '@atlaskit/tooltip';
-import Select from "react-select";
+// import Select from "react-select";
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
-import { FaSearch, FaPlus } from "react-icons/fa";
+import { FaSearch, FaPlus, FaArrowDown } from "react-icons/fa";
 
 class TablePanel extends Component {
   constructor(props) {
@@ -61,10 +61,10 @@ class TablePanel extends Component {
         tempHeader = (
           <th className="table-head">
             <div
-              onClick={(e) => this.props.getKeyOptions(e, colIndex)}
-              className="super-header-div"
+              // onClick={(e) => this.props.getKeyOptions(e, colIndex)}
+              // className="super-header-div"
             >
-              <Select
+              {/* <Select
                 className="selection-header"
                 value={this.props.tableHeader[colIndex]}
                 onChange={(e) => this.props.selectColHeader(e, colIndex)}
@@ -72,7 +72,17 @@ class TablePanel extends Component {
                 options={this.props.optionsMap[this.props.keyColIndex]}
                 // isMulti={multiAllowed}
                 isMulti={true}
-              />
+              /> */}
+              <div>
+                <button
+                  className="btn btn-default"
+                  title="Add more entities"
+                >
+                  <FaArrowDown
+                    // onClick={(e) => this.props.getOtherOptions(e, colIndex)}
+                  />
+                </button>
+              </div>
               <FaSearch
                 className="search-icon"
                 title={"Set as key column"}
@@ -89,10 +99,10 @@ class TablePanel extends Component {
         tempHeader = (
           <th className="table-head">
             <div
-              onClick={(e) => this.props.getOtherOptions(e, colIndex)}
-              className="super-header-div"
+              // onClick={(e) => this.props.getOtherOptions(e, colIndex)}
+              // className="super-header-div"
             >
-              <Select
+              {/* <Select
                 className="selection-header"
                 value={this.props.tableHeader[colIndex]}
                 onChange={(e) => this.props.selectColHeader(e, colIndex)}
@@ -100,7 +110,17 @@ class TablePanel extends Component {
                 options={this.props.optionsMap[colIndex]}
                 // isMulti={false}
                 isMulti={true}
-              />
+              /> */}
+              <div>
+                <button
+                  className="btn btn-default"
+                  title="Add more entities"
+                >
+                  <FaArrowDown
+                    onClick={(e) => this.props.getOtherOptions(e, colIndex)}
+                  />
+                </button>
+              </div>
               <FaSearch
                 className="search-icon"
                 title={"Set as key column"}

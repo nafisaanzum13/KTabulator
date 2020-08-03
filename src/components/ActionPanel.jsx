@@ -336,7 +336,7 @@ class ActionPanel extends Component {
             firstColFilled={this.props.firstColFilled}
             toggleNeighbourSelection={this.props.toggleNeighbourSelection}
             tableHeader={this.props.tableHeader}
-            latestCheckedIndex={this.props.latestCheckedIndex}
+            keyCheckedIndex={this.props.keyCheckedIndex}
             populateKeyColumn={this.props.populateKeyColumn}
             confirmAddFirstCol={this.props.confirmAddFirstCol}
           />
@@ -361,7 +361,7 @@ class ActionPanel extends Component {
       else if (actionInfo.task === "afterPopulateColumn") {
         actionEle = (
           <div>
-            Fill an <b>empty column header</b> by choosing from its <b>dropdown menu</b>
+            Fill an <b>empty column header</b> by choosing from its <b>down arrow</b>
           </div>
         )
       }
@@ -397,7 +397,7 @@ class ActionPanel extends Component {
           actionEle = (
             <div>
               <p className="suggestion-text">
-                Fill the <b>first column header</b> by choosing from its <b>dropdown menu</b>
+                Fill the <b>first column header</b> by choosing from its <b>down arrow</b>
               </p>
             </div>
           );
