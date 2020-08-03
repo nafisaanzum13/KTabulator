@@ -335,7 +335,7 @@ class ActionPanel extends Component {
             firstColSelection={this.props.firstColSelection}
             firstColChecked={this.props.firstColChecked}
             firstColFilled={this.props.firstColFilled}
-            toggleNeighbourSelection={this.props.toggleNeighbourSelection}
+            toggleFirstNeighbour={this.props.toggleFirstNeighbour}
             tableHeader={this.props.tableHeader}
             keyCheckedIndex={this.props.keyCheckedIndex}
             populateKeyColumn={this.props.populateKeyColumn}
@@ -348,7 +348,12 @@ class ActionPanel extends Component {
       else if (actionInfo.task === "showOtherColSelection") {
         actionEle = (
           <OtherColSelection
-
+            otherColSelection={this.props.otherColSelection}
+            otherColChecked={this.props.otherColChecked}
+            otherCheckedIndex={this.props.otherCheckedIndex}
+            toggleOtherNeighbour={this.props.toggleOtherNeighbour}
+            populateOtherColumn={this.props.populateOtherColumn}
+            colIndex={actionInfo.colIndex}
           />
         )
       }

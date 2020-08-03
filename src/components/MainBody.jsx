@@ -186,10 +186,13 @@ class MainBody extends Component {
     this.runJoin = this.runJoin.bind(this);
 
     // functions below are for first column selection
-    this.toggleNeighbourSelection = this.toggleNeighbourSelection.bind(this);
+    this.toggleFirstNeighbour = this.toggleFirstNeighbour.bind(this);
     this.handlePlusClick = this.handlePlusClick.bind(this);
     this.addToFirstCol = this.addToFirstCol.bind(this);
     this.confirmAddFirstCol = this.confirmAddFirstCol.bind(this);
+
+    // functions below are for other column selection
+    this.toggleOtherNeighbour = this.toggleOtherNeighbour.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -404,24 +407,17 @@ class MainBody extends Component {
   }
 
   // This function handles the toggling of the starting subject's neighbours
-  // If toggled ON, we want to add to tableHeader[0]'s array
-  // Else, we remove it.
-  // And based on this new tableHeader[0], we create the suggestions text.
   // Also, we store this toggledIndex, so that we can display the suggestion text at the right location.
   // Obviously, we need to update this.state.firstColChecked array.
 
-  toggleNeighbourSelection(e, index) {
+  toggleFirstNeighbour(e, index) {
     // console.log("Toggled index is "+index);
     
-    // We first create a copy of firstColChecked and tableHeader 
+    // We first create a copy of firstColChecked
     let firstColChecked = this.state.firstColChecked.slice();
 
     // Now we deal with keyCheckedIndex
     let keyCheckedIndex = index;
-
-    // Check if we have all the correct values.
-    // console.log(tableHeader);
-    // console.log(keyCheckedIndex);
   
     // We handle the toggling here
     firstColChecked[index] = !firstColChecked[index];
@@ -429,8 +425,19 @@ class MainBody extends Component {
     // Lastly, we make the state changes
     this.setState({
       firstColChecked:firstColChecked,
-      // tableHeader:tableHeader,
       keyCheckedIndex:keyCheckedIndex,
+    })
+  }
+
+  // This function handles the toggling of a non-first column's attribute selection
+  toggleOtherNeighbour(e, index) {
+    let otherColChecked = this.state.otherColChecked.slice();
+    let otherCheckedIndex = index;
+    otherColChecked[index] = !otherColChecked[index];
+
+    this.setState({
+      otherColChecked:otherColChecked,
+      otherCheckedIndex:otherCheckedIndex,
     })
   }
 
@@ -912,7 +919,7 @@ class MainBody extends Component {
       allPromiseReady(promiseArray).then((values) => {
         // let's first work with the first promise result: fill in table data with the entities we have fetched
   
-        // console.log(values[0].results.bindings);
+        console.log(values[0].results.bindings);
 
         // We set the tableHeader[0] here, from a deep copy of tableHeader
         // tableHeader[0] should be set as neighbourArray
@@ -3926,11 +3933,16 @@ class MainBody extends Component {
                     firstColSelection={this.state.firstColSelection}
                     firstColChecked={this.state.firstColChecked}
                     firstColFilled={this.state.firstColFilled}
-                    toggleNeighbourSelection={this.toggleNeighbourSelection}
+                    toggleFirstNeighbour={this.toggleFirstNeighbour}
                     tableHeader={this.state.tableHeader}
                     keyCheckedIndex={this.state.keyCheckedIndex}
                     addToFirstCol={this.addToFirstCol}
                     confirmAddFirstCol={this.confirmAddFirstCol}
+                    // Following states are for other column's header selection
+                    otherColSelection={this.state.otherColSelection}
+                    otherColChecked={this.state.otherColChecked}
+                    otherCheckedIndex={this.state.otherCheckedIndex}
+                    toggleOtherNeighbour={this.toggleOtherNeighbour}
                   />
                 </div>
               </div>
@@ -5402,6 +5414,8 @@ function setFirstColumnData(resultsBinding, tableData, tableHeader, colIndex) {
 
   // Now we dedup by tableData by tableData[i][0].data
   tableData = _.uniqBy(tableData, function(x) {return x[0].data;});
+
+  // console.log(tableData);
   return tableData;
 }
 

@@ -62,7 +62,7 @@ class FirstColSelection extends Component {
     }
 
     let returnEle = [];
-    // We loop over the firstColSelection array, and push on the neede radio checkbox and textual information
+    // We loop over the firstColSelection array, and push on the needed radio checkbox and textual information
     for (let i = 0; i < firstColSelection.length; ++i) {
       // additionEle is basically a copy of populateEle
       let additionEle = i === keyCheckedIndex ? populateEle: null;
@@ -74,7 +74,7 @@ class FirstColSelection extends Component {
                 <input
                   type="checkbox"
                   checked={firstColChecked[i]}
-                  onChange={(e) => this.props.toggleNeighbourSelection(e, i)}
+                  onChange={(e) => this.props.toggleFirstNeighbour(e, i)}
                 />
                 {'\u00A0'}{'\u00A0'}
                 {niceRender(firstColSelection[i].oValue)}
@@ -92,7 +92,7 @@ class FirstColSelection extends Component {
                 <input
                   type="checkbox"
                   checked={firstColChecked[i]}
-                  onChange={(e) => this.props.toggleNeighbourSelection(e, i)}
+                  onChange={(e) => this.props.toggleFirstNeighbour(e, i)}
                 />
                 {'\u00A0'}{'\u00A0'}
                 {firstColSelection[i].pValue}
