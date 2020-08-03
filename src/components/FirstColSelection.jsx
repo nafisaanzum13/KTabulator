@@ -26,7 +26,7 @@ class FirstColSelection extends Component {
       }
     }
 
-    console.log(selectedNeighbours);
+    // console.log(selectedNeighbours);
 
     // If selectedNeighbours is not empty, we have to create the populateText and populateEle
     if (keyCheckedIndex !== -1 && selectedNeighbours.length > 0) {

@@ -562,76 +562,115 @@ class MainBody extends Component {
 
   getOtherOptions(e, colIndex) {
 
-    console.log("Column index clicked is "+colIndex);
+    // console.log("Column index clicked is "+colIndex);
 
-    // if (colIndex !== this.state.keyColIndex) {
-    //   // first we want to check if this column is all-empty, or all filled
-    //   let colEmpty = true;
-    //   let colFilled = true;
-    //   let nonEmptyInfo = [];
-    //   for (let i = 0; i < this.state.tableData.length; ++i) {
-    //     // If some data is not "", that means this column is not empty
-    //     if (this.state.tableData[i][colIndex].data !== "") {
-    //       colEmpty = false;
-    //       nonEmptyInfo.push([i, this.state.tableData[i][colIndex].data]);
-    //     }
-    //     // If some data is "", that means this column is not filled
-    //     else {
-    //       colFilled = false;
-    //     }
-    //   }
-    //   // We only want to get specialized options if the column is non-empty, and not completely filled.
-    //   if (colEmpty === false && colFilled === false) {
-    //     let prefixURL =
-    //       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-    //     let suffixURL =
-    //       "%0D%0A%7D%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-    //     let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B";
-    //     for (let i = 0; i < nonEmptyInfo.length; ++i) {
-    //       let curKeySubject = regexReplace(
-    //         this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex]
-    //           .data
-    //       );
-    //       let curEnteredSubject = regexReplace(nonEmptyInfo[i][1]);
-    //       queryBody +=
-    //         "%0D%0A++++++++dbr%3A" +
-    //         curKeySubject +
-    //         "+%3Fsomevar+dbr%3A" +
-    //         curEnteredSubject +
-    //         ".";
-    //     }
-    //     let queryURL = prefixURL + queryBody + suffixURL;
-    //     let promiseArray = [];
-    //     promiseArray.push(fetchJSON(queryURL));
-    //     allPromiseReady(promiseArray).then((values) => {
-    //       let myJson = values[0];
-    //       let otherColOptions = [];
-    //       for (let i = 0; i < myJson.results.bindings.length; ++i) {
-    //         let tempObj = {};
-    //         let neighbour = myJson.results.bindings[i].somevar.value.slice(
-    //           28
-    //         );
-    //         tempObj["label"] = neighbour;
-    //         tempObj["value"] = neighbour;
-    //         tempObj["type"] = "subject"; // for now we only allow the subject search
-    //         otherColOptions.push(tempObj);
-    //       }
-    //       // let optionsMap = this.state.optionsMap.slice();
-    //       // optionsMap[colIndex] = otherColOptions;
-    //       // this.setState({
-    //       //   optionsMap: optionsMap,
-    //       // });
-    //     });
-    //   } 
-    //   // If this non-key column is empty or filled completely, we just use keyColNeighbours for the list of options
-    //   else {
-    //     // let optionsMap = this.state.optionsMap.slice();
-    //     // optionsMap[colIndex] = this.state.keyColNeighbours;
-    //     // this.setState({
-    //     //   optionsMap: optionsMap,
-    //     // });
-    //   }
-    // }
+    // The first thing we need to do is to determine the content for otherColSelection
+    let otherColSelection = [];
+
+    // We check if this column is all-empty, or all filled
+    let colEmpty = true;
+    let colFilled = true;
+    let nonEmptyInfo = [];
+    for (let i = 0; i < this.state.tableData.length; ++i) {
+      // If some data is not "", that means this column is not empty
+      if (this.state.tableData[i][colIndex].data !== "") {
+        colEmpty = false;
+        nonEmptyInfo.push([i, this.state.tableData[i][colIndex].data]);
+      }
+      // If some data is "", that means this column is not filled
+      else {
+        colFilled = false;
+      }
+    }
+
+    // Case 1:
+    // If this column is non-empty, and not completely filled, we want to deal with special otherColSelection
+    if (colEmpty === false && colFilled === false) {
+      let prefixURL =
+        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURL =
+        "%0D%0A%7D%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B";
+      for (let i = 0; i < nonEmptyInfo.length; ++i) {
+        let curKeySubject = regexReplace(
+          this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex]
+            .data
+        );
+        let curEnteredSubject = regexReplace(nonEmptyInfo[i][1]);
+        queryBody +=
+          "%0D%0A++++++++dbr%3A" +
+          curKeySubject +
+          "+%3Fsomevar+dbr%3A" +
+          curEnteredSubject +
+          ".";
+      }
+      let queryURL = prefixURL + queryBody + suffixURL;
+      let promiseArray = [];
+      promiseArray.push(fetchJSON(queryURL));
+      allPromiseReady(promiseArray).then((values) => {
+      let myJson = values[0];
+      for (let i = 0; i < myJson.results.bindings.length; ++i) {
+        let tempObj = {};
+        let neighbour = myJson.results.bindings[i].somevar.value.slice(28);
+        tempObj["label"] = neighbour;
+        tempObj["value"] = neighbour;
+        tempObj["type"] = "subject"; // for now we only allow the subject search
+        otherColSelection.push(tempObj);
+      }
+      // Take a look at otherColSelection
+      // console.log(otherColSelection);
+
+      // Now we have figured out the content for otherColSelection, we move on otherColChecked and otherCheckedIndex.
+      // Every time we are running this function, we need to reset otherColChecked and otherCheckedIndex
+      let otherColChecked = [];
+      for (let i = 0; i < otherColSelection.length; ++i) {
+        otherColChecked.push(false);
+      }
+      let otherCheckedIndex = -1;
+
+      let tempObj = 
+        {
+          "task":"showOtherColSelection",
+          "colIndex":colIndex,
+        }
+
+      this.setState({
+        otherColSelection:otherColSelection,
+        otherColChecked:otherColChecked,
+        otherCheckedIndex:otherCheckedIndex,
+        curActionInfo:tempObj,
+      })
+      })
+    }
+
+    // Case 2:
+    // If this column is empty or completely filled, we just set otherColSelection to be keyColNeighbours
+    else {
+      otherColSelection = this.state.keyColNeighbours;
+      // Take a look at otherColSelection
+      // console.log(otherColSelection);
+
+      // Now we have figured out the content for otherColSelection, we move on otherColChecked and otherCheckedIndex.
+      // Every time we are running this function, we need to reset otherColChecked and otherCheckedIndex
+      let otherColChecked = [];
+      for (let i = 0; i < otherColSelection.length; ++i) {
+        otherColChecked.push(false);
+      }
+      let otherCheckedIndex = -1;
+
+      let tempObj = 
+        {
+          "task":"showOtherColSelection",
+          "colIndex":colIndex,
+        }
+
+      this.setState({
+        otherColSelection:otherColSelection,
+        otherColChecked:otherColChecked,
+        otherCheckedIndex:otherCheckedIndex,
+        curActionInfo:tempObj,
+      })
+    }
   }
 
   // This function handles the the selection of a column header.
@@ -851,8 +890,8 @@ class MainBody extends Component {
 
   populateKeyColumn(e, colIndex, neighbourArray) {
     // Let's first take a look at parameters passed in
-    console.log(colIndex);
-    console.log(neighbourArray);
+    // console.log(colIndex);
+    // console.log(neighbourArray);
 
     // Let's create a helper function to generate the query text.
     let queryURL = keyQueryGen(neighbourArray)
@@ -873,7 +912,7 @@ class MainBody extends Component {
       allPromiseReady(promiseArray).then((values) => {
         // let's first work with the first promise result: fill in table data with the entities we have fetched
   
-        console.log(values[0].results.bindings);
+        // console.log(values[0].results.bindings);
 
         // We set the tableHeader[0] here, from a deep copy of tableHeader
         // tableHeader[0] should be set as neighbourArray

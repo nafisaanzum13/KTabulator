@@ -11,6 +11,7 @@ import TableSelection from "./TableSelection";
 // import RangeSlider from "react-bootstrap-range-slider";
 // import "react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
 import FirstColSelection from "./FirstColSelection";
+import OtherColSelection from "./OtherColSelection";
 
 class ActionPanel extends Component {
   constructor(props) {
@@ -339,6 +340,15 @@ class ActionPanel extends Component {
             keyCheckedIndex={this.props.keyCheckedIndex}
             populateKeyColumn={this.props.populateKeyColumn}
             confirmAddFirstCol={this.props.confirmAddFirstCol}
+          />
+        )
+      }
+      // Case 2.2: Users have clicked on the down arrow for non-first columns.
+      // We ask users to select a column header for this column.
+      else if (actionInfo.task === "showOtherColSelection") {
+        actionEle = (
+          <OtherColSelection
+
           />
         )
       }
