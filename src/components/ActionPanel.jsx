@@ -253,7 +253,7 @@ class ActionPanel extends Component {
     }
     let returnEle = 
       <div>
-        <div>
+        {/* <div>
           <p>String similarity recommendations:</p>
           {stringRecommend}
         </div>
@@ -261,7 +261,10 @@ class ActionPanel extends Component {
         <div>
           <p>Semantic similarity recommendations:</p>
           {semanticRecommend}
-        </div>
+        </div> */}
+        <p>Recommendations of attributes to add:</p>
+        {stringRecommend}
+        {semanticRecommend}
       </div>
     return returnEle;
   }

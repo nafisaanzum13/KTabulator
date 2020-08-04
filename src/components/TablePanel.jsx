@@ -3,7 +3,7 @@ import React, { Component } from "react";
 // import Tooltip from '@atlaskit/tooltip';
 // import Select from "react-select";
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
-import { FaSearch, FaPlus, FaArrowDown } from "react-icons/fa";
+import { FaSearch, FaArrowDown } from "react-icons/fa";
 
 class TablePanel extends Component {
   constructor(props) {
@@ -37,10 +37,10 @@ class TablePanel extends Component {
             <div>
               <button
                 className="btn btn-default"
-                title="Add more entities"
+                title="Add entities"
                 onClick={() => this.props.handlePlusClick()}
               >
-                <FaPlus />
+                <FaArrowDown />
               </button>
               <button
                 className="btn btn-default"
@@ -143,7 +143,6 @@ class TablePanel extends Component {
                 type="text"
                 value={niceRender(this.props.tableData[i][j].data)}
                 title={niceRender(this.props.tableData[i][j].data)}
-                // onClick={() => {alert("hmm");}}
                 onChange={(e) => this.props.onCellChange(e, i, j)}
                 // onClick={() => alert("hmm")} something like this could work
               />

@@ -624,6 +624,11 @@ class MainBody extends Component {
         tempObj["type"] = "subject"; // for now we only allow the subject search
         otherColSelection.push(tempObj);
       }
+      // Now, we do not want to have an empty otherColSelection.
+      // Thus, if it is, we just want to set it as this.state.keyColNeighbours
+      if (otherColSelection.length === 0) {
+        otherColSelection = this.state.keyColNeighbours;
+      }
       // Take a look at otherColSelection
       // console.log(otherColSelection);
 
