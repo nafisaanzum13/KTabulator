@@ -13,9 +13,9 @@ class OtherColSelection extends Component {
     let otherColChecked = this.props.otherColChecked;
     let otherCheckedIndex = this.props.otherCheckedIndex;
 
-    console.log(otherColSelection);
-    console.log(otherColChecked);
-    console.log(otherCheckedIndex);
+    // console.log(otherColSelection);
+    // console.log(otherColChecked);
+    // console.log(otherCheckedIndex);
 
     // First do some basic error checking
     if (otherColChecked.length !== otherColSelection.length) {
@@ -36,6 +36,7 @@ class OtherColSelection extends Component {
       let populateText = "Populate this column with attributes ";
       for (let i = 0; i < selectedNeighbours.length; ++i) {
         let curText = i > 0 ? " OR " + selectedNeighbours[i].value : selectedNeighbours[i].value;
+        curText = selectedNeighbours[i].type === "subject" ? curText : "is " + curText + " of";
         populateText+=curText;
       }
       populateText+="?";

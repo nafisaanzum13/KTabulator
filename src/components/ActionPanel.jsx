@@ -191,14 +191,14 @@ class ActionPanel extends Component {
           <Collapse isOpen={this.props.propertyNeighbours[i].isOpen}>
             <div>
               <hr />
-              <ul className="list-group list-css">
+              {/* <ul className="list-group list-css">
                 <li
                   className="col-md-4 list-group-item list-button list-button-backgound-pink"
                   onClick={(e) => this.props.unionProperty(i)}
                 >
                   Union from all pages
                 </li>
-              </ul>
+              </ul> */}
               {this.createSiblingArray(i)}
             </div>
           </Collapse>

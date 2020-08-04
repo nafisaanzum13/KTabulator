@@ -919,7 +919,7 @@ class MainBody extends Component {
       allPromiseReady(promiseArray).then((values) => {
         // let's first work with the first promise result: fill in table data with the entities we have fetched
   
-        console.log(values[0].results.bindings);
+        // console.log(values[0].results.bindings);
 
         // We set the tableHeader[0] here, from a deep copy of tableHeader
         // tableHeader[0] should be set as neighbourArray
@@ -946,51 +946,11 @@ class MainBody extends Component {
         let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", colIndex);
         allPromiseReady(promiseArrayOne).then((valuesOne) => {
         allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
-  
-          // console.log(valuesOne);
-          // console.log(valuesTwo);
-  
-          // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
-          let firstDegNeighbours = {};
-  
-          // First we deal with subject neighbours, so valuesOne
-          let subjectNeighbourArray = [];
-          for (let i = 0; i < valuesOne.length; ++i) {
-            let temp = updateKeyColNeighbours(
-              [],
-              valuesOne[i].results.bindings,
-              "subject"
-            )
-            subjectNeighbourArray.push(temp);
-          }
-          firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
-          let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
-          processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
-          // Need modification here
-  
-          // Then we deal with object neighbours, so valuesTwo
-          let objectNeighbourArray = [];
-          for (let i = 0; i < valuesTwo.length; ++i) {
-            let temp = updateKeyColNeighbours(
-              [],
-              valuesTwo[i].results.bindings,
-              "object"
-            )
-            objectNeighbourArray.push(temp);
-          }
-          firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
-          let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
-          processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
-          // Need modification here
-  
-          // console.log(processedSubjectNeighbours);
-          // console.log(processedObjectNeighbours);
-          // console.log(firstDegNeighbours);
-  
-          // we now concat subjectNeighbours and objectNeighbours together
-          let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
-  
-          // console.log(keyColNeighbours);
+
+          // We call updateNeighbourInfo here because we are changing the rows
+          let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+          let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+          let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
   
           // Support for undo: 
           // Let's save the previous state in an object
@@ -1072,49 +1032,10 @@ class MainBody extends Component {
         allPromiseReady(promiseArrayOne).then((valuesOne) => {
         allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
   
-          // console.log(valuesOne);
-          // console.log(valuesTwo);
-  
-          // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
-          let firstDegNeighbours = {};
-  
-          // First we deal with subject neighbours, so valuesOne
-          let subjectNeighbourArray = [];
-          for (let i = 0; i < valuesOne.length; ++i) {
-            let temp = updateKeyColNeighbours(
-              [],
-              valuesOne[i].results.bindings,
-              "subject"
-            )
-            subjectNeighbourArray.push(temp);
-          }
-          firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
-          let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
-          processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
-  
-          // Then we deal with object neighbours, so valuesTwo
-          let objectNeighbourArray = [];
-          for (let i = 0; i < valuesTwo.length; ++i) {
-            let temp = updateKeyColNeighbours(
-              [],
-              valuesTwo[i].results.bindings,
-              "object"
-            )
-            objectNeighbourArray.push(temp);
-          }
-          firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
-          let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
-          processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
-          // Need modification here
-  
-          // console.log(processedSubjectNeighbours);
-          // console.log(processedObjectNeighbours);
-  
-          // we now concat subjectNeighbours and objectNeighbours together
-          let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
-  
-          // console.log(keyColNeighbours);
-          // console.log(firstDegNeighbours);
+          // We call updateNeighbourInfo here because we are changing the rows
+          let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+          let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+          let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
 
           document.body.classList.remove('waiting');
   
@@ -2203,47 +2124,11 @@ class MainBody extends Component {
 
     allPromiseReady(promiseArrayOne).then((valuesOne) => {
     allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
-      // console.log(valuesOne);
-      // console.log(valuesTwo);
 
-      // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
-      let firstDegNeighbours = {};
-
-      // First we deal with subject neighbours, so valuesOne
-      let subjectNeighbourArray = [];
-      for (let i = 0; i < valuesOne.length; ++i) {
-        let temp = updateKeyColNeighbours(
-          [],
-          valuesOne[i].results.bindings,
-          "subject"
-        )
-        subjectNeighbourArray.push(temp);
-      }
-      firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
-      let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
-      processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
-      // Need modification here
-
-      // Then we deal with object neighbours, so valuesTwo
-      let objectNeighbourArray = [];
-      for (let i = 0; i < valuesTwo.length; ++i) {
-        let temp = updateKeyColNeighbours(
-          [],
-          valuesTwo[i].results.bindings,
-          "object"
-        )
-        objectNeighbourArray.push(temp);
-      }
-      firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
-      let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
-      processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
-      // Need modification here
-
-      // console.log(processedSubjectNeighbours);
-      // console.log(processedObjectNeighbours);
-
-      // we now concat subjectNeighbours and objectNeighbours together
-      let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
+      // We call updateNeighbourInfo here because we are changing the rows
+      let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+      let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+      let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
 
       document.body.classList.remove('waiting');
 
@@ -2522,51 +2407,12 @@ class MainBody extends Component {
     let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", keyColIndex);
     return allPromiseReady(promiseArrayOne).then((valuesOne) => {
     return allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
-      // console.log(valuesOne);
-      // console.log(valuesTwo);
-
-      // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
-      let firstDegNeighbours = {};
-
-      // First we deal with subject neighbours, so valuesOne
-      let subjectNeighbourArray = [];
-      for (let i = 0; i < valuesOne.length; ++i) {
-        let temp = updateKeyColNeighbours(
-          [],
-          valuesOne[i].results.bindings,
-          "subject"
-        )
-        subjectNeighbourArray.push(temp);
-      }
-      firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
-      let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
-      processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
-      // Need modification here
-
-      // Then we deal with object neighbours, so valuesTwo
-      let objectNeighbourArray = [];
-      for (let i = 0; i < valuesTwo.length; ++i) {
-        let temp = updateKeyColNeighbours(
-          [],
-          valuesTwo[i].results.bindings,
-          "object"
-        )
-        objectNeighbourArray.push(temp);
-      }
-      firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
-      let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
-      processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
-      // Need modification here
-
-      // console.log(processedSubjectNeighbours);
-      // console.log(processedObjectNeighbours);
-
-      // we now concat subjectNeighbours and objectNeighbours together
-      let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
-
-      // console.log(keyColNeighbours);
       
-      // Lastly, let's put all the information together in a single object, and return it as a Promise
+      // We call updateNeighbourInfo here because we are changing the rows
+      let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+      let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+      let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
       return Promise.resolve(
         {
           "keyColIndex":keyColIndex,
@@ -2928,14 +2774,14 @@ class MainBody extends Component {
   // by changing tableDataExplore
 
   unionTable(firstIndex, secondIndex, otherTableHTML, colMapping) {
+    document.body.classList.add('waiting');
     // First we create a copy of the current tableData
     let tableData = _.cloneDeep(this.state.tableData);
     // console.log(tableData);
 
     // Then we get the clean data and set the origin for the other table.
     // We do so by calling setTableFromHTML, and setUnionData.
-    let otherTableOrigin = this.state.propertyNeighbours[firstIndex]
-      .siblingArray[secondIndex].name;
+    let otherTableOrigin = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML, otherTableOrigin);
     otherTableData = setUnionData(otherTableData);
     // console.log(otherTableData);
@@ -2952,22 +2798,42 @@ class MainBody extends Component {
 
     // console.log(tableData);
 
-    // Support for undo: 
-    let lastAction = "unionTable";
-    let prevState = 
-        {
-          "tableData":this.state.tableData,
-        };
+    // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
+    // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
+    let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
+    let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+    allPromiseReady(promiseArrayOne).then((valuesOne) => {
+    allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
-    this.setState({
-      tableData: tableData,
-      lastAction: lastAction,
-      prevState: prevState,
-    });
+      // We call updateNeighbourInfo here because we are changing the rows
+      let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+      let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+      let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+      document.body.classList.remove('waiting');
+      // Suppport for undo.
+      let lastAction = "unionTable";
+      let prevState = 
+          {
+            "tableData":this.state.tableData,
+            "keyColNeighbours":this.state.keyColNeighbours,
+            "firstDegNeighbours":this.state.firstDegNeighbours,
+          };
+      
+      this.setState({
+        tableData: tableData,
+        keyColNeighbours: keyColNeighbours,
+        firstDegNeighbours: firstDegNeighbours,
+        lastAction: lastAction,
+        prevState: prevState,
+      })
+    })
+    })
   }
 
   // The following function unions all similar tables found under a sibling page with the selected table
   unionPage(firstIndex, secondIndex) {
+    document.body.classList.add('waiting');
     // First we create a copy of the current tableDataExplore
     let tableData = _.cloneDeep(this.state.tableData);
     // We get the tableArray and name of the current sibling page
@@ -3014,18 +2880,37 @@ class MainBody extends Component {
         );
       }
     }
-    // Support for undo: 
-    let lastAction = "unionPage";
-    let prevState = 
-        {
-          "tableData":this.state.tableData,
-        };
+    // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
+    // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
+    let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
+    let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+    allPromiseReady(promiseArrayOne).then((valuesOne) => {
+    allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
-    this.setState({
-      tableData: tableData,
-      lastAction: lastAction,
-      prevState: prevState,
-    });
+      // We call updateNeighbourInfo here because we are changing the rows
+      let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+      let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+      let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+      document.body.classList.remove('waiting');
+      // Suppport for undo.
+      let lastAction = "unionPage";
+      let prevState = 
+          {
+            "tableData":this.state.tableData,
+            "keyColNeighbours":this.state.keyColNeighbours,
+            "firstDegNeighbours":this.state.firstDegNeighbours,
+          };
+      
+      this.setState({
+        tableData: tableData,
+        keyColNeighbours: keyColNeighbours,
+        firstDegNeighbours: firstDegNeighbours,
+        lastAction: lastAction,
+        prevState: prevState,
+      })
+    })
+    })
   }
 
   // The following function unions all similar tables found under a property(parent) neighbour with the selected table
@@ -3207,23 +3092,40 @@ class MainBody extends Component {
         --i;
       }
     }
-    // console.log(tableData);
 
-    // Before we use tableData to update this.state.tableData, we need to add suppport for undo.
-    let lastAction = "applyFilter";
-    let prevState = 
-        {
-          "tableData":this.state.tableData,
-          "curActionInfo":this.state.curActionInfo,
-        };
-    
-    this.setState({
-      dataAndChecked: [],
-      showFilter: false,
-      curFilterIndex: -1,
-      tableData: tableData,
-      lastAction: lastAction,
-      prevState: prevState,
+    // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
+    // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
+    let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
+    let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+    allPromiseReady(promiseArrayOne).then((valuesOne) => {
+    allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+
+      // We call updateNeighbourInfo here because we are changing the rows
+      let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+      let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+      let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+      // Suppport for undo.
+      let lastAction = "applyFilter";
+      let prevState = 
+          {
+            "tableData":this.state.tableData,
+            "curActionInfo":this.state.curActionInfo,
+            "keyColNeighbours":this.state.keyColNeighbours,
+            "firstDegNeighbours":this.state.firstDegNeighbours,
+          };
+      
+      this.setState({
+        dataAndChecked: [],
+        showFilter: false,
+        curFilterIndex: -1,
+        tableData: tableData,
+        keyColNeighbours: keyColNeighbours,
+        firstDegNeighbours: firstDegNeighbours,
+        lastAction: lastAction,
+        prevState: prevState,
+      })
+    })
     })
   }
 
@@ -3377,6 +3279,8 @@ class MainBody extends Component {
     else if (lastAction === "unionTable" || lastAction === "unionPage" || lastAction === "unionProperty") {
       this.setState({
         tableData: prevState.tableData,
+        keyColNeighbours: prevState.keyColNeighbours,
+        firstDegNeighbours: prevState.firstDegNeighbours,
         lastAction: "",
       })
     }
@@ -3455,6 +3359,8 @@ class MainBody extends Component {
     else if (lastAction === "applyFilter") {
       this.setState({
         tableData: prevState.tableData,
+        keyColNeighbours: prevState.keyColNeighbours,
+        firstDegNeighbours: prevState.firstDegNeighbours,
         curActionInfo: prevState.curActionInfo,
         lastAction: "",
       })
@@ -4091,6 +3997,7 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
          || a.p.value === "http://dbpedia.org/property/onlinebooks"
          || a.p.value === "http://dbpedia.org/property/signature"
          || a.p.value === "http://dbpedia.org/property/video"
+         || a.p.value === "http://dbpedia.org/property/logo"
          )
   );
 
@@ -4274,6 +4181,7 @@ function updatePreviewInfo(resultsBinding, type) {
          || a.p.value === "http://dbpedia.org/property/onlinebooks"
          || a.p.value === "http://dbpedia.org/property/signature"
          || a.p.value === "http://dbpedia.org/property/video"
+         || a.p.value === "http://dbpedia.org/property/logo"
          )
   );
 
@@ -4372,6 +4280,7 @@ function updateFirstColSelection(resultsBinding) {
          || a.p.value === "http://dbpedia.org/property/onlinebooks"
          || a.p.value === "http://dbpedia.org/property/signature"
          || a.p.value === "http://dbpedia.org/property/video"
+         || a.p.value === "http://dbpedia.org/property/logo"
          )
   );
   
@@ -4656,7 +4565,7 @@ function findTableFromTable(
         colMapping.push("null");
       }
     }
-    // In here we do a bit of string matching for tables with the same number of columns
+    // In here we do a bit of string matching
     // Chances are: tables from sibling pages with the same number of columns as the selected table, with structual invariability,
     // is likely to be the "same" table as the selected on, we give it a chance for string matching
     if (newCols.length === originCols.length) {
@@ -5691,6 +5600,59 @@ function keyQueryGen(neighbourArray) {
   }
   else {
     return queryURL;
+  }
+}
+
+// The following is a helper function used to update firstDegNeighbours and keyColNeighbours.
+// It makes use of two query result arrays.
+
+// It return an object with two attributes: firstDegNeighbours and keyColNeighbours
+
+// This function should be called whenever number of rows are changed.
+
+function updateNeighbourInfo(valuesOne, valuesTwo) {
+  // console.log(valuesOne);
+  // console.log(valuesTwo);
+
+  // To support the firstDegNeighbours prefetching, let's store the first degree neighbours in state firstDegNeighbours
+  let firstDegNeighbours = {};
+
+  // First we deal with subject neighbours, so valuesOne
+  let subjectNeighbourArray = [];
+  for (let i = 0; i < valuesOne.length; ++i) {
+    let temp = updateKeyColNeighbours(
+      [],
+      valuesOne[i].results.bindings,
+      "subject"
+    )
+    subjectNeighbourArray.push(temp);
+  }
+  firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
+  let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
+  processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
+
+  // Then we deal with object neighbours, so valuesTwo
+  let objectNeighbourArray = [];
+  for (let i = 0; i < valuesTwo.length; ++i) {
+    let temp = updateKeyColNeighbours(
+      [],
+      valuesTwo[i].results.bindings,
+      "object"
+    )
+    objectNeighbourArray.push(temp);
+  }
+  firstDegNeighbours["object"] = storeFirstDeg(objectNeighbourArray);
+  let processedObjectNeighbours = processAllNeighbours(objectNeighbourArray);
+  processedObjectNeighbours = addRecommendNeighbours(processedObjectNeighbours);
+
+  // we now concat subjectNeighbours and objectNeighbours together
+  let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
+
+  // console.log(keyColNeighbours);
+  // console.log(firstDegNeighbours);
+  return {
+    "firstDegNeighbours":firstDegNeighbours,
+    "keyColNeighbours":keyColNeighbours,
   }
 }
 
