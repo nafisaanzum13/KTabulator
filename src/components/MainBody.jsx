@@ -2245,13 +2245,6 @@ class MainBody extends Component {
       // we now concat subjectNeighbours and objectNeighbours together
       let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
 
-      let optionsMap = this.state.optionsMap.slice();
-      for (let i = 0; i < optionsMap.length; ++i) {
-        if (i !== colIndex) {
-          optionsMap[i] = keyColNeighbours;
-        }
-      }
-
       document.body.classList.remove('waiting');
 
       // Support for undo: 
@@ -2262,7 +2255,6 @@ class MainBody extends Component {
             "keyColNeighbours": this.state.keyColNeighbours,
             "firstDegNeighbours": this.state.firstDegNeighbours,
             "curActionInfo": this.state.curActionInfo,
-            "optionsMap": this.state.optionsMap,
             "tabIndex": this.state.tabIndex,
           };
 
@@ -2271,7 +2263,6 @@ class MainBody extends Component {
         keyColNeighbours: keyColNeighbours,
         firstDegNeighbours: firstDegNeighbours,
         curActionInfo: {"task":"afterPopulateColumn"},
-        optionsMap: optionsMap,
         tabIndex: 0, // we want to set the currently active tab to be wrangling actions
         lastAction: lastAction,
         prevState: prevState,
@@ -2291,11 +2282,7 @@ class MainBody extends Component {
 
     let originElement = [];
     for (let i = 0; i < cellSelected.origin.length; ++i) {
-      if (i === 0) {
-        originElement.push(<p>{cellSelected.origin[i]}</p>);
-      } else {
-        originElement.push(<p>{cellSelected.origin[i]}</p>);
-      }
+      originElement.push(<p>{niceRender(cellSelected.origin[i])}</p>);
     }
 
     // This origin literal correctly contains the cell Origin we want to display
@@ -2494,6 +2481,7 @@ class MainBody extends Component {
     // console.log(keyColIndex);
 
     // Now, let's deal with tableHeader. Note: these tableHeaders only have value and label, no range or type
+    // Also note that since table headers can be multi-selects, each tableHeader element is in the form of a length one array
     let tableHeader = [];
     for (let j=0;j<tableDataExplore[0].length;++j) {
       tableHeader.push(
@@ -2577,15 +2565,6 @@ class MainBody extends Component {
       let keyColNeighbours = processedSubjectNeighbours.concat(processedObjectNeighbours);
 
       // console.log(keyColNeighbours);
-
-      // Now, we handle the optionsMaps
-      // We can just put on empty options.
-      let optionsMap = [];
-      for (let j=0;j<tableHeader.length;++j) {
-        optionsMap.push([]);
-      }
-      // console.log("Options Map are: ");
-      // console.log(optionsMap);
       
       // Lastly, let's put all the information together in a single object, and return it as a Promise
       return Promise.resolve(
@@ -2595,7 +2574,6 @@ class MainBody extends Component {
           "tableData":tableData,
           "keyColNeighbours":keyColNeighbours,
           "firstDegNeighbours":firstDegNeighbours,
-          "optionsMap":optionsMap
         }
       )
     })
@@ -2768,7 +2746,6 @@ class MainBody extends Component {
                 "firstDegNeighbours": this.state.firstDegNeighbours,
                 "tableData": this.state.tableData,
                 "tableHeader": this.state.tableHeader,
-                "optionsMap": this.state.optionsMap,
                 "usecaseSelected": this.state.usecaseSelected,
                 "tabIndex": this.state.tabIndex,
               };
@@ -2783,13 +2760,11 @@ class MainBody extends Component {
             firstDegNeighbours: stateInfo.firstDegNeighbours,
             tableData: stateInfo.tableData,
             tableHeader: stateInfo.tableHeader,
-            optionsMap: stateInfo.optionsMap,
             usecaseSelected: "startTable",
             tabIndex: 1,
             lastAction: lastAction,
             prevState: prevState,
           });
-          // this.handleTabSwitch(1);
         })
       });
     });

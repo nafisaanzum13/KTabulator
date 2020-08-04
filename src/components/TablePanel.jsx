@@ -31,17 +31,23 @@ class TablePanel extends Component {
       let tempHeader;
       // This part deals with the column 0 
       if (colIndex === 0) {
-        let plusButton = null;
+        let buttonsEle = null;
         if (this.props.firstColFilled === true) {
-          plusButton = 
+          buttonsEle = 
             <div>
               <button
                 className="btn btn-default"
                 title="Add more entities"
+                onClick={() => this.props.handlePlusClick()}
               >
-                <FaPlus
-                  onClick={() => this.props.handlePlusClick()}
-                />
+                <FaPlus />
+              </button>
+              <button
+                className="btn btn-default"
+                title="Set as key column"
+                onClick={(e) => this.props.contextSetColumn(e, colIndex)}
+              >
+                <FaSearch />
               </button>
             </div>
         }
@@ -51,7 +57,7 @@ class TablePanel extends Component {
               className="super-header-div"
             >
             </div>
-            {plusButton}
+            {buttonsEle}
           </th>
         )
       }
@@ -60,34 +66,21 @@ class TablePanel extends Component {
         // let multiAllowed = colIndex === 0 ? true : false;
         tempHeader = (
           <th className="table-head">
-            <div
-              // onClick={(e) => this.props.getKeyOptions(e, colIndex)}
-              // className="super-header-div"
-            >
-              {/* <Select
-                className="selection-header"
-                value={this.props.tableHeader[colIndex]}
-                onChange={(e) => this.props.selectColHeader(e, colIndex)}
-                placeholder={"Choose header"}
-                options={this.props.optionsMap[this.props.keyColIndex]}
-                // isMulti={multiAllowed}
-                isMulti={true}
-              /> */}
-              <div>
-                <button
-                  className="btn btn-default"
-                  title="Add more entities"
-                >
-                  <FaArrowDown
-                    // onClick={(e) => this.props.getOtherOptions(e, colIndex)}
-                  />
-                </button>
-              </div>
-              <FaSearch
-                className="search-icon"
-                title={"Set as key column"}
+            <div>
+              {/* <button
+                className="btn btn-default"
+                title="Add entities"
+                onClick={(e) => this.props.getOtherOptions(e, colIndex)}
+              >
+                <FaArrowDown />
+              </button> */}
+              <button
+                className="btn btn-default"
+                title="Set as key column"
                 onClick={(e) => this.props.contextSetColumn(e, colIndex)}
-              />
+              >
+                <FaSearch />
+              </button>
             </div>
           </th>
         );
@@ -98,34 +91,21 @@ class TablePanel extends Component {
         // console.log(this.props.optionsMap);
         tempHeader = (
           <th className="table-head">
-            <div
-              // onClick={(e) => this.props.getOtherOptions(e, colIndex)}
-              // className="super-header-div"
-            >
-              {/* <Select
-                className="selection-header"
-                value={this.props.tableHeader[colIndex]}
-                onChange={(e) => this.props.selectColHeader(e, colIndex)}
-                placeholder={"Choose header"}
-                options={this.props.optionsMap[colIndex]}
-                // isMulti={false}
-                isMulti={true}
-              /> */}
-              <div>
-                <button
-                  className="btn btn-default"
-                  title="Add more entities"
-                >
-                  <FaArrowDown
-                    onClick={(e) => this.props.getOtherOptions(e, colIndex)}
-                  />
-                </button>
-              </div>
-              <FaSearch
-                className="search-icon"
-                title={"Set as key column"}
+            <div>
+              <button
+                className="btn btn-default"
+                title="Add entities"
+                onClick={(e) => this.props.getOtherOptions(e, colIndex)}
+              >
+                <FaArrowDown />
+              </button>
+              <button
+                className="btn btn-default"
+                title="Set as key column"
                 onClick={(e) => this.props.contextSetColumn(e, colIndex)}
-              />
+              >
+                <FaSearch />
+              </button>
             </div>
           </th>
         );
