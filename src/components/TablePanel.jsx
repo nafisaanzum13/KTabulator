@@ -13,6 +13,39 @@ class TablePanel extends Component {
     this.createSelectedTableView = this.createSelectedTableView.bind(this);
   }
 
+  // This function creates the i-th column header from this.props.tableHeader[i]
+  // It is a helper function for createSuperTable
+
+  columnHeaderGen(colIndex) {
+    // console.log(colIndex);
+    // console.log(this.props.tableHeader);
+    let textLiteral = "";
+    // In this case we deal with the first column header
+    if (colIndex === 0) {
+      // Need a small fix here for the "start table" case
+      for (let i = 0; i < this.props.tableHeader[0].length; ++i) {
+        let textToAdd = i > 0 ? "\nAND " + niceRender(this.props.tableHeader[0][i].label) : niceRender(this.props.tableHeader[0][i].label);
+        textLiteral+=textToAdd;
+      }
+      console.log(textLiteral);
+    }
+    // In this case we deal with non-first column headers
+    else {
+      for (let i = 0; i < this.props.tableHeader[colIndex].length; ++i) {
+        let textToAdd = 
+          this.props.tableHeader[colIndex][i].type === "object" ? "is " + this.props.tableHeader[colIndex][i].value + " of" 
+          : this.props.tableHeader[colIndex][i].value;
+        textToAdd = i > 0 ? "\nOR " + textToAdd : textToAdd;
+        textLiteral+=textToAdd;
+      }
+    }
+    let textEle = 
+      <div>
+        {textLiteral}
+      </div>
+    return textEle;
+  }
+
   // This function takes the states tableData, keyColIndex, keyEntryIndex, tableHeader, optionsMap
   // And convert them into HTML for the super table
 
@@ -25,13 +58,14 @@ class TablePanel extends Component {
     let table = [];
 
     // This part creates the table header row
-    // Start here: we want to adjust what we render as first column's TH, depends on this.props.firstColFilled
+
     let tempRow = [];
     for (let colIndex = 0; colIndex < colNum; ++colIndex) {
       let tempHeader;
       // This part deals with the column 0 
       if (colIndex === 0) {
         let buttonsEle = null;
+        let textEle = null;
         if (this.props.firstColFilled === true) {
           buttonsEle = 
             <div>
@@ -50,6 +84,7 @@ class TablePanel extends Component {
                 <FaSearch />
               </button>
             </div>
+          textEle = this.columnHeaderGen(colIndex);
         }
         tempHeader = (
           <th className="table-head">
@@ -58,12 +93,13 @@ class TablePanel extends Component {
             >
             </div>
             {buttonsEle}
+            {textEle}
           </th>
         )
       }
       // This part deals with key columns that are not column 0
       else if (colIndex === this.props.keyColIndex) {
-        // let multiAllowed = colIndex === 0 ? true : false;
+        let textEle = this.columnHeaderGen(colIndex);
         tempHeader = (
           <th className="table-head">
             <div>
@@ -82,13 +118,13 @@ class TablePanel extends Component {
                 <FaSearch />
               </button>
             </div>
+            {textEle}
           </th>
         );
       }
-      // This part deals with the non-key column headers
+      // This part deals with the non-key, non-first column headers
       else {
-        // console.log("Current column index is "+colIndex);
-        // console.log(this.props.optionsMap);
+        let textEle = this.columnHeaderGen(colIndex);
         tempHeader = (
           <th className="table-head">
             <div>
@@ -107,6 +143,7 @@ class TablePanel extends Component {
                 <FaSearch />
               </button>
             </div>
+            {textEle}
           </th>
         );
       }
@@ -270,3 +307,4 @@ function niceRender(str) {
   return str.replace(/_\(.*?\)/g, "")
             .replace(/_/g, " ");
 }
+

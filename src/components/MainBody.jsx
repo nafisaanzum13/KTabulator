@@ -75,7 +75,7 @@ class MainBody extends Component {
       firstColSelection: [],   // 1D array of objects storing information about the starting subject's neighbours
       firstColChecked: [],     // 1D array of booleans storing whether a neighbour of the starting subject is selected or not
       firstColFilled: false,   // boolean indicating whether the first column has been filled. 
-                               // Will be set to true and remain that way after calling populateKeyColumn. 
+                               // Will be set to true and remain that way after calling populateKeyColumn, or handleStartTable
       keyCheckedIndex: -1,  // index storing the most recent index that has just been toggled for the first column. Initially -1.
 
       // states below are useful for other column header selection
@@ -970,7 +970,7 @@ class MainBody extends Component {
               "tableHeader":this.state.tableHeader,
               "firstColFilled":this.state.firstColFilled,
             };
-  
+
           document.body.classList.remove('waiting');
   
           this.setState({
@@ -1211,7 +1211,9 @@ class MainBody extends Component {
         let curNeighbour = neighbourArray[j];
         let firstDegNeighbours = 
           curNeighbour.type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
+        // console.log(firstDegNeighbours);
         let curNeighbourData = firstDegNeighbours[i][curNeighbour.value];
+        // console.log("Current neighbour data is "+curNeighbourData);
         // If yes, we want to concat those values with curColumnArray
         if (curNeighbourData !== undefined) {
           curColumnArray = curColumnArray.concat(curNeighbourData);
@@ -1238,6 +1240,9 @@ class MainBody extends Component {
       }
     }
     // Now, we are done with updating tableData.
+    // We want to update tableHeader as well.
+    let tableHeader = _.cloneDeep(this.state.tableHeader);
+    tableHeader[colIndex] = neighbourArray;
 
     // We start setting up the content for the Action Panel.
     // console.log(longestColumnArray);
@@ -1276,11 +1281,13 @@ class MainBody extends Component {
       {
         "curActionInfo":this.state.curActionInfo,
         "tableData":this.state.tableData,
+        "tableHeader":this.state.tableHeader,
       };
 
     this.setState({
       curActionInfo: tempObj,
       tableData: tableData,
+      tableHeader: tableHeader,
       lastAction: lastAction,
       prevState: prevState,
     });
@@ -1440,8 +1447,6 @@ class MainBody extends Component {
     // console.log(selectedClassAnnotation);
     // console.log("End of attributes check\n\n\n\n");
 
-    // Now we need to write the body for this function
-
     // First thing should be to insert "numCols" number of empty columns right after column with index "colIndex"
     const rowNum = tableData.length;
     const colNum = tableData[0].length;
@@ -1496,7 +1501,8 @@ class MainBody extends Component {
       newTableHeader = [
         {
           "value" : neighbourArray[0].value,
-          "label" : ownLabel + "--" + keyColLabel
+          "label" : ownLabel + "--" + keyColLabel,
+          "type"  : neighbourArray[0].type,
         }
       ]
     }
@@ -2588,6 +2594,7 @@ class MainBody extends Component {
           let lastAction = "handleStartTable";
           let prevState = 
               {
+                "firstColFilled": this.state.firstColFilled,
                 "selectedTableIndex": this.state.selectedTableIndex,
                 "propertyNeighbours": this.state.propertyNeighbours,
                 "curActionInfo": this.state.curActionInfo,
@@ -2602,6 +2609,7 @@ class MainBody extends Component {
               };
 
           this.setState({
+            firstColFilled: true,
             selectedTableIndex: tableIndex,
             propertyNeighbours: propertyNeighbours,
             curActionInfo: curActionInfo,
@@ -3199,6 +3207,7 @@ class MainBody extends Component {
 
     else if (lastAction === "handleStartTable") {
       this.setState({
+        firstColFilled: prevState.firstColFilled,
         selectedTableIndex: prevState.selectedTableIndex,
         propertyNeighbours: prevState.propertyNeighbours,
         curActionInfo: prevState.curActionInfo,
@@ -3237,6 +3246,7 @@ class MainBody extends Component {
       this.setState({
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
         lastAction: "",
       })
     }
@@ -3379,6 +3389,8 @@ class MainBody extends Component {
         tableHeader: prevState.tableHeader,
         optionsMap: prevState.optionsMap,
         selectedClassAnnotation: prevState.selectedClassAnnotation,
+        keyColNeighbours: prevState.keyColNeighbours,
+        firstDegNeighbours: prevState.firstDegNeighbours,
         lastAction: "",
       })
     }
@@ -3449,50 +3461,30 @@ class MainBody extends Component {
     // Note: both originTableHeader and joinTableHeader are array of objects with three properties: label, value, and index
 
     // First we get the header for the origin table
-    // Two cases: 1) first column is "OriginURL" (we started from a table) 2) otherwise, we have started from a subject
-
-    // In this clause, we are in the "Start Table" case.
-    if (tableHeader[0].value !== undefined) {
-      for (let i = 0; i < tableHeader.length; ++i) {
-        originTableHeader.push(tableHeader[i]);
-        originTableHeader[i].index = i;
+    console.log(tableHeader);
+    // Let's loop through this tableHeader to fill the originTableHeader
+    for (let i = 0; i < tableHeader.length; ++i) {
+      // If the current element in table header has length of 0, it means it's empty
+      if (tableHeader[i].length === 0) {
+        break;
+      }
+      else {
+        // We loop through the tableHeader[i]
+        let value = "";
+        for (let j = 0; j < tableHeader[i].length; ++j) {
+          let valueToAdd = j > 0 ? "&" + tableHeader[i][j].value : tableHeader[i][j].value;
+          value+=valueToAdd;
+        }
+        originTableHeader.push(
+          {
+            "value":value,
+            "label":value,
+            "index":i
+          }
+        )
       }
     }
-    // Else, we are in the "Start Subject" case.
-    else {
-      // console.log(tableHeader);
-      // Let's loop through this tableHeader to fill the originTableHeader
-      // We first push on the first element from tableHeader
-      let value = "";
-      for (let i = 0; i < tableHeader[0].length; ++i) {
-        if (i > 0) {
-          value+="&";
-        }
-        value+=tableHeader[0][i].value;
-      }
-      originTableHeader.push(
-        {
-          "value":value,
-          "label":value,
-          "index":0
-        }
-      )
-      for (let i = 1; i < tableHeader.length; ++i) {
-        if (tableHeader[i] === "") {
-          break;
-        }
-        else {
-          originTableHeader.push(
-            {
-              "value":tableHeader[i].value,
-              "label":tableHeader[i].label,
-              "index":i
-            }
-          )
-        }
-      }
-    }
-    // console.log(originTableHeader);
+    console.log(originTableHeader);
 
     // Now that we have originTableHeader working correctly, let's get the joinTableHeader
     let urlOrigin = decodeURIComponent(this.state.urlPasted.slice(30));
@@ -3581,14 +3573,16 @@ class MainBody extends Component {
         --i;
       }
     }
-    // Now we push on the new columns
+    // Now we push on the new columns. Note that it has to be in the form of an array
     for (let i = 0; i < joinTableData[0].length; ++i) {
       if (i !== joinJoinIndex) {
         tableHeaderUpdated.push(
-          {
-            "value":joinTableData[0][i].data,
-            "label":joinTableData[0][i].data
-          }
+          [
+            {
+              "value":joinTableData[0][i].data,
+              "label":joinTableData[0][i].data
+            }
+          ]
         )
       }
     }
@@ -3661,7 +3655,6 @@ class MainBody extends Component {
           // console.log("A match has been found at index "+j);
           // Let's create the tempRow that we want to push onto tableDataUpdated
 
-          // Code Placeholder
           let tempRow = _.cloneDeep(tableData[i]);
           for (let k = 0; k < joinTableDataUpdated[j].length; ++k) {
             if (k !== joinJoinIndex) {
@@ -3697,26 +3690,43 @@ class MainBody extends Component {
     // Now, we have correctly got everything we needed: tableDataUpdated, tableHeaderUpdated, optionsMapUpdated, selectedClassAnnotationUpdated
     // Let's add some support for undo, and do not forget to close the joinModal
 
-    // Support for undo: 
-    let lastAction = "runJoin";
-    let prevState = 
-      {
-        "curActionInfo":this.state.curActionInfo,
-        "tableData":this.state.tableData,
-        "tableHeader":this.state.tableHeader,
-        "optionsMap":this.state.optionsMap,
-        "selectedClassAnnotation":this.state.selectedClassAnnotation,
-      };
+    // Bugfix: since this function potentially changes the number of rows too, we need to update firstDegNeighbours and keyColNeighbours
+    let promiseArrayOne = this.getNeighbourPromise(tableDataUpdated, "subject", this.state.keyColIndex);
+    let promiseArrayTwo = this.getNeighbourPromise(tableDataUpdated, "object", this.state.keyColIndex);
+    allPromiseReady(promiseArrayOne).then((valuesOne) => {
+    allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
-    this.setState({
-      curActionInfo:{"task":"afterPopulateColumn"},
-      tableData:tableDataUpdated,
-      tableHeader:tableHeaderUpdated,
-      optionsMap:optionsMapUpdated,
-      selectedClassAnnotation:selectedClassAnnotationUpdated,
-      showJoinModal: false,
-      lastAction:lastAction,
-      prevState:prevState,
+      // We call updateNeighbourInfo here because we are changing the rows
+      let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+      let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+      let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+      // Support for undo: 
+      let lastAction = "runJoin";
+      let prevState = 
+        {
+          "curActionInfo":this.state.curActionInfo,
+          "tableData":this.state.tableData,
+          "keyColNeighbours":this.state.keyColNeighbours,
+          "firstDegNeighbours":this.state.firstDegNeighbours,
+          "tableHeader":this.state.tableHeader,
+          "optionsMap":this.state.optionsMap,
+          "selectedClassAnnotation":this.state.selectedClassAnnotation,
+        };
+
+      this.setState({
+        curActionInfo:{"task":"afterPopulateColumn"},
+        tableData:tableDataUpdated,
+        tableHeader:tableHeaderUpdated,
+        keyColNeighbours:keyColNeighbours,
+        firstDegNeighbours:firstDegNeighbours,
+        optionsMap:optionsMapUpdated,
+        selectedClassAnnotation:selectedClassAnnotationUpdated,
+        showJoinModal: false,
+        lastAction:lastAction,
+        prevState:prevState,
+      })
+    })
     })
     })
   }
@@ -4372,7 +4382,7 @@ function updateFirstColSelection(resultsBinding) {
           "oValue":processedBinding[i].o.value.slice(37),
           "oType":"",
           "value":"category",
-          "label":"category:"+processedBinding[i].o.value.slice(37),
+          "label":processedBinding[i].o.value.slice(37),
         }
       )
     }
