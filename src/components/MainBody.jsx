@@ -282,9 +282,14 @@ class MainBody extends Component {
           curText = "";
           for (let j = 0; j < tableHeader[i].length; ++j) {
             if (j > 0) {
-              curText += "&";
+              if (i === 0) {
+                curText += " AND ";
+              }
+              else {
+                curText += " OR ";
+              }
             }
-            curText += tableHeader[i][j].label;
+            curText += niceRender(tableHeader[i][j].label);
           }
         }
         if (curText !== undefined && curText !== "") {
@@ -305,7 +310,6 @@ class MainBody extends Component {
         }
         copiedText += "\n";
       }
-    } else {
     }
     textArea.value = copiedText;
     document.body.appendChild(textArea);
@@ -445,6 +449,7 @@ class MainBody extends Component {
   handlePlusClick() {
     this.setState({
       curActionInfo:{"task":"plusClicked"},
+      tabIndex: 0,
     })
   }
 
@@ -1013,7 +1018,6 @@ class MainBody extends Component {
         // We first push on numNewRows number of rows, while setting up data and origin
         for (let i = 0; i < numNewRows; ++i) {
           let tempRow = [];
-          // Potentially need a bugfix here: DO NOT use initialColNum
           for (let j = 0; j < this.state.tableHeader.length; ++j) {
             if (j === 0) {
               tempRow.push({

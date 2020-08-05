@@ -66,26 +66,30 @@ class TablePanel extends Component {
       // This part deals with the column 0 
       if (colIndex === 0) {
         let buttonsEle = null;
-        let textEle = null;
+        let textEle = <div><br /></div>;
         if (this.props.firstColFilled === true) {
-          buttonsEle = 
-            <div>
-              <button
-                className="btn btn-default"
-                title="Add entities"
-                onClick={() => this.props.handlePlusClick()}
-              >
-                <FaArrowDown />
-              </button>
-              <button
-                className="btn btn-default"
-                title="Set as key column"
-                onClick={(e) => this.props.contextSetColumn(e, colIndex)}
-              >
-                <FaSearch />
-              </button>
-            </div>
+          // If we have filled in the first column already, then we can generate its header text
           textEle = this.columnHeaderGen(colIndex);
+          // Moreover, if the first column head is not ["OriginURL"], then we can create the button element
+          if (this.props.tableHeader[0][0].value !== "OriginURL") {
+            buttonsEle = 
+              <div>
+                <button
+                  className="btn btn-default"
+                  title="Add entities"
+                  onClick={() => this.props.handlePlusClick()}
+                >
+                  <FaArrowDown />
+                </button>
+                <button
+                  className="btn btn-default"
+                  title="Set as key column"
+                  onClick={(e) => this.props.contextSetColumn(e, colIndex)}
+                >
+                  <FaSearch />
+                </button>
+              </div>
+          }
         }
         tempHeader = (
           <th className="table-head">
@@ -101,19 +105,7 @@ class TablePanel extends Component {
       // This part deals with key columns that are not column 0
       else if (colIndex === this.props.keyColIndex) {
         let textEle = this.columnHeaderGen(colIndex);
-        let buttonEle = null;
-        if (this.props.firstColFilled === true) {
-          buttonEle = 
-            <div>
-              <button
-                className="btn btn-default"
-                title="Set as key column"
-                onClick={(e) => this.props.contextSetColumn(e, colIndex)}
-              >
-                <FaSearch />
-              </button>
-            </div>
-        }
+        let buttonEle = <div><br /></div>;
         tempHeader = (
           <th className="table-head">
             {buttonEle}
@@ -124,7 +116,7 @@ class TablePanel extends Component {
       // This part deals with the non-key, non-first column headers
       else {
         let textEle = this.columnHeaderGen(colIndex);
-        let buttonEle = null;
+        let buttonEle = <div><br /></div>;;
         if (this.props.firstColFilled === true) {
           buttonEle = 
             <div>
