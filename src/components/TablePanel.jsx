@@ -27,7 +27,7 @@ class TablePanel extends Component {
         let textToAdd = i > 0 ? "\nAND " + niceRender(this.props.tableHeader[0][i].label) : niceRender(this.props.tableHeader[0][i].label);
         textLiteral+=textToAdd;
       }
-      console.log(textLiteral);
+      // console.log(textLiteral);
     }
     // In this case we deal with non-first column headers
     else {
@@ -50,6 +50,7 @@ class TablePanel extends Component {
   // And convert them into HTML for the super table
 
   createSuperTable() {
+
     // console.log("Has first column been filled? " + this.props.firstColFilled);
     // console.log(this.props.tableData);
     const rowNum = this.props.tableData.length;
@@ -100,16 +101,10 @@ class TablePanel extends Component {
       // This part deals with key columns that are not column 0
       else if (colIndex === this.props.keyColIndex) {
         let textEle = this.columnHeaderGen(colIndex);
-        tempHeader = (
-          <th className="table-head">
+        let buttonEle = null;
+        if (this.props.firstColFilled === true) {
+          buttonEle = 
             <div>
-              {/* <button
-                className="btn btn-default"
-                title="Add entities"
-                onClick={(e) => this.props.getOtherOptions(e, colIndex)}
-              >
-                <FaArrowDown />
-              </button> */}
               <button
                 className="btn btn-default"
                 title="Set as key column"
@@ -118,6 +113,10 @@ class TablePanel extends Component {
                 <FaSearch />
               </button>
             </div>
+        }
+        tempHeader = (
+          <th className="table-head">
+            {buttonEle}
             {textEle}
           </th>
         );
@@ -125,8 +124,9 @@ class TablePanel extends Component {
       // This part deals with the non-key, non-first column headers
       else {
         let textEle = this.columnHeaderGen(colIndex);
-        tempHeader = (
-          <th className="table-head">
+        let buttonEle = null;
+        if (this.props.firstColFilled === true) {
+          buttonEle = 
             <div>
               <button
                 className="btn btn-default"
@@ -143,6 +143,10 @@ class TablePanel extends Component {
                 <FaSearch />
               </button>
             </div>
+        }
+        tempHeader = (
+          <th className="table-head">
+            {buttonEle}
             {textEle}
           </th>
         );

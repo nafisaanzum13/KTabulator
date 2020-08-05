@@ -1013,7 +1013,8 @@ class MainBody extends Component {
         // We first push on numNewRows number of rows, while setting up data and origin
         for (let i = 0; i < numNewRows; ++i) {
           let tempRow = [];
-          for (let j = 0; j < initialColNum; ++j) {
+          // Potentially need a bugfix here: DO NOT use initialColNum
+          for (let j = 0; j < this.state.tableHeader.length; ++j) {
             if (j === 0) {
               tempRow.push({
                 data: values[0].results.bindings[i].somevar.value.slice(28),
