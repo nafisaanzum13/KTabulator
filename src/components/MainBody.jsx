@@ -152,6 +152,7 @@ class MainBody extends Component {
     // this.contextOpenLink = this.contextOpenLink.bind(this);
     this.openPreviewAndPage = this.openPreviewAndPage.bind(this);
     this.contextSortColumn = this.contextSortColumn.bind(this);
+    this.contextDedupColumn = this.contextDedupColumn.bind(this);
 
     // functions below are useful for startTable
     this.toggleTable = this.toggleTable.bind(this);
@@ -2167,6 +2168,46 @@ class MainBody extends Component {
     });
   }
 
+  // The following function dedups the selected column.
+  // Note: this function has to make modifications to both firstDegNeighbours and keyColNeighbours
+
+  contextDedupColumn(e, colIndex) {
+    document.body.classList.add('waiting');
+    let tableData = _.cloneDeep(this.state.tableData);
+    // console.log(colIndex);
+    // console.log(tableData);
+
+    // We simply dedup this column by calling the uniqBy function from the lodash library
+    tableData = _.uniqBy(tableData, function(x) {return x[colIndex].data;});
+    // console.log(this.state.tableData);
+    // console.log(tableData);
+
+    // Now we deal with firstDegNeighbours and keyColNeighbours' updates
+    // Since we are changing the number of rows, we need to call updateNeighbourInfo
+    // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
+    let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
+    let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+    allPromiseReady(promiseArrayOne).then((valuesOne) => {
+    allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+
+      // We call updateNeighbourInfo here because we are changing the rows
+      let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+      let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+      let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+      document.body.classList.remove('waiting');
+
+      // Need to add support for undo here later
+
+      this.setState({
+        tableData: tableData,
+        keyColNeighbours: keyColNeighbours,
+        firstDegNeighbours: firstDegNeighbours,
+      })
+    })
+    })
+  }
+
   // The following functions sets the selected column to be the search column.
 
   contextSetColumn(e, colIndex) {
@@ -3825,6 +3866,7 @@ class MainBody extends Component {
                     // contextOpenLink={this.contextOpenLink}
                     openPreviewAndPage={this.openPreviewAndPage}
                     contextSortColumn={this.contextSortColumn}
+                    contextDedupColumn={this.contextDedupColumn}
                     // Following states are useful for column filter
                     openFilter={this.openFilter}
                     // Following states control the render of first column header

@@ -294,6 +294,9 @@ class TablePanel extends Component {
             <MenuItem onClick={(e) => this.props.contextSortColumn(e, j, "descending")}>
               Sort descending
             </MenuItem>
+            <MenuItem onClick={(e) => this.props.contextDedupColumn(e, j)}>
+              Remove duplicates
+            </MenuItem>
             <MenuItem divider />
             <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
               Show Origin of Cell
