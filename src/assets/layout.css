@@ -2,7 +2,7 @@
 
 .wrapper {
   position: fixed;
-  width: 100%;
+  width: 99%;
 }
 
 .header {
@@ -169,7 +169,8 @@ a.logo:focus {
 
 .action-panel {
   height: inherit;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   border-left: 1px solid lightgrey;
 }
 

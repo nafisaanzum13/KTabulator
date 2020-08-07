@@ -177,7 +177,7 @@ class TablePanel extends Component {
                 value={niceRender(this.props.tableData[i][j].data)}
                 title={niceRender(this.props.tableData[i][j].data)}
                 onChange={(e) => this.props.onCellChange(e, i, j)}
-                // onClick={() => alert("hmm")} something like this could work
+                onDoubleClick={(e) => this.props.openPreviewAndPage(e, i, j)}
               />
             </ContextMenuTrigger>
           </td>

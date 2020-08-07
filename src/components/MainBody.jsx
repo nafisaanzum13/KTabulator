@@ -148,8 +148,9 @@ class MainBody extends Component {
     this.contextDeleteColumn = this.contextDeleteColumn.bind(this);
     this.contextSetColumn = this.contextSetColumn.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
-    this.contextCellPreview = this.contextCellPreview.bind(this);
-    this.contextOpenLink = this.contextOpenLink.bind(this);
+    // this.contextCellPreview = this.contextCellPreview.bind(this);
+    // this.contextOpenLink = this.contextOpenLink.bind(this);
+    this.openPreviewAndPage = this.openPreviewAndPage.bind(this);
     this.contextSortColumn = this.contextSortColumn.bind(this);
 
     // functions below are useful for startTable
@@ -681,6 +682,7 @@ class MainBody extends Component {
           "colIndex":colIndex,
         }
 
+      window.scrollTo(0, 0);
       this.setState({
         otherColSelection:otherColSelection,
         otherColChecked:otherColChecked,
@@ -2208,13 +2210,14 @@ class MainBody extends Component {
     });
   }
 
-  // The following function displays the preview of a cell in the Action Panel.
-  // Note: currently it will not have any N/A's
+  // This function takes place of the original contextCellPreview and contextOpenLink
 
-  contextCellPreview(e, rowIndex, colIndex) {
+  openPreviewAndPage(e, rowIndex, colIndex) {
     document.body.classList.add('waiting');
     // console.log("Row index is "+rowIndex);
     // console.log("Col index is "+colIndex);
+
+    // This first part deals with preview
 
     // Let's first run queries to fetch the dbp neighbours and dbo neighbours for the selected cell (withe some filtering)
     // In here, we need both the ?p and ?o. This is different from before.
@@ -2285,6 +2288,9 @@ class MainBody extends Component {
       tempObj["cellValue"] = this.state.tableData[rowIndex][colIndex].data;
       tempObj["preview"] = previewInfoArray;
 
+      // Now, everything about cell preview has been completed. Let's deal with open link.
+      let iframeURL = "https://en.wikipedia.org/wiki/" + this.state.tableData[rowIndex][colIndex].data;
+
       // Support for undo: 
       document.body.classList.remove('waiting');
       let lastAction = "contextCellPreview";
@@ -2297,20 +2303,11 @@ class MainBody extends Component {
       this.setState({
         curActionInfo: tempObj,
         tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+        pageHidden: false,
+        iframeURL: iframeURL,
         lastAction: lastAction,
         prevState: prevState,
       });
-    });
-  }
-
-  // The following function sets the bottom page URL to the Wikipage of selected cell.
-
-  contextOpenLink(e, rowIndex, colIndex) {
-    let iframeURL = "https://en.wikipedia.org/wiki/" + this.state.tableData[rowIndex][colIndex].data;
-    this.setState({
-      pageHidden: false,
-      iframeURL: iframeURL,
-      // curActionInfo: {"task":"afterPopulateColumn"},
     });
   }
 
@@ -3783,8 +3780,9 @@ class MainBody extends Component {
                     contextDeleteColumn={this.contextDeleteColumn}
                     contextSetColumn={this.contextSetColumn}
                     contextCellOrigin={this.contextCellOrigin}
-                    contextCellPreview={this.contextCellPreview}
-                    contextOpenLink={this.contextOpenLink}
+                    // contextCellPreview={this.contextCellPreview}
+                    // contextOpenLink={this.contextOpenLink}
+                    openPreviewAndPage={this.openPreviewAndPage}
                     contextSortColumn={this.contextSortColumn}
                     // Following states are useful for column filter
                     openFilter={this.openFilter}
