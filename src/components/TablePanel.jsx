@@ -3,7 +3,7 @@ import React, { Component } from "react";
 // import Tooltip from '@atlaskit/tooltip';
 // import Select from "react-select";
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
-import { FaSearch, FaEdit, FaPlus, FaMinus } from "react-icons/fa";
+import { FaSearch, FaEdit, FaPlus, FaMinus, FaFilter } from "react-icons/fa";
 
 class TablePanel extends Component {
   constructor(props) {
@@ -95,6 +95,13 @@ class TablePanel extends Component {
                 >
                   <FaPlus />
                 </button>
+                <button
+                  className="btn btn-default"
+                  title="Filter this column"
+                  onClick={(e) => this.props.showFilterMethods(e, colIndex)}
+                >
+                  <FaFilter />
+                </button>
                 {/* <button
                   className="btn btn-default"
                   title="Delete this column"
@@ -129,6 +136,13 @@ class TablePanel extends Component {
                   onClick={(e) => this.props.contextAddColumn(e, colIndex)}
                 >
                   <FaPlus />
+                </button>
+                <button
+                  className="btn btn-default"
+                  title="Filter this column"
+                  onClick={(e) => this.props.showFilterMethods(e, colIndex)}
+                >
+                  <FaFilter />
                 </button>
             </div>
         }
@@ -173,6 +187,13 @@ class TablePanel extends Component {
                   onClick={(e) => this.props.contextDeleteColumn(e, colIndex)}
                 >
                   <FaMinus />
+                </button>
+                <button
+                  className="btn btn-default"
+                  title="Filter this column"
+                  onClick={(e) => this.props.showFilterMethods(e, colIndex)}
+                >
+                  <FaFilter />
                 </button>
             </div>
         }

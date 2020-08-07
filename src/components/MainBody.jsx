@@ -153,6 +153,7 @@ class MainBody extends Component {
     this.openPreviewAndPage = this.openPreviewAndPage.bind(this);
     this.contextSortColumn = this.contextSortColumn.bind(this);
     this.contextDedupColumn = this.contextDedupColumn.bind(this);
+    this.showFilterMethods = this.showFilterMethods.bind(this);
 
     // functions below are useful for startTable
     this.toggleTable = this.toggleTable.bind(this);
@@ -2208,6 +2209,17 @@ class MainBody extends Component {
     })
   }
 
+  // This function handles click event on the filter icon.
+  // We want to let the Action Panel display 4 different filtering methods:
+  // 1) Sort ascending
+  // 2) Sort descending
+  // 3) Filter
+  // 4) Dedup
+
+  showFilterMethods(e, colIndex) {
+    console.log("Selected column is "+colIndex);
+  }
+
   // The following functions sets the selected column to be the search column.
 
   contextSetColumn(e, colIndex) {
@@ -3867,6 +3879,7 @@ class MainBody extends Component {
                     openPreviewAndPage={this.openPreviewAndPage}
                     contextSortColumn={this.contextSortColumn}
                     contextDedupColumn={this.contextDedupColumn}
+                    showFilterMethods={this.showFilterMethods}
                     // Following states are useful for column filter
                     openFilter={this.openFilter}
                     // Following states control the render of first column header
