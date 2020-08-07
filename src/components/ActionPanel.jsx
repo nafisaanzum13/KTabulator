@@ -447,33 +447,33 @@ class ActionPanel extends Component {
         let neighbourArrayText = createNeighbourText(actionInfo.neighbourArray);
         actionEle = (
           <div>
-            <p>Add all other properties with name:</p>
+            <p>Some cells in this column contain multiple values.</p>
+            <p>Expand all other values that are also</p>
             <p><b>{neighbourArrayText}</b> ?</p>
             <div className="row">
               <button
                 className="col-md-4"
                 onClick={(e) =>
-                  this.props.sameNeighbourOneCol(
+                  this.props.sameNeighbourOneRow(
                     e,
                     actionInfo.colIndex,
                     actionInfo.neighbourArray,
                   )
                 }
               >
-                In One Column
+                In One Row
               </button>
               <button
                 className="offset-md-1 col-md-4"
                 onClick={(e) =>
-                  this.props.sameNeighbourDiffCol(
+                  this.props.sameNeighbourDiffRow(
                     e,
                     actionInfo.colIndex,
                     actionInfo.neighbourArray,
-                    actionInfo.numCols,
                   )
                 }
               >
-                In Separate Columns
+                In Separate Rows
               </button>
             </div>
           </div>

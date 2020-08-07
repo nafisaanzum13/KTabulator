@@ -12,7 +12,7 @@ import ActionPanel from "../components/ActionPanel";
 import PagePanel from "../components/PagePanel";
 import _ from "lodash";
 
-const maxNeighbourCount = 50;
+const maxNeighbourCount = 10;
 const initialColNum = 4;
 const initialRowNum = 10;
 
@@ -140,8 +140,8 @@ class MainBody extends Component {
     this.populateOtherColumn = this.populateOtherColumn.bind(this);
     this.addAllNeighbour = this.addAllNeighbour.bind(this);
     this.getTableStates = this.getTableStates.bind(this);
-    this.sameNeighbourDiffCol = this.sameNeighbourDiffCol.bind(this);
-    this.sameNeighbourOneCol = this.sameNeighbourOneCol.bind(this);
+    this.sameNeighbourDiffRow = this.sameNeighbourDiffRow.bind(this);
+    this.sameNeighbourOneRow = this.sameNeighbourOneRow.bind(this);
     // this.populateSameRange = this.populateSameRange.bind(this);
     this.populateRecommendation = this.populateRecommendation.bind(this);
     this.contextAddColumn = this.contextAddColumn.bind(this);
@@ -1208,7 +1208,9 @@ class MainBody extends Component {
     // console.log(neighbourArray);
 
     let tableData = _.cloneDeep(this.state.tableData);
-    let longestColumnArray = [];
+    // We use a boolean to keep track of if any cell contains multiple values
+    let hasMultiple = false;
+
     for (let i = 0; i < tableData.length; ++i) {
       // curColumnArray is the dataArray for each entry in search column, for all neighbours in neighbourArray.
       let curColumnArray = [];
@@ -1240,10 +1242,14 @@ class MainBody extends Component {
         keyOrigin.push(originToAdd);
         tableData[i][colIndex].origin = keyOrigin;
         // console.log(keyOrigin)
-        // If curColumnArray's length is longer than longestColumnArray's length, we want to update it
-        if (curColumnArray.length > longestColumnArray.length) {
-          longestColumnArray = curColumnArray;
-        }
+
+        // Now, if curColumnArray has length longer than one, we want to set hasMultiple to true
+        // We also create an extra attribute for the current tableData cell, called dataArray, whose max length is maxNeighbourCount.
+        if (curColumnArray.length > 1) {
+          hasMultiple = true;
+          let lastIndex = Math.min(curColumnArray.length, maxNeighbourCount);
+          tableData[i][colIndex].dataArray = curColumnArray.slice(1, lastIndex);
+        } 
       }
     }
     // Now, we are done with updating tableData.
@@ -1252,10 +1258,6 @@ class MainBody extends Component {
     tableHeader[colIndex] = neighbourArray;
 
     // We start setting up the content for the Action Panel.
-    // console.log(longestColumnArray);
-    let maxCount = Math.min(longestColumnArray.length, maxNeighbourCount);
-    let remainNeighbourCount = maxCount - 1;
-    // console.log(remainNeighbourCount);
 
     let recommendArray = createRecommendArray(neighbourArray);
     // console.log(recommendArray);
@@ -1263,12 +1265,11 @@ class MainBody extends Component {
     // tempObj stores the information passed to ActionPanel
     let tempObj = {};
 
-    // If remainNeighbourCount is larger than 0, we give users the option to populate duplicate neighbours
-    if (remainNeighbourCount > 0) {
+    // If hasMultiple is true, we give users option to populate all those multiple values
+    if (hasMultiple === true) {
       tempObj["task"] = "populateSameNeighbour";
       tempObj["colIndex"] = colIndex;
       tempObj["neighbourArray"] = neighbourArray;
-      tempObj["numCols"] = remainNeighbourCount;
     }
     // Else, this column has no multiple values. Let's check if we can make some suggestions.
     else if (recommendArray.length > 0) {
@@ -1598,37 +1599,86 @@ class MainBody extends Component {
     };
   }
 
-  // This function populates all neighbour with the same names in different columns, if that neighbour has multiple occurences.
+  // This function populates all neighbour with the same names in different rows, if that neighbour has multiple occurences.
+  // It should modify both tableData and firstDegNeighbours, but not keyColNeighbours.
+  // This is because we are not removing, or adding anything new, to the search column.
 
-  // It takes in 6 parameters:
-  // 1) colIndex:        index of the column that we just filled     (ex. 1, if we just filled in column 1)
-  // 2) neighbour:       attribute name of the column we just filled (ex. almaMater)
-  // 3) neighbourIndex:  index of the attribute we just filled       (ex. 0, if we have filled in almaMater-1)
-  // 4) type:            type of the attribute. Either "subject" or "object"
-  // 5) numCols:         number of columns that we need to fill with the duplicated neighbour. (ex. 2, if we have filled in one almaMater, but there are three in total)
-  // 6) range:           range for the neighbour to be filled (ex: Person for vicePresident)
-  
-  // Note: currently it only populates "later" neighbour with same name.
+  sameNeighbourDiffRow(e,colIndex,neighbourArray) {
 
-  sameNeighbourDiffCol(e,colIndex,neighbourArray,numCols) {
+    // First we take a look at the parameters passed in
+    // console.log(colIndex);
+    // console.log(neighbourArray);
+    // console.log(this.state.tableData);
 
-    let newState = this.addAllNeighbour(colIndex,
-                                        neighbourArray,
-                                        numCols,
-                                        this.state.keyColIndex,
-                                        this.state.tableHeader,
-                                        this.state.tableData,
-                                        this.state.optionsMap,
-                                        this.state.selectedClassAnnotation,
-                                        false);
-    // console.log(newState);
+    let tableDataUpdated = [];
+    let subjectNeighbours = [];
+    let objectNeighbours = [];
+    let tableData = _.cloneDeep(this.state.tableData);
+    let firstDegNeighbours = _.cloneDeep(this.state.firstDegNeighbours);
+
+    // The first loop deals with tableData's additions 
+    for (let i = 0; i < tableData.length; ++i) {
+      // We first create a deep copy of the current row
+      let curRow = _.cloneDeep(tableData[i]);
+      // If the current cell in the selected column does NOT have dataArray attribute, we push it onto tableData as it is
+      if (curRow[colIndex].dataArray === undefined) {
+        tableDataUpdated.push(curRow);
+      }
+      // Else, we have to push on dataArray.length number of new rows onto tableData.
+      // We need to take care of the new cell's data, origin, and dataArray
+      else {
+        // First, we still need to push on curRow
+        tableDataUpdated.push(curRow);
+        // Then, we deal with rows that are not in the original table
+        for (let j = 0; j < curRow[colIndex].dataArray.length; ++j) {
+          let rowToAdd = _.cloneDeep(curRow);
+          // We set data
+          rowToAdd[colIndex].data = curRow[colIndex].dataArray[j];
+          // we then set origin for the cell. Need to use neighbourArray to get the correct text for the origin
+          let originToAdd = createNeighbourText(neighbourArray) + ":" + curRow[colIndex].dataArray[j];
+          let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
+          keyOrigin.push(originToAdd);
+          rowToAdd[colIndex].origin = keyOrigin;
+          // Lastly, we remove the dataArray attribute from rowToAdd
+          delete rowToAdd[colIndex].dataArray;
+          tableDataUpdated.push(rowToAdd);
+        }
+      }
+    }
+
+    // The second loop deals with firstDegNeighbours's additions
+    for (let i = 0; i < tableData.length; ++i) {
+      // We first create a deep copy of the current row
+      let curRow = _.cloneDeep(tableData[i]);
+      // If the current cell in the selected column does NOT have dataArray attribute
+      // We push onto subjectNeighbours and objectNeighbours once
+      if (curRow[colIndex].dataArray === undefined) {
+        subjectNeighbours.push(firstDegNeighbours["subject"][i]);
+        objectNeighbours.push(firstDegNeighbours["object"][i]);
+      }
+      // Else, we have to push onto subject/objectNeighbours 1 + dataArray.length times.
+      else {
+        for (let j = 0; j < 1 + curRow[colIndex].dataArray.length; ++j) {
+          subjectNeighbours.push(firstDegNeighbours["subject"][i]);
+          objectNeighbours.push(firstDegNeighbours["object"][i]);
+        }
+      }
+    }
+    let firstDegNeighboursUpdated = 
+      {
+        "subject":subjectNeighbours,
+        "object":objectNeighbours,
+      }
+    // We take a look at updated tableData and firstDegNeighbours
+    // console.log(tableDataUpdated);
+    // console.log(firstDegNeighboursUpdated);
 
     // Now we set up the obj for Action Panel
     let tempObj = {};
     let recommendArray = createRecommendArray(neighbourArray);
     if (recommendArray.length > 0) {
       tempObj["task"] = "populateRecommendation";
-      tempObj["colIndex"] = colIndex + numCols;
+      tempObj["colIndex"] = colIndex;
       tempObj["recommendArray"] = recommendArray; 
     }
     else {
@@ -1637,24 +1687,18 @@ class MainBody extends Component {
 
     // Support for undo: 
     // Let's save the previous state in an object
-    let lastAction = "sameNeighbourDiffCol";
+    let lastAction = "sameNeighbourDiffRow";
     let prevState = 
       {
         "curActionInfo":this.state.curActionInfo,
         "tableData":this.state.tableData,
-        "tableHeader":this.state.tableHeader,
-        "optionsMap":this.state.optionsMap,
-        "selectedClassAnnotation":this.state.selectedClassAnnotation,
-        "keyColIndex":this.state.keyColIndex,
+        "firstDegNeighbours":this.state.firstDegNeighbours,
       };
 
     this.setState({
-      curActionInfo:tempObj,
-      tableData:newState.tableData,
-      tableHeader:newState.tableHeader,
-      optionsMap:newState.optionsMap,
-      selectedClassAnnotation:newState.selectedClassAnnotation,
-      keyColIndex:newState.keyColIndex,
+      curActionInfo: tempObj,
+      tableData: tableDataUpdated,
+      firstDegNeighbours: firstDegNeighboursUpdated,
       lastAction: lastAction,
       prevState: prevState,
     })
@@ -1662,7 +1706,7 @@ class MainBody extends Component {
 
   // This function populates all neighbour with the same names in the same columns, if that neighbour has multiple occurences.
 
-  sameNeighbourOneCol(e, colIndex, neighbourArray) {
+  sameNeighbourOneRow(e, colIndex, neighbourArray) {
     // console.log(colIndex);
     // console.log(neighbourArray);
     // console.log(numCols);
@@ -1725,7 +1769,7 @@ class MainBody extends Component {
     }
 
     // Support for undo: 
-    let lastAction = "sameNeighbourOneCol";
+    let lastAction = "sameNeighbourOneRow";
     let prevState = 
       {
         "curActionInfo":this.state.curActionInfo,
@@ -3255,13 +3299,11 @@ class MainBody extends Component {
 
     // Case 6: Undo the population of same neighbour in different columns.
     // In this case we need to restore curActionInfo, tableData, tableHeader, optionsMap.
-    else if (lastAction === "sameNeighbourDiffCol") {
+    else if (lastAction === "sameNeighbourDiffRow") {
       this.setState({
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
-        tableHeader: prevState.tableHeader,
-        optionsMap: prevState.optionsMap,
-        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        firstDegNeighbours: prevState.firstDegNeighbours,
         keyColIndex: prevState.keyColIndex,
         lastAction: "",
       })
@@ -3269,7 +3311,7 @@ class MainBody extends Component {
 
     // Case 7: Undo the population of same neighbour in the same column.
     // In this case we need to restore the curActionInfo, tableData.
-    else if (lastAction === "sameNeighbourOneCol") {
+    else if (lastAction === "sameNeighbourOneRow") {
       this.setState({
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
@@ -3801,8 +3843,8 @@ class MainBody extends Component {
                     handleStartSubject={this.handleStartSubject}
                     populateKeyColumn={this.populateKeyColumn}
                     populateOtherColumn={this.populateOtherColumn}
-                    sameNeighbourDiffCol={this.sameNeighbourDiffCol}
-                    sameNeighbourOneCol={this.sameNeighbourOneCol}
+                    sameNeighbourDiffRow={this.sameNeighbourDiffRow}
+                    sameNeighbourOneRow={this.sameNeighbourOneRow}
                     populateRecommendation={this.populateRecommendation}
                     // Folloiwng states are passed to "startTable"
                     handleStartTable={this.handleStartTable}
