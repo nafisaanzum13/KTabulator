@@ -1896,7 +1896,7 @@ class MainBody extends Component {
     })
   }
 
-  // The following function adds a new column to the table, to the right of the context-menu clicked column.
+  // The following function adds a new column to the table, to the right of the selected column.
   // In here, let's also set tabIndex to 0.
 
   contextAddColumn(e, colIndex) {
@@ -1978,7 +1978,7 @@ class MainBody extends Component {
     });
   }
   
-  // The following function handles the deletion of a column from context menu.
+  // The following function handles the deletion of a selected column.
   // This function should be largely similar to contextAddColumn
 
   contextDeleteColumn(e, colIndex) {
@@ -3304,7 +3304,6 @@ class MainBody extends Component {
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
         firstDegNeighbours: prevState.firstDegNeighbours,
-        keyColIndex: prevState.keyColIndex,
         lastAction: "",
       })
     }

@@ -3,7 +3,7 @@ import React, { Component } from "react";
 // import Tooltip from '@atlaskit/tooltip';
 // import Select from "react-select";
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
-import { FaSearch, FaArrowDown } from "react-icons/fa";
+import { FaSearch, FaEdit, FaPlus, FaMinus } from "react-icons/fa";
 
 class TablePanel extends Component {
   constructor(props) {
@@ -79,7 +79,7 @@ class TablePanel extends Component {
                   title="Add entities"
                   onClick={() => this.props.handlePlusClick()}
                 >
-                  <FaArrowDown />
+                  <FaEdit />
                 </button>
                 <button
                   className="btn btn-default"
@@ -88,6 +88,20 @@ class TablePanel extends Component {
                 >
                   <FaSearch />
                 </button>
+                <button
+                  className="btn btn-default"
+                  title="Add column to the right"
+                  onClick={(e) => this.props.contextAddColumn(e, colIndex)}
+                >
+                  <FaPlus />
+                </button>
+                {/* <button
+                  className="btn btn-default"
+                  title="Delete this column"
+                  // onClick={(e) => this.props.contextSetColumn(e, colIndex)}
+                >
+                  <FaMinus />
+                </button> */}
               </div>
           }
         }
@@ -106,6 +120,18 @@ class TablePanel extends Component {
       else if (colIndex === this.props.keyColIndex) {
         let textEle = this.columnHeaderGen(colIndex);
         let buttonEle = <div><br /></div>;
+        if (this.props.firstColFilled === true) {
+          buttonEle = 
+            <div>
+                <button
+                  className="btn btn-default"
+                  title="Add column to the right"
+                  onClick={(e) => this.props.contextAddColumn(e, colIndex)}
+                >
+                  <FaPlus />
+                </button>
+            </div>
+        }
         tempHeader = (
           <th className="table-head">
             {buttonEle}
@@ -125,15 +151,29 @@ class TablePanel extends Component {
                 title="Add entities"
                 onClick={(e) => this.props.getOtherOptions(e, colIndex)}
               >
-                <FaArrowDown />
+                <FaEdit />
               </button>
               <button
-                className="btn btn-default"
-                title="Set as key column"
-                onClick={(e) => this.props.contextSetColumn(e, colIndex)}
-              >
-                <FaSearch />
-              </button>
+                  className="btn btn-default"
+                  title="Set as key column"
+                  onClick={(e) => this.props.contextSetColumn(e, colIndex)}
+                >
+                  <FaSearch />
+                </button>
+                <button
+                  className="btn btn-default"
+                  title="Add column to the right"
+                  onClick={(e) => this.props.contextAddColumn(e, colIndex)}
+                >
+                  <FaPlus />
+                </button>
+                <button
+                  className="btn btn-default"
+                  title="Delete this column"
+                  onClick={(e) => this.props.contextDeleteColumn(e, colIndex)}
+                >
+                  <FaMinus />
+                </button>
             </div>
         }
         tempHeader = (
@@ -245,18 +285,9 @@ class TablePanel extends Component {
         let tempID = "cellRow" + i + "Col" + j;
         menuArray.push(
           <ContextMenu id={tempID}>
-            <MenuItem onClick={(e) => this.props.contextAddColumn(e, j)}>
-              Add Column to the Right
-            </MenuItem>
-            <MenuItem divider />
-            <MenuItem onClick={(e) => this.props.contextDeleteColumn(e, j)}>
-              Delete this column
-            </MenuItem>
-            <MenuItem divider />
             <MenuItem onClick={(e) => this.props.openFilter(e, j)}>
               Filter this column
             </MenuItem>
-            <MenuItem divider />
             <MenuItem onClick={(e) => this.props.contextSortColumn(e, j, "ascending")}>
               Sort ascending
             </MenuItem>
