@@ -219,34 +219,36 @@ class ActionPanel extends Component {
     let semanticRecommend = [];
     // stringRecommend and semanticRecommend are both HTML elements that should be constructed from recommend array
     for (let i = 0; i < recommendArray.length; ++i) {
-      let neighbourArray = [
-        {
-          "value":recommendArray[i].value,
-          "type":recommendArray[i].type
-        }
-      ]
+      // let neighbourArray = [
+      //   {
+      //     "value":recommendArray[i].value,
+      //     "type":recommendArray[i].type
+      //   }
+      // ]
       let recommendText = recommendArray[i].type === "subject" ? recommendArray[i].value: "is " + recommendArray[i].value + " of";
       if (recommendArray[i].relation === "string") {
         stringRecommend.push(
           <div>
-            <Button
+            {/* <Button
               onClick={(e) => this.props.populateRecommendation(e,
                                                                 colIndex,
                                                                 neighbourArray)}>
               add {recommendText}
-            </Button>
+            </Button> */}
+            <p><b>{recommendText}</b></p>
           </div>
         )
       }
       else {
         semanticRecommend.push(
           <div>
-            <Button
+            {/* <Button
               onClick={(e) => this.props.populateRecommendation(e,
                                                                 colIndex,
                                                                 neighbourArray)}>
               add {recommendText}
-            </Button>
+            </Button> */}
+            <p><b>{recommendText}</b></p>
           </div>
         )
       }
