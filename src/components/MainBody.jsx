@@ -2217,7 +2217,15 @@ class MainBody extends Component {
   // 4) Dedup
 
   showFilterMethods(e, colIndex) {
-    console.log("Selected column is "+colIndex);
+    // console.log("Selected column is "+colIndex);
+    // We just need to pass on the colIndex
+    let tempObj = {};
+    tempObj["task"] = "showFilterMethods";
+    tempObj["colIndex"] = colIndex;
+    
+    this.setState({
+      curActionInfo: tempObj,
+    })
   }
 
   // The following functions sets the selected column to be the search column.
@@ -3877,11 +3885,11 @@ class MainBody extends Component {
                     // contextCellPreview={this.contextCellPreview}
                     // contextOpenLink={this.contextOpenLink}
                     openPreviewAndPage={this.openPreviewAndPage}
-                    contextSortColumn={this.contextSortColumn}
-                    contextDedupColumn={this.contextDedupColumn}
+                    // contextSortColumn={this.contextSortColumn}
+                    // contextDedupColumn={this.contextDedupColumn}
                     showFilterMethods={this.showFilterMethods}
                     // Following states are useful for column filter
-                    openFilter={this.openFilter}
+                    // openFilter={this.openFilter}
                     // Following states control the render of first column header
                     firstColFilled={this.state.firstColFilled}
                     handlePlusClick={this.handlePlusClick}
@@ -3938,6 +3946,10 @@ class MainBody extends Component {
                     otherColChecked={this.state.otherColChecked}
                     otherCheckedIndex={this.state.otherCheckedIndex}
                     toggleOtherNeighbour={this.toggleOtherNeighbour}
+                    // Following states are for column's processing methods
+                    contextSortColumn={this.contextSortColumn}
+                    contextDedupColumn={this.contextDedupColumn}
+                    openFilter={this.openFilter}
                   />
                 </div>
               </div>

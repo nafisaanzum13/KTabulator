@@ -520,6 +520,47 @@ class ActionPanel extends Component {
           </div>
         )
       }
+      // In this case we give user four column filter methods: sort asc, sort des, filter, and dedup
+      else if (actionInfo.task === "showFilterMethods") {
+        actionEle = (
+          <div>
+            <div>
+              <p><b>How would you like to process this column?</b></p>
+            </div>
+            <div>
+              <Button
+                onClick={(e) => this.props.contextSortColumn(e, actionInfo.colIndex, "ascending")}
+              >
+                Sort ascending
+              </Button>
+            </div>
+            <br />
+            <div>
+              <Button
+                onClick={(e) => this.props.contextSortColumn(e, actionInfo.colIndex, "descending")}
+              >
+                Sort descending
+              </Button>
+            </div>
+            <br />
+            <div>
+              <Button
+                onClick={(e) => this.props.openFilter(e, actionInfo.colIndex)}
+              >
+                Filter this column
+              </Button>
+            </div>
+            <br />
+            <div>
+              <Button
+                onClick={(e) => this.props.contextDedupColumn(e, actionInfo.colIndex)}
+              >
+                Dedup this column
+              </Button>
+            </div>
+          </div>
+        )
+      }
       // In this case we display the origin of selected cell
       else if (actionInfo.task === "contextCellOrigin") {
         actionEle = (

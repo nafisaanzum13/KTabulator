@@ -305,20 +305,7 @@ class TablePanel extends Component {
       for (let j = 0; j < this.props.tableData[0].length; ++j) {
         let tempID = "cellRow" + i + "Col" + j;
         menuArray.push(
-          <ContextMenu id={tempID}>
-            <MenuItem onClick={(e) => this.props.openFilter(e, j)}>
-              Filter this column
-            </MenuItem>
-            <MenuItem onClick={(e) => this.props.contextSortColumn(e, j, "ascending")}>
-              Sort ascending
-            </MenuItem>
-            <MenuItem onClick={(e) => this.props.contextSortColumn(e, j, "descending")}>
-              Sort descending
-            </MenuItem>
-            <MenuItem onClick={(e) => this.props.contextDedupColumn(e, j)}>
-              Remove duplicates
-            </MenuItem>
-            <MenuItem divider />
+          <ContextMenu id={tempID}>   
             <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
               Show Origin of Cell
             </MenuItem>
