@@ -124,7 +124,6 @@ class MainBody extends Component {
 
     // functions below are useful during start up
     this.handleURLPaste = this.handleURLPaste.bind(this);
-    this.handleTablePaste = this.handleTablePaste.bind(this);
     this.handleStartSubject = this.handleStartSubject.bind(this);
     this.handleStartTable = this.handleStartTable.bind(this);
 
@@ -142,14 +141,13 @@ class MainBody extends Component {
     this.getTableStates = this.getTableStates.bind(this);
     this.sameNeighbourDiffRow = this.sameNeighbourDiffRow.bind(this);
     this.sameNeighbourOneRow = this.sameNeighbourOneRow.bind(this);
-    // this.populateSameRange = this.populateSameRange.bind(this);
     this.populateRecommendation = this.populateRecommendation.bind(this);
+
+    // functions below are for column processing
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextDeleteColumn = this.contextDeleteColumn.bind(this);
     this.contextSetColumn = this.contextSetColumn.bind(this);
     this.contextCellOrigin = this.contextCellOrigin.bind(this);
-    // this.contextCellPreview = this.contextCellPreview.bind(this);
-    // this.contextOpenLink = this.contextOpenLink.bind(this);
     this.openPreviewAndPage = this.openPreviewAndPage.bind(this);
     this.contextSortColumn = this.contextSortColumn.bind(this);
     this.contextDedupColumn = this.contextDedupColumn.bind(this);
@@ -204,11 +202,13 @@ class MainBody extends Component {
   handleURLPaste(urlPasted) {
     document.body.classList.add('waiting');
 
-    // Lastly, we updated the urlPasted and iframeURL
+    // We first check if user has pasted a valid wikipedia page.
 
     if (!urlPasted.includes("https://en.wikipedia.org/wiki/")) {
       alert("Please paste a valid Wikipedia link.");
     }
+
+    // If yes, we fetch the tables from the pasted Wikipedia page
     else {
       let promiseArray = [];
       promiseArray.push(fetchText(urlPasted));
@@ -223,8 +223,8 @@ class MainBody extends Component {
         }
 
         // Adding support for undo:
-
         document.body.classList.remove('waiting');
+
         let lastAction = "handleURLPaste";
         let prevState = 
           {
@@ -244,12 +244,6 @@ class MainBody extends Component {
         });
       });
     }
-  }
-
-  handleTablePaste(tablePasted) {
-    this.setState({
-      tablePasted: tablePasted,
-    });
   }
 
   // This function copies the table content to clipboard
@@ -404,10 +398,10 @@ class MainBody extends Component {
           tableData: tableData,
           firstColSelection: firstColSelection,
           firstColChecked: firstColChecked,
-          lastAction: lastAction,
-          prevState: prevState,
           curActionInfo: tempObj,
           tabIndex: 0,
+          lastAction: lastAction,
+          prevState: prevState,
         });
       })
     } 
@@ -624,13 +618,27 @@ class MainBody extends Component {
       promiseArray.push(fetchJSON(queryURL));
       allPromiseReady(promiseArray).then((values) => {
       let myJson = values[0];
+      // we create a temporary variable to hold results from myJson.results.bindings
+      let tempSelection = [];
       for (let i = 0; i < myJson.results.bindings.length; ++i) {
         let tempObj = {};
         let neighbour = myJson.results.bindings[i].somevar.value.slice(28);
         tempObj["label"] = neighbour;
         tempObj["value"] = neighbour;
         tempObj["type"] = "subject"; // for now we only allow the subject search
-        otherColSelection.push(tempObj);
+        tempSelection.push(tempObj);
+      }
+      // We push onto otherColSelection the right elements from keyColNeighbours, based on tempSelection
+      // console.log(this.state.keyColNeighbours);
+      // console.log(tempSelection);
+      for (let i = 0; i < tempSelection.length; ++i) {
+        for (let j = 0; j < this.state.keyColNeighbours.length; ++j) {
+          if (tempSelection[i].value === this.state.keyColNeighbours[j].value 
+              && tempSelection[i].type === this.state.keyColNeighbours[j].type) {
+            otherColSelection.push(this.state.keyColNeighbours[j]);
+            break; 
+          }
+        }
       }
       // Now, we do not want to have an empty otherColSelection.
       // Thus, if it is, we just want to set it as this.state.keyColNeighbours
@@ -1052,12 +1060,23 @@ class MainBody extends Component {
           let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
 
           document.body.classList.remove('waiting');
+
+          // Support for undo
+          let lastAction = "confirmAddFirstCol";
+          let prevState = 
+            {
+              "tableData": this.state.tableData,
+              "keyColNeighbours": this.state.keyColNeighbours,
+              "firstDegNeighbours": this.state.firstDegNeighbours,
+            }
   
           this.setState({
+            tableData: tableData,
             keyColNeighbours: keyColNeighbours,
             firstDegNeighbours: firstDegNeighbours,
             curActionInfo: {"task":"afterPopulateColumn"},
-            tableData: tableData,
+            lastAction: lastAction,
+            prevState: prevState,
           });
         })
         })
@@ -1786,66 +1805,6 @@ class MainBody extends Component {
     });
   }
 
-  // // The following function populates all neighbour from the same range (ex. all neighbours with rdfs:range Person)
-  // // This function should use addAllNeighbour as a helper function
-  // populateSameRange(e, colIndex, range, siblingNeighbour) {
-
-  //   // console.log("Column index is "+colIndex);
-  //   // console.log("Range is "+range);
-  //   // console.log("Sibling neighbours are: ");
-  //   // console.log(siblingNeighbour);
-
-  //   // first we fetch the initial state of tableHeader, tableData, optionsMap, selectedClassAnnotation, keyColIndex, and curColIndex
-  //   let tempHeader = this.state.tableHeader;
-  //   let tempData = this.state.tableData;
-  //   let tempOptions = this.state.optionsMap;
-  //   let tempAnnotation = this.state.selectedClassAnnotation;
-  //   let tempKeyColIndex = this.state.keyColIndex;
-  //   let curColIndex = colIndex;
-
-  //   for (let i = 0; i < siblingNeighbour.length; ++i) {
-  //     let newState = this.addAllNeighbour(curColIndex,
-  //                                         siblingNeighbour[i].value,
-  //                                         "subject",
-  //                                         siblingNeighbour[i].count,
-  //                                         tempKeyColIndex,
-  //                                         tempHeader,
-  //                                         tempData,
-  //                                         tempOptions,
-  //                                         tempAnnotation,
-  //                                         true);
-  //     curColIndex+=siblingNeighbour[i].count;
-  //     tempHeader = newState.tableHeader;
-  //     tempData = newState.tableData;
-  //     tempOptions = newState.optionsMap;
-  //     tempAnnotation = newState.selectedClassAnnotation;
-  //     tempKeyColIndex = newState.keyColIndex;
-  //   }
-
-  //   // Support for undo: 
-  //   let lastAction = "populateSameRange";
-  //   let prevState = 
-  //     {
-  //       "curActionInfo":this.state.curActionInfo,
-  //       "tableData":this.state.tableData,
-  //       "tableHeader":this.state.tableHeader,
-  //       "optionsMap":this.state.optionsMap,
-  //       "selectedClassAnnotation":this.state.selectedClassAnnotation,
-  //       "keyColIndex":this.state.keyColIndex,
-  //     };
-
-  //   this.setState({
-  //     curActionInfo:{"task":"afterPopulateColumn"},
-  //     tableData:tempData,
-  //     tableHeader:tempHeader,
-  //     optionsMap:tempOptions,
-  //     selectedClassAnnotation:tempAnnotation,
-  //     keyColIndex:tempKeyColIndex,
-  //     lastAction:lastAction,
-  //     prevState:prevState,
-  //   })
-  // }
-
   // The following function populates one recommendation neighbour
   populateRecommendation(e, colIndex, neighbourArray) {
     console.log(colIndex);
@@ -1961,7 +1920,6 @@ class MainBody extends Component {
           "tableData": this.state.tableData,
           "tableHeader": this.state.tableHeader,
           "curActionInfo": this.state.curActionInfo,
-          "optionsMap": this.state.optionsMap,
           "keyColIndex": this.state.keyColIndex,
           "selectedClassAnnotation": this.state.selectedClassAnnotation,
           "tabIndex": this.state.tabIndex,
@@ -1971,7 +1929,6 @@ class MainBody extends Component {
       tableData: tableData,
       tableHeader: tableHeader,
       curActionInfo: {"task":"afterPopulateColumn"},
-      optionsMap: optionsMap,
       keyColIndex: keyColIndex,
       selectedClassAnnotation: selectedClassAnnotation,
       tabIndex: 0, // we want to set the currently active tab to be wrangling actions
@@ -2035,7 +1992,6 @@ class MainBody extends Component {
           {
             "tableData": this.state.tableData,
             "tableHeader": this.state.tableHeader,
-            "optionsMap": this.state.optionsMap,
             "selectedClassAnnotation": this.state.selectedClassAnnotation,
             "keyColIndex": this.state.keyColIndex,
             "propertyNeighbours": this.state.propertyNeighbours,
@@ -2045,7 +2001,6 @@ class MainBody extends Component {
       this.setState({
         tableData: tableData,
         tableHeader: tableHeader,
-        optionsMap: optionsMap,
         selectedClassAnnotation: selectedClassAnnotation,
         keyColIndex: keyColIndex,
         propertyNeighbours: propertyNeighbours,
@@ -2198,12 +2153,25 @@ class MainBody extends Component {
 
       document.body.classList.remove('waiting');
 
-      // Need to add support for undo here later
+      // Support for undo:
+      let lastAction = "contextDedupColumn";
+      let prevState = 
+        {
+          "tableData": this.state.tableData,
+          "keyColNeighbours": this.state.keyColNeighbours,
+          "firstDegNeighbours": this.state.firstDegNeighbours,
+          "curActionInfo": this.state.curActionInfo,
+          "tabIndex": this.state.tabIndex,
+        }
 
       this.setState({
         tableData: tableData,
         keyColNeighbours: keyColNeighbours,
         firstDegNeighbours: firstDegNeighbours,
+        curActionInfo: {"task":"afterPopulateColumn"},
+        tabIndex: 0,
+        lastAction: lastAction,
+        prevState: prevState,
       })
     })
     })
@@ -2398,11 +2366,13 @@ class MainBody extends Component {
 
       // Support for undo: 
       document.body.classList.remove('waiting');
-      let lastAction = "contextCellPreview";
+      let lastAction = "openPreviewAndPage";
       let prevState = 
           {
             "curActionInfo": this.state.curActionInfo,
             "tabIndex": this.state.tabIndex,
+            "pageHidden": this.state.pageHidden,
+            "iframeURL": this.state.iframeURL,
           };
       
       this.setState({
@@ -3295,7 +3265,7 @@ class MainBody extends Component {
     }
 
     // Case 2: Undo the selection of the task: startSubject.
-    // In this case we need to restore usecaseSelected, and tableData
+    // In this case we need to restore usecaseSelected, tableData, firstColSelection, firstColChecked, tabIndex, and curActionInfo
 
     else if (lastAction === "handleStartSubject") {
       this.setState({
@@ -3324,7 +3294,6 @@ class MainBody extends Component {
         firstDegNeighbours: prevState.firstDegNeighbours,
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
-        optionsMap: prevState.optionsMap,
         usecaseSelected: prevState.usecaseSelected,
         tabIndex: prevState.tabIndex,
         lastAction: "",
@@ -3332,7 +3301,9 @@ class MainBody extends Component {
     }
 
     // Case 4: Undo the population of key column.
-    // In this case we need to restore keyColIndex, keyColNeighbours, curActionInfo, tableData, optionsMap
+    // In this case we need to restore keyColIndex, keyColNeighbours, firstDegNeighbours, firstColFilled, 
+    //                                 curActionInfo, tableData, tableHeader
+
     else if (lastAction === "populateKeyColumn") {
       this.setState({
         keyColIndex: prevState.keyColIndex,
@@ -3342,7 +3313,6 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
         firstColFilled: prevState.firstColFilled,
-        optionsMap: prevState.optionsMap,
         lastAction: "",
       })
     }
@@ -3379,20 +3349,6 @@ class MainBody extends Component {
       })
     }
 
-    // Case 8: Undo the population of neighbours from the same range.
-    // In this case we need to restore curActionInfo, tableData, tableHeader, optionsMap
-    else if (lastAction === "populateSameRange") {
-      this.setState({
-        curActionInfo: prevState.curActionInfo,
-        tableData: prevState.tableData,
-        tableHeader: prevState.tableHeader,
-        optionsMap: prevState.optionsMap,
-        selectedClassAnnotation: prevState.selectedClassAnnotation,
-        keyColIndex: prevState.keyColIndex,
-        lastAction: "",
-      })
-    }
-
     // Case 9: Undo the union of tables.
     // In this case we need to restore tableData
     else if (lastAction === "unionTable" || lastAction === "unionPage" || lastAction === "unionProperty") {
@@ -3410,7 +3366,6 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
         curActionInfo: prevState.curActionInfo,
-        optionsMap: prevState.optionsMap,
         keyColIndex: prevState.keyColIndex,
         selectedClassAnnotation: prevState.selectedClassAnnotation,
         tabIndex: prevState.tabIndex,
@@ -3421,12 +3376,10 @@ class MainBody extends Component {
     // Case 11: Undo the set of search cell.
     else if (lastAction === "contextSetColumn") {
       this.setState({
-        keyEntryIndex: prevState.keyEntryIndex,
         keyColIndex: prevState.keyColIndex,
         keyColNeighbours: prevState.keyColNeighbours,
         firstDegNeighbours: prevState.firstDegNeighbours,
         curActionInfo: prevState.curActionInfo,
-        optionsMap: prevState.optionsMap,
         tabIndex: prevState.tabIndex,
         lastAction: "",
       })
@@ -3442,10 +3395,12 @@ class MainBody extends Component {
     }
 
     // Case 12: Undo the showing of cell preview.
-    else if (lastAction === "contextCellPreview") {
+    else if (lastAction === "openPreviewAndPage") {
       this.setState({
         curActionInfo: prevState.curActionInfo,
         tabIndex: prevState.tabIndex,
+        pageHidden: prevState.pageHidden,
+        iframeURL: prevState.iframeURL,
         lastAction: "",
       })
     }
@@ -3455,7 +3410,6 @@ class MainBody extends Component {
       this.setState({
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
-        optionsMap: prevState.optionsMap,
         selectedClassAnnotation: prevState.selectedClassAnnotation,
         keyColIndex: prevState.keyColIndex,
         propertyNeighbours: prevState.propertyNeighbours,
@@ -3470,6 +3424,18 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         keyEntryIndex: prevState.keyEntryIndex,
         curActionInfo: prevState.curActionInfo,
+        lastAction: "",
+      })
+    }
+
+    // Case 14: Undo the deduping of a column.
+    else if (lastAction === "contextDedupColumn") {
+      this.setState({
+        tableData: prevState.tableData,
+        keyColNeighbours: prevState.keyColNeighbours,
+        firstDegNeighbours: prevState.firstDegNeighbours,
+        curActionInfo: prevState.curActionInfo,
+        tabIndex: prevState.tabIndex,
         lastAction: "",
       })
     }
@@ -3491,10 +3457,18 @@ class MainBody extends Component {
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
-        optionsMap: prevState.optionsMap,
-        selectedClassAnnotation: prevState.selectedClassAnnotation,
         keyColNeighbours: prevState.keyColNeighbours,
         firstDegNeighbours: prevState.firstDegNeighbours,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        lastAction: "",
+      })
+    }
+
+    else if (lastAction === "confirmAddFirstCol") {
+      this.setState({
+        tableData: prevState.tableData,
+        firstDegNeighbours: prevState.firstDegNeighbours,
+        keyColNeighbours: prevState.keyColNeighbours,
         lastAction: "",
       })
     }
@@ -3811,10 +3785,9 @@ class MainBody extends Component {
         {
           "curActionInfo":this.state.curActionInfo,
           "tableData":this.state.tableData,
+          "tableHeader":this.state.tableHeader,
           "keyColNeighbours":this.state.keyColNeighbours,
           "firstDegNeighbours":this.state.firstDegNeighbours,
-          "tableHeader":this.state.tableHeader,
-          "optionsMap":this.state.optionsMap,
           "selectedClassAnnotation":this.state.selectedClassAnnotation,
         };
 
@@ -3824,7 +3797,6 @@ class MainBody extends Component {
         tableHeader:tableHeaderUpdated,
         keyColNeighbours:keyColNeighbours,
         firstDegNeighbours:firstDegNeighbours,
-        optionsMap:optionsMapUpdated,
         selectedClassAnnotation:selectedClassAnnotationUpdated,
         showJoinModal: false,
         lastAction:lastAction,
@@ -5591,6 +5563,10 @@ function createRecommendArray(neighbourArray) {
   for (let i = 0; i < neighbourArray.length; ++i) {
     recommendArray = recommendArray.concat(neighbourArray[i].recommendNeighbours);
   }
+
+  // console.log(neighbourArray);
+  // console.log(recommendArray);
+
   // We then remove recommendations that are completely duplicated
   recommendArray = _.uniqBy(recommendArray, function(x) {
     return x.value || x.type || x.relation;

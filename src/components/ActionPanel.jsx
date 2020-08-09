@@ -760,7 +760,7 @@ export default ActionPanel;
 // It also makes use of niceRender, so that preview looks clean.
 
 function renderPreview(previewInfoArray) {
-  console.log(previewInfoArray);
+  // console.log(previewInfoArray);
   let infoEle = [];
   for (let i = 0; i < previewInfoArray.length; ++i) {
     let keyLiteral = previewInfoArray[i].key;
