@@ -385,7 +385,7 @@ class ActionPanel extends Component {
       else if (actionInfo.task === "afterPopulateColumn") {
         actionEle = (
           <div>
-            Fill an <b>empty column header</b> by choosing from its <b>down arrow</b>
+            Fill an <b>empty column header</b> by clicking on its <b>edit icon</b>
           </div>
         )
       }
@@ -664,6 +664,9 @@ class ActionPanel extends Component {
                       <Collapse isOpen={this.props.showJoinTables}>
                         <CardBody>
                           <Card>
+                            <p>
+                              The following tables are from page: <b>{decodeURIComponent(this.props.urlPasted.slice(30))}</b>
+                            </p>
                             <TableSelection 
                               originTableArray={this.props.originTableArray}
                               tableOpenList={this.props.tableOpenList}
@@ -736,6 +739,9 @@ class ActionPanel extends Component {
                       <Collapse isOpen={this.props.showJoinTables}>
                         <CardBody>
                           <Card>
+                            <p>
+                              The following tables are from page: <b>{decodeURIComponent(this.props.urlPasted.slice(30))}</b>
+                            </p>
                             <TableSelection 
                               originTableArray={this.props.originTableArray}
                               tableOpenList={this.props.tableOpenList}

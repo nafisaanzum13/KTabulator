@@ -19,18 +19,52 @@ class TablePanel extends Component {
   columnHeaderGen(colIndex) {
     // console.log(colIndex);
     // console.log(this.props.tableHeader);
-    let textLiteral = "";
+
     // In this case we deal with the first column header
+    // We want to divide it into two subcases: "start table" vs. "start subject"
     if (colIndex === 0) {
-      // Need a small fix here for the "start table" case
-      for (let i = 0; i < this.props.tableHeader[0].length; ++i) {
-        let textToAdd = i > 0 ? "\nAND " + niceRender(this.props.tableHeader[0][i].label) : niceRender(this.props.tableHeader[0][i].label);
-        textLiteral+=textToAdd;
+      // First case is start table
+      if (this.props.tableHeader.length > 0 && 
+          this.props.tableHeader[0].length === 1 && 
+          this.props.tableHeader[0][0].label === "OriginURL") {
+        let textLiteral = "";
+        for (let i = 0; i < this.props.tableHeader[0].length; ++i) {
+          let textToAdd = i > 0 ? "\nAND " + niceRender(this.props.tableHeader[0][i].label) : niceRender(this.props.tableHeader[0][i].label);
+          textLiteral+=textToAdd;
+        }
+        let textEle = 
+          <div>
+            {textLiteral}
+          </div>
+        return textEle;
       }
-      // console.log(textLiteral);
+      // Second case is start subject
+      else {
+        // Here is the difference: textLiteral for this case is an array instead of a string
+        let textLiteral = [];
+        let firstColHeaderInfo = this.props.firstColHeaderInfo;
+        for (let i = 0; i < firstColHeaderInfo.length; ++i) {
+          let curText = "";
+          for (let j = 0; j < firstColHeaderInfo[i].length; ++j) {
+            let textToAdd = j > 0 ? "\nAND " + niceRender(firstColHeaderInfo[i][j].label) : niceRender(firstColHeaderInfo[i][j].label);
+            curText+=textToAdd;
+          }
+          textLiteral.push(
+            <p>
+              {curText}
+            </p>
+          )
+        }
+        let textEle = 
+          <div>
+            {textLiteral}
+          </div>
+        return textEle;
+      }
     }
     // In this case we deal with non-first column headers
     else {
+      let textLiteral = "";
       for (let i = 0; i < this.props.tableHeader[colIndex].length; ++i) {
         let textToAdd = 
           this.props.tableHeader[colIndex][i].type === "object" ? "is " + this.props.tableHeader[colIndex][i].value + " of" 
@@ -38,18 +72,20 @@ class TablePanel extends Component {
         textToAdd = i > 0 ? "\nOR " + textToAdd : textToAdd;
         textLiteral+=textToAdd;
       }
+      let textEle = 
+        <div>
+          {textLiteral}
+        </div>
+      return textEle;
     }
-    let textEle = 
-      <div>
-        {textLiteral}
-      </div>
-    return textEle;
   }
 
   // This function takes the states tableData, keyColIndex, keyEntryIndex, tableHeader, optionsMap
   // And convert them into HTML for the super table
 
   createSuperTable() {
+
+    // console.log(this.props.firstColHeaderInfo);
 
     // console.log("Has first column been filled? " + this.props.firstColFilled);
     // console.log(this.props.tableData);

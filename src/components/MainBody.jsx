@@ -76,7 +76,8 @@ class MainBody extends Component {
       firstColChecked: [],     // 1D array of booleans storing whether a neighbour of the starting subject is selected or not
       firstColFilled: false,   // boolean indicating whether the first column has been filled. 
                                // Will be set to true and remain that way after calling populateKeyColumn, or handleStartTable
-      keyCheckedIndex: -1,  // index storing the most recent index that has just been toggled for the first column. Initially -1.
+      keyCheckedIndex: -1,     // index storing the most recent index that has just been toggled for the first column. Initially -1.
+      firstColHeaderInfo: [],  // 2D array of objects storing information needed to create the first column's header. (since both AND and OR need to be considered)
 
       // states below are useful for other column header selection
       otherColSelection: [],    // 1D array of objects storing information about the search column's neighbours
@@ -947,6 +948,10 @@ class MainBody extends Component {
         // tableHeader[0] should be set as neighbourArray
         let tableHeader = _.cloneDeep(this.state.tableHeader);
         tableHeader[0] = neighbourArray;
+
+        // Addition: we want to display the first column's header correctly. Let's add support for that
+        let firstColHeaderInfo = [];
+        firstColHeaderInfo.push(neighbourArray);
   
         // This part sets the data for each cell
         let tableData = _.cloneDeep(this.state.tableData);
@@ -986,6 +991,7 @@ class MainBody extends Component {
               "tableData":this.state.tableData,
               "tableHeader":this.state.tableHeader,
               "firstColFilled":this.state.firstColFilled,
+              "firstColHeaderInfo":this.state.firstColHeaderInfo,
             };
 
           document.body.classList.remove('waiting');
@@ -998,6 +1004,7 @@ class MainBody extends Component {
             tableData: tableData,
             tableHeader: tableHeader,
             firstColFilled: true,
+            firstColHeaderInfo: firstColHeaderInfo,
             lastAction: lastAction,
             prevState: prevState,
           });
@@ -1063,6 +1070,9 @@ class MainBody extends Component {
 
           document.body.classList.remove('waiting');
 
+          let firstColHeaderInfo = _.cloneDeep(this.state.firstColHeaderInfo);
+          firstColHeaderInfo.push(neighbourArray);
+
           // Support for undo
           let lastAction = "confirmAddFirstCol";
           let prevState = 
@@ -1070,12 +1080,14 @@ class MainBody extends Component {
               "tableData": this.state.tableData,
               "keyColNeighbours": this.state.keyColNeighbours,
               "firstDegNeighbours": this.state.firstDegNeighbours,
+              "firstColHeaderInfo": this.state.firstColHeaderInfo,
             }
   
           this.setState({
             tableData: tableData,
             keyColNeighbours: keyColNeighbours,
             firstDegNeighbours: firstDegNeighbours,
+            firstColHeaderInfo: firstColHeaderInfo,
             curActionInfo: {"task":"afterPopulateColumn"},
             lastAction: lastAction,
             prevState: prevState,
@@ -3327,6 +3339,7 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
         firstColFilled: prevState.firstColFilled,
+        firstColHeaderInfo: prevState.firstColHeaderInfo,
         lastAction: "",
       })
     }
@@ -3483,6 +3496,7 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         firstDegNeighbours: prevState.firstDegNeighbours,
         keyColNeighbours: prevState.keyColNeighbours,
+        firstColHeaderInfo: prevState.firstColHeaderInfo,
         lastAction: "",
       })
     }
@@ -3867,18 +3881,12 @@ class MainBody extends Component {
                     contextAddColumn={this.contextAddColumn}
                     contextDeleteColumn={this.contextDeleteColumn}
                     contextSetColumn={this.contextSetColumn}
-                    // contextCellOrigin={this.contextCellOrigin}
-                    // contextCellPreview={this.contextCellPreview}
-                    // contextOpenLink={this.contextOpenLink}
                     originPreviewPage={this.originPreviewPage}
-                    // contextSortColumn={this.contextSortColumn}
-                    // contextDedupColumn={this.contextDedupColumn}
                     showFilterMethods={this.showFilterMethods}
-                    // Following states are useful for column filter
-                    // openFilter={this.openFilter}
                     // Following states control the render of first column header
                     firstColFilled={this.state.firstColFilled}
                     handlePlusClick={this.handlePlusClick}
+                    firstColHeaderInfo={this.state.firstColHeaderInfo}
                     // Following states control the render of other column header
                     getOtherOptions={this.getOtherOptions}
                   />
