@@ -131,4 +131,9 @@
   background-color: #fff;
 }
 
+/* The following class handles the divider style between cell preview and cell origin */
+.preview-origin-divider {
+  border: 5px solid black;
+}
+
 body.waiting * { cursor: wait; }

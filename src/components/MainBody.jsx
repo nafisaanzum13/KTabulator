@@ -14,7 +14,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 10;
 const initialColNum = 4;
-const initialRowNum = 45;
+const initialRowNum = 15;
 
 class MainBody extends Component {
   constructor(props) {
@@ -147,8 +147,8 @@ class MainBody extends Component {
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextDeleteColumn = this.contextDeleteColumn.bind(this);
     this.contextSetColumn = this.contextSetColumn.bind(this);
-    this.contextCellOrigin = this.contextCellOrigin.bind(this);
-    this.openPreviewAndPage = this.openPreviewAndPage.bind(this);
+    // this.contextCellOrigin = this.contextCellOrigin.bind(this);
+    this.originPreviewPage = this.originPreviewPage.bind(this);
     this.contextSortColumn = this.contextSortColumn.bind(this);
     this.contextDedupColumn = this.contextDedupColumn.bind(this);
     this.showFilterMethods = this.showFilterMethods.bind(this);
@@ -2249,45 +2249,46 @@ class MainBody extends Component {
     })
   }
 
-  // The following function displays the origin of a cell in the Action Panel.
+  // // The following function displays the origin of a cell in the Action Panel.
 
-  contextCellOrigin(e, rowIndex, colIndex) {
-    // To get the origin of a cell, we simply returns its "origin field"
-    // The trick is to set the origin field correctly in previous functions
-    // The place to do that should be in the two populating columns
+  // contextCellOrigin(e, rowIndex, colIndex) {
+  //   // To get the origin of a cell, we simply returns its "origin field"
+  //   // The trick is to set the origin field correctly in previous functions
+  //   // The place to do that should be in the two populating columns
 
-    let cellSelected = this.state.tableData[rowIndex][colIndex];
+  //   let cellSelected = this.state.tableData[rowIndex][colIndex];
 
-    let originElement = [];
-    for (let i = 0; i < cellSelected.origin.length; ++i) {
-      originElement.push(<p>{niceRender(cellSelected.origin[i])}</p>);
-    }
+  //   let originElement = [];
+  //   for (let i = 0; i < cellSelected.origin.length; ++i) {
+  //     originElement.push(<p>{niceRender(cellSelected.origin[i])}</p>);
+  //   }
 
-    // This origin literal correctly contains the cell Origin we want to display
-    // Now we just need to show it in the ActionPanel
-    let tempObj = {};
-    tempObj["task"] = "contextCellOrigin";
-    tempObj["origin"] = originElement;
+  //   // This origin literal correctly contains the cell Origin we want to display
+  //   // Now we just need to show it in the ActionPanel
+  //   let tempObj = {};
+  //   tempObj["task"] = "contextCellOrigin";
+  //   tempObj["origin"] = originElement;
 
-    // Support for undo: 
-    let lastAction = "contextCellOrigin";
-    let prevState = 
-        {
-          "curActionInfo": this.state.curActionInfo,
-          "tabIndex": this.state.tabIndex,
-        };
+  //   // Support for undo: 
+  //   let lastAction = "contextCellOrigin";
+  //   let prevState = 
+  //       {
+  //         "curActionInfo": this.state.curActionInfo,
+  //         "tabIndex": this.state.tabIndex,
+  //       };
     
-    this.setState({
-      curActionInfo: tempObj,
-      tabIndex: 0, // we want to set the currently active tab to be wrangling actions
-      lastAction: lastAction,
-      prevState: prevState,
-    });
-  }
+  //   this.setState({
+  //     curActionInfo: tempObj,
+  //     tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+  //     lastAction: lastAction,
+  //     prevState: prevState,
+  //   });
+  // }
 
-  // This function takes place of the original contextCellPreview and contextOpenLink
+  // This function has three functionalities: 
+  // Show the selected cell's origin, show the selected cell's preview, and update the bottom iframe's URL
 
-  openPreviewAndPage(e, rowIndex, colIndex) {
+  originPreviewPage(e, rowIndex, colIndex) {
     document.body.classList.add('waiting');
     // console.log("Row index is "+rowIndex);
     // console.log("Col index is "+colIndex);
@@ -2363,12 +2364,23 @@ class MainBody extends Component {
       tempObj["cellValue"] = this.state.tableData[rowIndex][colIndex].data;
       tempObj["preview"] = previewInfoArray;
 
-      // Now, everything about cell preview has been completed. Let's deal with open link.
+      // Now, everything about cell preview has been completed. 
+      // Let's move on to deal with open link.
       let iframeURL = "https://en.wikipedia.org/wiki/" + this.state.tableData[rowIndex][colIndex].data;
+
+      // Lastly, let's deal with cell origin
+      let cellSelected = this.state.tableData[rowIndex][colIndex];
+
+      let originElement = [];
+      for (let i = 0; i < cellSelected.origin.length; ++i) {
+        originElement.push(<p>{niceRender(cellSelected.origin[i])}</p>);
+      }
+      // We push this property to tempObj
+      tempObj["origin"] = originElement;
 
       // Support for undo: 
       document.body.classList.remove('waiting');
-      let lastAction = "openPreviewAndPage";
+      let lastAction = "originPreviewPage";
       let prevState = 
           {
             "curActionInfo": this.state.curActionInfo,
@@ -3387,17 +3399,17 @@ class MainBody extends Component {
       })
     }
 
-    // Case 12: Undo the showing of cell origin.
-    else if (lastAction === "contextCellOrigin") {
-      this.setState({
-        curActionInfo: prevState.curActionInfo,
-        tabIndex: prevState.tabIndex,
-        lastAction: "",
-      })
-    }
+    // // Case 12: Undo the showing of cell origin.
+    // else if (lastAction === "contextCellOrigin") {
+    //   this.setState({
+    //     curActionInfo: prevState.curActionInfo,
+    //     tabIndex: prevState.tabIndex,
+    //     lastAction: "",
+    //   })
+    // }
 
     // Case 12: Undo the showing of cell preview.
-    else if (lastAction === "openPreviewAndPage") {
+    else if (lastAction === "originPreviewPage") {
       this.setState({
         curActionInfo: prevState.curActionInfo,
         tabIndex: prevState.tabIndex,
@@ -3855,10 +3867,10 @@ class MainBody extends Component {
                     contextAddColumn={this.contextAddColumn}
                     contextDeleteColumn={this.contextDeleteColumn}
                     contextSetColumn={this.contextSetColumn}
-                    contextCellOrigin={this.contextCellOrigin}
+                    // contextCellOrigin={this.contextCellOrigin}
                     // contextCellPreview={this.contextCellPreview}
                     // contextOpenLink={this.contextOpenLink}
-                    openPreviewAndPage={this.openPreviewAndPage}
+                    originPreviewPage={this.originPreviewPage}
                     // contextSortColumn={this.contextSortColumn}
                     // contextDedupColumn={this.contextDedupColumn}
                     showFilterMethods={this.showFilterMethods}

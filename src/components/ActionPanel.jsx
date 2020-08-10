@@ -588,9 +588,16 @@ class ActionPanel extends Component {
       else if (actionInfo.task === "contextCellPreview") {
       actionEle = (
         <div>
-          <p>Preview of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
           <div>
-            {renderPreview(actionInfo.preview)}
+            <p>Preview of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
+            <div>
+              {renderPreview(actionInfo.preview)}
+            </div>
+          </div>
+          <hr className="preview-origin-divider"/>
+          <div>
+            <p>Origin of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
+            <div>{actionInfo.origin}</div>
           </div>
         </div>
         );

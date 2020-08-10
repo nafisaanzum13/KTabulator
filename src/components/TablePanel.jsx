@@ -2,7 +2,7 @@ import React, { Component } from "react";
 // import TableSelection from "../components/TableSelection";
 // import Tooltip from '@atlaskit/tooltip';
 // import Select from "react-select";
-import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
+// import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
 import { FaSearch, FaEdit, FaPlus, FaMinus, FaFilter } from "react-icons/fa";
 
 class TablePanel extends Component {
@@ -221,7 +221,7 @@ class TablePanel extends Component {
       //Inner loop to create each cell of the row
       for (let j = 0; j < colNum; j++) {
         // Create the each cell
-        let tempID = "cellRow" + i + "Col" + j;
+        // let tempID = "cellRow" + i + "Col" + j;
         let cellColor;
         if (j === this.props.keyColIndex) {
           cellColor = { backgroundColor: "LightBlue" };
@@ -231,16 +231,16 @@ class TablePanel extends Component {
         // console.log("Current data is "+this.props.tableData[i][j]);
         tempRow.push(
           <td style={cellColor}>
-            <ContextMenuTrigger id={tempID}>
+            {/* <ContextMenuTrigger id={tempID}> */}
               <input
                 className="twenty-vw"
                 type="text"
                 value={niceRender(this.props.tableData[i][j].data)}
                 title={niceRender(this.props.tableData[i][j].data)}
                 onChange={(e) => this.props.onCellChange(e, i, j)}
-                onDoubleClick={(e) => this.props.openPreviewAndPage(e, i, j)}
+                onDoubleClick={(e) => this.props.originPreviewPage(e, i, j)}
               />
-            </ContextMenuTrigger>
+            {/* </ContextMenuTrigger> */}
           </td>
         );
       }
@@ -299,27 +299,27 @@ class TablePanel extends Component {
   render() {
     let tableEle = null;
 
-    // In all cases, once we have pasted the URL. We want to display the super table in the table panel.
-    let menuArray = [];
-    for (let i = 0; i < this.props.tableData.length; ++i) {
-      for (let j = 0; j < this.props.tableData[0].length; ++j) {
-        let tempID = "cellRow" + i + "Col" + j;
-        menuArray.push(
-          <ContextMenu id={tempID}>   
-            <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
-              Show Origin of Cell
-            </MenuItem>
-          </ContextMenu>
-        );
-      }
-    }
+    // // In all cases, once we have pasted the URL. We want to display the super table in the table panel.
+    // let menuArray = [];
+    // for (let i = 0; i < this.props.tableData.length; ++i) {
+    //   for (let j = 0; j < this.props.tableData[0].length; ++j) {
+    //     let tempID = "cellRow" + i + "Col" + j;
+    //     menuArray.push(
+    //       <ContextMenu id={tempID}>   
+    //         <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
+    //           Show Origin of Cell
+    //         </MenuItem>
+    //       </ContextMenu>
+    //     );
+    //   }
+    // }
     tableEle = (
       // class table-fixed helps with sticky column headers
       <div>
         <table class border="1" className="table table-sm table-bordered">
           {this.createSuperTable()}
         </table>
-        {menuArray}
+        {/* {menuArray} */}
       </div>
     );
     return <div>{tableEle}</div>;
