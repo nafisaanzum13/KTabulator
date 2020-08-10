@@ -4422,7 +4422,9 @@ function updateFirstColSelection(resultsBinding) {
 
   // The following code gets the count for each property(or neighbour)
   dbopArray.sort((a, b) => (a.p.value.slice(28) < b.p.value.slice(28) ? -1 : 1));
-  dbopArray[0].p.count = getPCount(dbopArray[0].p.value, dbopArray);
+  if (dbopArray.length > 0) {
+    dbopArray[0].p.count = getPCount(dbopArray[0].p.value, dbopArray);
+  }
   for (let i = 1; i < dbopArray.length; ++i) {
     let prevNeighbour = dbopArray[i-1];
     let curNeighbour = dbopArray[i];
