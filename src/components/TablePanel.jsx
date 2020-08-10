@@ -3,7 +3,7 @@ import React, { Component } from "react";
 // import Tooltip from '@atlaskit/tooltip';
 // import Select from "react-select";
 // import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
-import { FaSearch, FaEdit, FaPlus, FaMinus, FaFilter } from "react-icons/fa";
+import { FaSearch, FaEdit, FaPlus, FaMinus, FaFilter, FaArrowDown } from "react-icons/fa";
 
 class TablePanel extends Component {
   constructor(props) {
@@ -79,7 +79,7 @@ class TablePanel extends Component {
                   title="Add entities"
                   onClick={() => this.props.handlePlusClick()}
                 >
-                  <FaEdit />
+                  <FaArrowDown />
                 </button>
                 <button
                   className="btn btn-default"
