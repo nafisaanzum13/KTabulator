@@ -255,15 +255,6 @@ class ActionPanel extends Component {
     }
     let returnEle = 
       <div>
-        {/* <div>
-          <p>String similarity recommendations:</p>
-          {stringRecommend}
-        </div>
-        <br />
-        <div>
-          <p>Semantic similarity recommendations:</p>
-          {semanticRecommend}
-        </div> */}
         <p>Recommendations of attributes to add:</p>
         {stringRecommend}
         {semanticRecommend}
@@ -365,17 +356,30 @@ class ActionPanel extends Component {
       // Case 2.2: Users have click on the PLUS icon on first column's header.
       // We ask users if they want to add more entities to the first column.
       else if (actionInfo.task === "plusClicked") {
-        // Start here
-        actionEle = (
-          <div>
-            <p>Add more entities to the first column?</p>
-            <button
-              onClick={() => this.props.addToFirstCol()}
-            >
-              OK
-            </button>
-          </div>
-        )
+        // We want to do an error check here: if the first column is not the current search column, we disable adding more entities to it.
+        if (this.props.keyColIndex !== 0) {
+          actionEle = (
+            <div>
+              <p>
+                <b>
+                  Please set the first column as the search column before adding more entities to it.
+                </b>
+              </p>
+            </div>
+          )
+        }
+        else {
+          actionEle = (
+            <div>
+              <p>Add more entities to the first column?</p>
+              <button
+                onClick={() => this.props.addToFirstCol()}
+              >
+                OK
+              </button>
+            </div>
+          )
+        }
       }
       // In this case, we tell users they can keep wrangling by selecting column header for empty columns
       else if (actionInfo.task === "afterPopulateColumn") {

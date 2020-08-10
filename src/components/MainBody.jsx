@@ -14,7 +14,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 10;
 const initialColNum = 4;
-const initialRowNum = 10;
+const initialRowNum = 45;
 
 class MainBody extends Component {
   constructor(props) {
@@ -1014,9 +1014,11 @@ class MainBody extends Component {
     // console.log(neighbourArray);
     let queryURL = keyQueryGen(neighbourArray);
 
+    // Let's first make sure that the neighbourArray do not contain attributes of unknown datatypes.
     if (queryURL === "ERROR") {
       alert("Unsupported datatype in selected neighbours. Please select some other neighbours.");
     }
+
     else {
       document.body.classList.add("waiting");
 
@@ -3908,6 +3910,7 @@ class MainBody extends Component {
                     firstColSelection={this.state.firstColSelection}
                     firstColChecked={this.state.firstColChecked}
                     firstColFilled={this.state.firstColFilled}
+                    keyColIndex={this.state.keyColIndex}
                     toggleFirstNeighbour={this.toggleFirstNeighbour}
                     tableHeader={this.state.tableHeader}
                     keyCheckedIndex={this.state.keyCheckedIndex}

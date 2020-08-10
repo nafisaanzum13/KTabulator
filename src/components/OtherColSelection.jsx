@@ -35,8 +35,8 @@ class OtherColSelection extends Component {
     if (otherCheckedIndex !== -1 && selectedNeighbours.length > 0) {
       let populateText = "Populate this column with attributes ";
       for (let i = 0; i < selectedNeighbours.length; ++i) {
-        let curText = i > 0 ? " OR " + selectedNeighbours[i].value : selectedNeighbours[i].value;
-        curText = selectedNeighbours[i].type === "subject" ? curText : "is " + curText + " of";
+        let curText = selectedNeighbours[i].type === "object" ? "is " + selectedNeighbours[i].value + " of" : selectedNeighbours[i].value;
+        curText = i > 0 ? " OR " + curText : curText;
         populateText+=curText;
       }
       populateText+="?";
