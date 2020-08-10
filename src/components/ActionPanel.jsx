@@ -522,10 +522,20 @@ class ActionPanel extends Component {
       }
       // In this case we give user four column filter methods: sort asc, sort des, filter, and dedup
       else if (actionInfo.task === "showFilterMethods") {
+        let textEle = null;
+        if (actionInfo.colIndex === 0) {
+          textEle = 
+            <p><b>How would you like to process the first column?</b></p>
+        }
+        else {
+          textEle = 
+            <p><b>How would you like to process column {createNeighbourText(this.props.tableHeader[actionInfo.colIndex])} ?</b></p>
+        }
+        // console.log(textEle);
         actionEle = (
           <div>
             <div>
-              <p><b>How would you like to process this column?</b></p>
+              {textEle}
             </div>
             <div>
               <Button
@@ -793,7 +803,7 @@ function createNeighbourText(neighbourArray) {
     if (i > 0) {
       neighbourArrayText+=" OR ";
     }
-    let curNeighbourText = neighbourArray[i].type === "subject" ? neighbourArray[i].value : "is " + neighbourArray[i].value + " of";
+    let curNeighbourText = neighbourArray[i].type === "object" ? "is " + neighbourArray[i].value + " of" : neighbourArray[i].value;
     neighbourArrayText+=curNeighbourText;
   }
   return neighbourArrayText;
