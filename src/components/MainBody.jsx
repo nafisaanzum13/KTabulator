@@ -4005,7 +4005,21 @@ export default MainBody;
 // This function takes in a queryURL and returns its JSON format
 function fetchJSON(url) {
   let urlCORS = "https://mysterious-ridge-15861.herokuapp.com/"+url;
-  return fetch(urlCORS).then((response) => response.json());
+  return fetch(urlCORS)
+        .then(function (response) {
+          if (!response.ok) {
+            throw Error(1);
+          }
+          return response;
+        })
+        .then(function (response) {
+          return response.json();
+        })
+        .catch(function (error) {
+          document.body.classList.remove('waiting');
+          alert("Some error occured when accessing SPARQL public endpoint. If semantic mapping is enabled, disable it and try again.");
+          return 1;
+        })
 }
 
 // This function takes in a queryURL and returns its Text format
