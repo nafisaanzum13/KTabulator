@@ -86,9 +86,9 @@ class TablePanel extends Component {
   createSuperTable() {
 
     // console.log(this.props.firstColHeaderInfo);
-
     // console.log("Has first column been filled? " + this.props.firstColFilled);
     // console.log(this.props.tableData);
+    
     const rowNum = this.props.tableData.length;
     const colNum = this.props.tableData[0].length;
 

@@ -206,6 +206,7 @@ class MainBody extends Component {
     // We first check if user has pasted a valid wikipedia page.
 
     if (!urlPasted.includes("https://en.wikipedia.org/wiki/")) {
+      document.body.classList.remove('waiting');
       alert("Please paste a valid Wikipedia link.");
     }
 
@@ -651,6 +652,7 @@ class MainBody extends Component {
 
       // Now we have figured out the content for otherColSelection, we move on otherColChecked and otherCheckedIndex.
       // Every time we are running this function, we need to reset otherColChecked and otherCheckedIndex
+
       let otherColChecked = [];
       for (let i = 0; i < otherColSelection.length; ++i) {
         otherColChecked.push(false);
@@ -681,6 +683,8 @@ class MainBody extends Component {
 
       // Now we have figured out the content for otherColSelection, we move on otherColChecked and otherCheckedIndex.
       // Every time we are running this function, we need to reset otherColChecked and otherCheckedIndex
+
+      // Maybe some modifications need to be done here when colFilled === true
       let otherColChecked = [];
       for (let i = 0; i < otherColSelection.length; ++i) {
         otherColChecked.push(false);
@@ -4133,6 +4137,9 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
          || a.p.value === "http://dbpedia.org/property/signature"
          || a.p.value === "http://dbpedia.org/property/video"
          || a.p.value === "http://dbpedia.org/property/logo"
+         || a.p.value === "http://dbpedia.org/property/shorts"
+         || a.p.value === "http://dbpedia.org/property/aShorts"
+         || a.p.value === "http://dbpedia.org/property/hShorts"
          )
   );
 
@@ -4317,6 +4324,9 @@ function updatePreviewInfo(resultsBinding, type) {
          || a.p.value === "http://dbpedia.org/property/signature"
          || a.p.value === "http://dbpedia.org/property/video"
          || a.p.value === "http://dbpedia.org/property/logo"
+         || a.p.value === "http://dbpedia.org/property/shorts"
+         || a.p.value === "http://dbpedia.org/property/aShorts"
+         || a.p.value === "http://dbpedia.org/property/hShorts"
          )
   );
 
@@ -4416,6 +4426,9 @@ function updateFirstColSelection(resultsBinding) {
          || a.p.value === "http://dbpedia.org/property/signature"
          || a.p.value === "http://dbpedia.org/property/video"
          || a.p.value === "http://dbpedia.org/property/logo"
+         || a.p.value === "http://dbpedia.org/property/shorts"
+         || a.p.value === "http://dbpedia.org/property/aShorts"
+         || a.p.value === "http://dbpedia.org/property/hShorts"
          )
   );
   

@@ -78,7 +78,7 @@ class OtherColSelection extends Component {
     return (
       <div>
         <div>
-          <p><b>Choose from attributes below</b> to determine the content for the this column</p>
+          <p><b>Choose from attributes below</b> to determine the content for this column</p>
         </div>
         <br />
         <div>
