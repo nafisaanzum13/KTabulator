@@ -1367,6 +1367,8 @@ class MainBody extends Component {
     // tempObj stores the information passed to ActionPanel
     let tempObj = {};
 
+    // Start here: let's modify the if statements so that populateSameNeighbour and populateRecommendation are not mutually exclusive
+
     // If hasMultiple is true, we give users option to populate all those multiple values
     if (hasMultiple === true) {
       tempObj["task"] = "populateSameNeighbour";

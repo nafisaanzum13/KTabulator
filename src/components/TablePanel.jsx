@@ -265,7 +265,7 @@ class TablePanel extends Component {
           tempRow.push(
             <td style={cellColor}>
               <input
-                className="twenty-vw"
+                className="twenty-vw column-preview-color"
                 type="text"
                 value={niceRender(this.props.tableData[i][j].previewData)}
                 readOnly

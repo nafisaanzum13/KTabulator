@@ -136,4 +136,9 @@
   border: 5px solid black;
 }
 
+/* The following class makes sure that the preview of a column is gray instead of black */
+.column-preview-color {
+  color: gray;
+}
+
 body.waiting * { cursor: wait; }
