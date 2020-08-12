@@ -254,11 +254,50 @@ class ActionPanel extends Component {
       }
     }
     let returnEle = 
-      <div>
-        <p>Recommendations of attributes to add:</p>
+      <div className="container">
+        <p>Attribute Recommendations:</p>
         {stringRecommend}
         {semanticRecommend}
       </div>
+    return returnEle;
+  }
+
+  // This function creates the HTML element for populateSameNeighbour
+  createSameNeighbour(actionInfo) {
+    let neighbourArrayText = createNeighbourText(actionInfo.neighbourArray);
+    let returnEle = (
+      <div className="container">
+        <p>Some cells in this column contain multiple values.</p>
+        <p>Expand all other values that are also</p>
+        <p><b>{neighbourArrayText}</b> ?</p>
+        <div className="row">
+          <button
+            className="col-md-4"
+            onClick={(e) =>
+              this.props.sameNeighbourOneRow(
+                e,
+                actionInfo.colIndex,
+                actionInfo.neighbourArray,
+              )
+            }
+          >
+            In One Row
+          </button>
+          <button
+            className="offset-md-1 col-md-4"
+            onClick={(e) =>
+              this.props.sameNeighbourDiffRow(
+                e,
+                actionInfo.colIndex,
+                actionInfo.neighbourArray,
+              )
+            }
+          >
+            In Separate Rows
+          </button>
+        </div>
+      </div>
+    );
     return returnEle;
   }
 
@@ -450,40 +489,7 @@ class ActionPanel extends Component {
       } 
       // In this case we give user a button to allow the population of same neighbour
       else if (actionInfo.task === "populateSameNeighbour") {
-        let neighbourArrayText = createNeighbourText(actionInfo.neighbourArray);
-        actionEle = (
-          <div>
-            <p>Some cells in this column contain multiple values.</p>
-            <p>Expand all other values that are also</p>
-            <p><b>{neighbourArrayText}</b> ?</p>
-            <div className="row">
-              <button
-                className="col-md-4"
-                onClick={(e) =>
-                  this.props.sameNeighbourOneRow(
-                    e,
-                    actionInfo.colIndex,
-                    actionInfo.neighbourArray,
-                  )
-                }
-              >
-                In One Row
-              </button>
-              <button
-                className="offset-md-1 col-md-4"
-                onClick={(e) =>
-                  this.props.sameNeighbourDiffRow(
-                    e,
-                    actionInfo.colIndex,
-                    actionInfo.neighbourArray,
-                  )
-                }
-              >
-                In Separate Rows
-              </button>
-            </div>
-          </div>
-        );
+        actionEle = this.createSameNeighbour(actionInfo);
       } 
       // In this case we give user a button to allow the population of all neighbours from the same range
       else if (actionInfo.task === "populateSameRange") {
@@ -521,6 +527,22 @@ class ActionPanel extends Component {
         actionEle = (
           <div>
             {recommendArray}
+          </div>
+        )
+      }
+      // In this case we have to include both populateSameNeighbour and populateRecommendation
+      else if (actionInfo.task === "sameNeighbourAndRecommendation") {
+        let sameNeighbourEle = this.createSameNeighbour(actionInfo);
+        let recommendEle = this.createRecommendArray(actionInfo.colIndex, actionInfo.recommendArray);
+        actionEle = (
+          <div>
+            <Card className="action-panel-card">
+              {sameNeighbourEle}
+            </Card>
+            <br />
+            <Card className="action-panel-card">
+              {recommendEle}
+            </Card>
           </div>
         )
       }

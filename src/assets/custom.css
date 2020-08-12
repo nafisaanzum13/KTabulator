@@ -141,4 +141,10 @@
   color: gray;
 }
 
+/* The following class is for cards in action panel */
+.action-panel-card {
+  /* background-color: #a6d8d0; */
+  border: double;
+}
+
 body.waiting * { cursor: wait; }

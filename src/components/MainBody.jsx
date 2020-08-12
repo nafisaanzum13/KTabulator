@@ -1367,21 +1367,26 @@ class MainBody extends Component {
     // tempObj stores the information passed to ActionPanel
     let tempObj = {};
 
-    // Start here: let's modify the if statements so that populateSameNeighbour and populateRecommendation are not mutually exclusive
-
-    // If hasMultiple is true, we give users option to populate all those multiple values
-    if (hasMultiple === true) {
+    // Case 1: hasMultiple is true, and there are recommendations
+    if (hasMultiple === true && recommendArray.length > 0) {
+      tempObj["task"] = "sameNeighbourAndRecommendation";
+      tempObj["colIndex"] = colIndex;
+      tempObj["neighbourArray"] = neighbourArray;
+      tempObj["recommendArray"] = recommendArray;
+    }
+    // Case 2: only hasMultiple is true
+    else if (hasMultiple === true) {
       tempObj["task"] = "populateSameNeighbour";
       tempObj["colIndex"] = colIndex;
       tempObj["neighbourArray"] = neighbourArray;
     }
-    // Else, this column has no multiple values. Let's check if we can make some suggestions.
+    // Case 3: only hasRecommendation is true
     else if (recommendArray.length > 0) {
       tempObj["task"] = "populateRecommendation";
       tempObj["colIndex"] = colIndex;
       tempObj["recommendArray"] = recommendArray; 
     }
-    // In this case, we have no suggestions to make, so We simply tell users that they can populate more columns. 
+    // Case 4: neither hasMultiple or hasRecommendation is true. In which case we just tell users that they can fill more columns.
     else {
       tempObj["task"] = "afterPopulateColumn";
     }
