@@ -121,6 +121,11 @@ class MainBody extends Component {
       joinColOptions: [],      // 1D array storing the selection options for the newly selected table.
       originJoinIndex: -1,     // number storing the index of the column of the original table that we are joining.
       joinJoinIndex: -1,       // number storing the index of the column of the newly selected table that we are joining.
+
+      // states below are for column preview
+      previewColIndex: -1,     // number storing the index of the column that we want to show preview for. 
+                               // When -1, we do not want to show any preview. This state needs to be passed to TablePanel
+                               // It should only be set to non -1 when we have toggled some selections on, but haven't confirmed on selections yet. 
     };
 
     // functions below are useful during start up
@@ -433,14 +438,72 @@ class MainBody extends Component {
   }
 
   // This function handles the toggling of a non-first column's attribute selection
-  toggleOtherNeighbour(e, index) {
-    let otherColChecked = this.state.otherColChecked.slice();
-    let otherCheckedIndex = index;
-    otherColChecked[index] = !otherColChecked[index];
+  // Note: since the preview feature is being addded, this function needs to handle preview as well.
+  // It will handle the preview similarly to how it handles populateOtherColumn, 
+  // Except it sets previewData attribute, instead of data attribute.
+  toggleOtherNeighbour(e, neighbourIndex, colIndex) {
+    // We first get all the variables we needed
+    let previewColIndex;
+    let tableData = _.cloneDeep(this.state.tableData); 
+    let otherColChecked = _.cloneDeep(this.state.otherColChecked);
+
+    // We first deal with the toggling of otherCheckedIndex and otherColChecked
+    let otherCheckedIndex = neighbourIndex;
+    otherColChecked[neighbourIndex] = !otherColChecked[neighbourIndex];
+
+    // We then deal with column preview.
+
+    // First step is to create a selectedNeighbours array for preview, similar to OtherColSelection.
+    // We will create the selectedNeighbours array from otherColSelection and otherColChecked
+    let selectedNeighbours = [];
+    for (let i = 0; i < otherColChecked.length; ++i) {
+      if (otherColChecked[i] === true) {
+        selectedNeighbours.push(this.state.otherColSelection[i]);
+      }
+    }
+    // console.log(selectedNeighbours);
+    // console.log(colIndex);
+    
+    // If selectedNeighbours is non-empty, we need to set previewColIndex to colIndex, and set tableData's previewData attribute
+    if (selectedNeighbours.length > 0) {
+      // We first set tableData, based on selectedNeighbours and colIndex. The following part will be similar to populateOtherColumn.
+      for (let i = 0; i < tableData.length; ++i) {
+        // curColumnArray is the previewData array, for each entry in search column, for all neighbours in selectedNeighbours
+        let curColumnArray = [];
+        // We loop through selectedNeighbours
+        for (let j = 0; j < selectedNeighbours.length; ++j) {
+          let curNeighbour = selectedNeighbours[j];
+          let firstDegNeighbours = 
+            curNeighbour.type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
+          let curNeighbourData = firstDegNeighbours[i][curNeighbour.value];
+          if (curNeighbourData !== undefined) {
+            curColumnArray = curColumnArray.concat(curNeighbourData);
+          }
+        }
+        // If curColumnArray is empty, that means this entry in search column do not have any of the attributes from selectedNeighbours
+        // We want to set previewData to N/A
+        if (curColumnArray.length === 0) {
+          tableData[i][colIndex].previewData = "N/A";
+        }
+        // Else, we have found at least one value. We want to set previewData to curColumnArray[0]
+        else {
+          tableData[i][colIndex].previewData = curColumnArray[0];
+        }
+      }
+
+      // Now that we are done with setting tableData, we set previewColIndex.
+      previewColIndex = colIndex;
+    }
+    // In this case, selectedNeighbours is empty, we want to set previewColIndex back to -1.
+    else {
+      previewColIndex = -1;
+    }
 
     this.setState({
-      otherColChecked:otherColChecked,
-      otherCheckedIndex:otherCheckedIndex,
+      otherColChecked: otherColChecked,
+      otherCheckedIndex: otherCheckedIndex,
+      tableData: tableData,
+      previewColIndex: previewColIndex,
     })
   }
 
@@ -1329,12 +1392,14 @@ class MainBody extends Component {
         "curActionInfo":this.state.curActionInfo,
         "tableData":this.state.tableData,
         "tableHeader":this.state.tableHeader,
+        "previewColIndex":this.state.previewColIndex,
       };
 
     this.setState({
       curActionInfo: tempObj,
       tableData: tableData,
       tableHeader: tableHeader,
+      previewColIndex: -1,
       lastAction: lastAction,
       prevState: prevState,
     });
@@ -2220,49 +2285,64 @@ class MainBody extends Component {
 
     // console.log("Col index of search cell is "+colIndex);
 
-    document.body.classList.add('waiting');
+    // Let's do a preliminary check here to make sure that users do not set empty columns as search columns
+    let colEmpty = true;
+    for (let i = 0; i < this.state.tableData.length; ++i) {
+      if (this.state.tableData[i][colIndex].data !== "") {
+        colEmpty = false;
+        break;
+      }
+    }
 
-    // Code here should largely be similar to what we have in populateKeyColumn
+    // We give users an alert if they try to set an empty columns as the search column
+    if (colEmpty === true) {
+      alert("This column is currently empty. Try set the data for this column before setting it as the search column.");
+    }
+    else {
+      document.body.classList.add('waiting');
 
-    let tableData = _.cloneDeep(this.state.tableData);
+      // Code here should largely be similar to what we have in populateKeyColumn
 
-    // We need to find neighbours of a column.
-    // We need to use tableData to ask more queries (number of queries is equal to tableData.length)
-    let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", colIndex);
-    let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", colIndex);
+      let tableData = _.cloneDeep(this.state.tableData);
 
-    allPromiseReady(promiseArrayOne).then((valuesOne) => {
-    allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+      // We need to find neighbours of a column.
+      // We need to use tableData to ask more queries (number of queries is equal to tableData.length)
+      let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", colIndex);
+      let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", colIndex);
 
-      // We call updateNeighbourInfo here because we are changing the rows
-      let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
-      let keyColNeighbours = updatedNeighbours.keyColNeighbours;
-      let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+      allPromiseReady(promiseArrayOne).then((valuesOne) => {
+      allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
-      document.body.classList.remove('waiting');
+        // We call updateNeighbourInfo here because we are changing the rows
+        let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+        let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+        let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
 
-      // Support for undo: 
-      let lastAction = "contextSetColumn";
-      let prevState = 
-          {
-            "keyColIndex": this.state.keyColIndex,
-            "keyColNeighbours": this.state.keyColNeighbours,
-            "firstDegNeighbours": this.state.firstDegNeighbours,
-            "curActionInfo": this.state.curActionInfo,
-            "tabIndex": this.state.tabIndex,
-          };
+        document.body.classList.remove('waiting');
 
-      this.setState({
-        keyColIndex: colIndex,
-        keyColNeighbours: keyColNeighbours,
-        firstDegNeighbours: firstDegNeighbours,
-        curActionInfo: {"task":"afterPopulateColumn"},
-        tabIndex: 0, // we want to set the currently active tab to be wrangling actions
-        lastAction: lastAction,
-        prevState: prevState,
-      });
-    })
-    })
+        // Support for undo: 
+        let lastAction = "contextSetColumn";
+        let prevState = 
+            {
+              "keyColIndex": this.state.keyColIndex,
+              "keyColNeighbours": this.state.keyColNeighbours,
+              "firstDegNeighbours": this.state.firstDegNeighbours,
+              "curActionInfo": this.state.curActionInfo,
+              "tabIndex": this.state.tabIndex,
+            };
+
+        this.setState({
+          keyColIndex: colIndex,
+          keyColNeighbours: keyColNeighbours,
+          firstDegNeighbours: firstDegNeighbours,
+          curActionInfo: {"task":"afterPopulateColumn"},
+          tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+          lastAction: lastAction,
+          prevState: prevState,
+        });
+      })
+      })
+    }
   }
 
   // // The following function displays the origin of a cell in the Action Panel.
@@ -3355,6 +3435,7 @@ class MainBody extends Component {
         curActionInfo: prevState.curActionInfo,
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
+        previewColIndex: prevState.previewColIndex,
         lastAction: "",
       })
     }
@@ -3893,6 +3974,8 @@ class MainBody extends Component {
                     firstColHeaderInfo={this.state.firstColHeaderInfo}
                     // Following states control the render of other column header
                     getOtherOptions={this.getOtherOptions}
+                    // Following states control the render of column preview
+                    previewColIndex={this.state.previewColIndex}
                   />
                 </div>
                 <div className="col-md-5 small-padding action-panel">

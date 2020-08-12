@@ -58,7 +58,7 @@ class OtherColSelection extends Component {
               <input  
                 type="checkbox"
                 checked={otherColChecked[i]}
-                onChange={(e) => this.props.toggleOtherNeighbour(e, i)}
+                onChange={(e) => this.props.toggleOtherNeighbour(e, i, this.props.colIndex)}
               />
               {'\u00A0'}{'\u00A0'}
               {otherColSelection[i].label}

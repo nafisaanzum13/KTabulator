@@ -88,6 +88,7 @@ class TablePanel extends Component {
     // console.log(this.props.firstColHeaderInfo);
     // console.log("Has first column been filled? " + this.props.firstColFilled);
     // console.log(this.props.tableData);
+    // console.log("The current previewColIndex is "+this.props.previewColIndex);
     
     const rowNum = this.props.tableData.length;
     const colNum = this.props.tableData[0].length;
@@ -254,20 +255,38 @@ class TablePanel extends Component {
     let rows = [];
     for (let i = 0; i < rowNum; i++) {
       let tempRow = [];
-      //Inner loop to create each cell of the row
+      // Inner loop to create each cell of the row
       for (let j = 0; j < colNum; j++) {
-        // Create the each cell
-        // let tempID = "cellRow" + i + "Col" + j;
-        let cellColor;
-        if (j === this.props.keyColIndex) {
-          cellColor = { backgroundColor: "LightBlue" };
-        } else {
-          cellColor = { backgroundColor: "White" };
+        // We want to treat preview columns and other columns differently
+
+        // First we deal with preview column
+        if (j === this.props.previewColIndex) {
+          let cellColor = {backgroundColor: "LightGray"};
+          tempRow.push(
+            <td style={cellColor}>
+              <input
+                className="twenty-vw"
+                type="text"
+                value={niceRender(this.props.tableData[i][j].previewData)}
+                readOnly
+              />
+            </td>
+          );
         }
-        // console.log("Current data is "+this.props.tableData[i][j]);
-        tempRow.push(
-          <td style={cellColor}>
-            {/* <ContextMenuTrigger id={tempID}> */}
+        // Else we are dealing with a regular column
+        else {
+          let cellColor;
+          // We use light blue to represent search column
+          if (j === this.props.keyColIndex) {
+            cellColor = { backgroundColor: "LightBlue" };
+          }
+          // We use white to represent other columns
+          else {
+            cellColor = { backgroundColor: "White" };
+          }
+          // console.log("Current data is "+this.props.tableData[i][j]);
+          tempRow.push(
+            <td style={cellColor}>
               <input
                 className="twenty-vw"
                 type="text"
@@ -276,9 +295,9 @@ class TablePanel extends Component {
                 onChange={(e) => this.props.onCellChange(e, i, j)}
                 onDoubleClick={(e) => this.props.originPreviewPage(e, i, j)}
               />
-            {/* </ContextMenuTrigger> */}
-          </td>
-        );
+            </td>
+          );
+        }
       }
       //Create the parent and add the children
       rows.push(<tr>{tempRow}</tr>);
@@ -335,20 +354,7 @@ class TablePanel extends Component {
   render() {
     let tableEle = null;
 
-    // // In all cases, once we have pasted the URL. We want to display the super table in the table panel.
-    // let menuArray = [];
-    // for (let i = 0; i < this.props.tableData.length; ++i) {
-    //   for (let j = 0; j < this.props.tableData[0].length; ++j) {
-    //     let tempID = "cellRow" + i + "Col" + j;
-    //     menuArray.push(
-    //       <ContextMenu id={tempID}>   
-    //         <MenuItem onClick={(e) => this.props.contextCellOrigin(e, i, j)}>
-    //           Show Origin of Cell
-    //         </MenuItem>
-    //       </ContextMenu>
-    //     );
-    //   }
-    // }
+    // In all cases, once we have pasted the URL. We want to display the super table in the table panel.
     tableEle = (
       // class table-fixed helps with sticky column headers
       <div>
