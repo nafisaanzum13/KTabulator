@@ -12,6 +12,7 @@ import TableSelection from "./TableSelection";
 // import "react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
 import FirstColSelection from "./FirstColSelection";
 import OtherColSelection from "./OtherColSelection";
+import PreviewOrigin from "./PreviewOrigin";
 
 class ActionPanel extends Component {
   constructor(props) {
@@ -607,21 +608,27 @@ class ActionPanel extends Component {
         );
       }
       // In this case we display the origin of selected cell
-      else if (actionInfo.task === "contextCellPreview") {
+      else if (actionInfo.task === "originPreviewPage") {
       actionEle = (
-        <div>
-          <div>
-            <p>Preview of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
-            <div>
-              {renderPreview(actionInfo.preview)}
-            </div>
-          </div>
-          <hr className="preview-origin-divider"/>
-          <div>
-            <p>Origin of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
-            <div>{actionInfo.origin}</div>
-          </div>
-        </div>
+        // <div>
+        //   <div>
+        //     <p>Preview of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
+        //     <div>
+        //       {renderPreview(actionInfo.preview)}
+        //     </div>
+        //   </div>
+        //   <hr className="preview-origin-divider"/>
+        //   <div>
+        //     <p>Origin of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
+        //     <div>{actionInfo.origin}</div>
+        //   </div>
+        // </div>
+          <PreviewOrigin
+            previewInfoArray={this.props.previewInfoArray}
+            previewInfoExpanded={this.props.previewInfoExpanded}
+            selectedCell={this.props.selectedCell}
+            togglePreviewElement={this.props.togglePreviewElement}
+          />
         );
       }  
     } 
@@ -803,36 +810,36 @@ class ActionPanel extends Component {
 
 export default ActionPanel;
 
-// The following helper function creates HTML elements from previewInfoArray, 
-// an array of key-val pairs containing the info for a cell's preview.
+// // The following helper function creates HTML elements from previewInfoArray, 
+// // an array of key-val pairs containing the info for a cell's preview.
 
-// It also makes use of niceRender, so that preview looks clean.
+// // It also makes use of niceRender, so that preview looks clean.
 
-function renderPreview(previewInfoArray) {
-  // console.log(previewInfoArray);
-  let infoEle = [];
-  for (let i = 0; i < previewInfoArray.length; ++i) {
-    let keyLiteral = previewInfoArray[i].key;
-    // We get the first element from value Array
-    let valLiteral = niceRender(previewInfoArray[i].value[0]);
-    // Since we have already included thte first element, we start the index from 1
-    for (let j = 1; j < previewInfoArray[i].value.length; ++j) {
-      valLiteral = valLiteral + "; "+niceRender(previewInfoArray[i].value[j]);
-    }
-    infoEle.push(
-      <p><b>{keyLiteral}</b>{":"}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{valLiteral}</p>
-    )
-  }
-  return infoEle;
-}
+// function renderPreview(previewInfoArray) {
+//   // console.log(previewInfoArray);
+//   let infoEle = [];
+//   for (let i = 0; i < previewInfoArray.length; ++i) {
+//     let keyLiteral = previewInfoArray[i].key;
+//     // We get the first element from value Array
+//     let valLiteral = niceRender(previewInfoArray[i].value[0]);
+//     // Since we have already included thte first element, we start the index from 1
+//     for (let j = 1; j < previewInfoArray[i].value.length; ++j) {
+//       valLiteral = valLiteral + "; "+niceRender(previewInfoArray[i].value[j]);
+//     }
+//     infoEle.push(
+//       <p><b>{keyLiteral}</b>{":"}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{'\u00A0'}{valLiteral}</p>
+//     )
+//   }
+//   return infoEle;
+// }
 
-// This function renders this.props.tableData[i][j].data in a nicer way. 
-// It removes all occurence of (...), and changes all "_" to " ".
+// // This function renders this.props.tableData[i][j].data in a nicer way. 
+// // It removes all occurence of (...), and changes all "_" to " ".
 
-function niceRender(str) {
-  return str.replace(/_\(.*?\)/g, "")
-            .replace(/_/g, " ");
-}
+// function niceRender(str) {
+//   return str.replace(/_\(.*?\)/g, "")
+//             .replace(/_/g, " ");
+// }
 
 // This function creates neighbourArrayText from neighbourArray
 

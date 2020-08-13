@@ -126,6 +126,13 @@ class MainBody extends Component {
       previewColIndex: -1,     // number storing the index of the column that we want to show preview for. 
                                // When -1, we do not want to show any preview. This state needs to be passed to TablePanel
                                // It should only be set to non -1 when we have toggled some selections on, but haven't confirmed on selections yet. 
+      // states below are useful for cell preview and origin
+      selectedCell: null,      // data in the format of tableData[i][j] (has both data and origin attribute). 
+                               // (origin element can be determined from this)
+      previewInfoArray: [],    // array storing the information used to create the preview element. 
+                               // It contains categories, subject, object first degree neighbours.
+      previewInfoExpanded: [], // array of booleans storing whether each element from previewInfoArray is expanded or not.
+                               // This can only be set to true for previewInfoArray elements that have value length longer than 1.
     };
 
     // functions below are useful during start up
@@ -200,6 +207,9 @@ class MainBody extends Component {
 
     // functions below are for other column selection
     this.toggleOtherNeighbour = this.toggleOtherNeighbour.bind(this);
+
+    // functions below are for cell preview and origin
+    this.togglePreviewElement = this.togglePreviewElement.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -2457,29 +2467,38 @@ class MainBody extends Component {
         );
       // console.log(subjectInfoArray);
       // console.log(objectInfoArray);
-      // Pick up from here tomorrow.
+      
+      // Here is where we make the modifications: instead of passing information to Action Panel, let's store them as states
       let previewInfoArray = subjectInfoArray.concat(objectInfoArray);
-
-      // previewInfoArray correctly contains the cell preview we want to display
-      // Now we just need to show it in the ActionPanel
-      let tempObj = {};
-      tempObj["task"] = "contextCellPreview";
-      tempObj["cellValue"] = this.state.tableData[rowIndex][colIndex].data;
-      tempObj["preview"] = previewInfoArray;
-
-      // Now, everything about cell preview has been completed. 
-      // Let's move on to deal with open link.
+      let previewInfoExpanded = [];
+      for (let i = 0; i < previewInfoArray.length; ++i) {
+        previewInfoExpanded.push(false);
+      }
+      let selectedCell = _.cloneDeep(this.state.tableData[rowIndex][colIndex]);
       let iframeURL = "https://en.wikipedia.org/wiki/" + this.state.tableData[rowIndex][colIndex].data;
 
-      // Lastly, let's deal with cell origin
-      let cellSelected = this.state.tableData[rowIndex][colIndex];
+      let tempObj = {};
+      tempObj["task"] = "originPreviewPage";
+      // // previewInfoArray correctly contains the cell preview we want to display
+      // // Now we just need to show it in the ActionPanel
+      // let tempObj = {};
+      // tempObj["task"] = "originPreviewPage";
+      // tempObj["cellValue"] = this.state.tableData[rowIndex][colIndex].data;
+      // tempObj["preview"] = previewInfoArray;
 
-      let originElement = [];
-      for (let i = 0; i < cellSelected.origin.length; ++i) {
-        originElement.push(<p>{niceRender(cellSelected.origin[i])}</p>);
-      }
-      // We push this property to tempObj
-      tempObj["origin"] = originElement;
+      // // Now, everything about cell preview has been completed. 
+      // // Let's move on to deal with open link.
+      // let iframeURL = "https://en.wikipedia.org/wiki/" + this.state.tableData[rowIndex][colIndex].data;
+
+      // // Lastly, let's deal with cell origin
+      // let cellSelected = this.state.tableData[rowIndex][colIndex];
+
+      // let originElement = [];
+      // for (let i = 0; i < cellSelected.origin.length; ++i) {
+      //   originElement.push(<p>{niceRender(cellSelected.origin[i])}</p>);
+      // }
+      // // We push this property to tempObj
+      // tempObj["origin"] = originElement;
 
       // Support for undo: 
       document.body.classList.remove('waiting');
@@ -2490,6 +2509,9 @@ class MainBody extends Component {
             "tabIndex": this.state.tabIndex,
             "pageHidden": this.state.pageHidden,
             "iframeURL": this.state.iframeURL,
+            "previewInfoArray": this.state.previewInfoArray,
+            "previewInfoExpanded": this.state.previewInfoExpanded,
+            "selectedCell": this.state.selectedCell,
           };
       
       this.setState({
@@ -2497,6 +2519,9 @@ class MainBody extends Component {
         tabIndex: 0, // we want to set the currently active tab to be wrangling actions
         pageHidden: false,
         iframeURL: iframeURL,
+        previewInfoArray: previewInfoArray,
+        previewInfoExpanded: previewInfoExpanded,
+        selectedCell: selectedCell,
         lastAction: lastAction,
         prevState: prevState,
       });
@@ -3520,6 +3545,9 @@ class MainBody extends Component {
         tabIndex: prevState.tabIndex,
         pageHidden: prevState.pageHidden,
         iframeURL: prevState.iframeURL,
+        previewInfoArray: prevState.previewInfoArray,
+        previewInfoExpanded: prevState.previewInfoExpanded,
+        selectedCell: prevState.selectedCell,
         lastAction: "",
       })
     }
@@ -3927,6 +3955,15 @@ class MainBody extends Component {
     })
   }
 
+  // This function handles the expansion/collapse of an attribute in cell preview and origin
+  togglePreviewElement(e, i) {
+    let previewInfoExpanded = this.state.previewInfoExpanded.slice();
+    previewInfoExpanded[i] = !previewInfoExpanded[i];
+    this.setState({
+      previewInfoExpanded: previewInfoExpanded,
+    })
+  }
+
   render() {
     let bodyEle;
     let bottomContentClass = " bottom-content";
@@ -4039,6 +4076,11 @@ class MainBody extends Component {
                     contextSortColumn={this.contextSortColumn}
                     contextDedupColumn={this.contextDedupColumn}
                     openFilter={this.openFilter}
+                    // Following states are for displaying cell's preview and origin
+                    previewInfoArray={this.state.previewInfoArray}
+                    previewInfoExpanded={this.state.previewInfoExpanded}
+                    selectedCell={this.state.selectedCell}
+                    togglePreviewElement={this.togglePreviewElement}
                   />
                 </div>
               </div>
@@ -4472,7 +4514,7 @@ function updatePreviewInfo(resultsBinding, type) {
       // to the element's value array in previewInfoArray at curIndex
       if (curNeighbour === prevNeighbour) {
         // Note, we dont want each element in previewInfoArray to contain too many elements (5), so we do a check here.
-        if (previewInfoArray[curIndex].value.length < 5) {
+        if (previewInfoArray[curIndex].value.length < maxNeighbourCount) {
           previewInfoArray[curIndex].value.push(removePrefix(processedBinding[i].value.value));
         }
       }
@@ -4488,7 +4530,31 @@ function updatePreviewInfo(resultsBinding, type) {
       }
     }
   }
-  console.log(previewInfoArray);
+
+  // At the current stage, previewInfoArray contains all the dbo and dbp neighbours. 
+  // Let's also add support for the DB categories, so that those can be displayed in cell preview as well.
+  let categoryPreviewInfoArray = [];
+  if (type === "subject") {
+    let categoryBinding = resultsBinding.filter(
+      a => a.p.value.includes("dc/terms/subject")
+    ) 
+    // console.log(categoryBinding);
+    if (categoryBinding.length > 0) {
+      categoryPreviewInfoArray.push(
+        {
+          "key": "Category",
+          "value": [categoryBinding[0].value.value.slice(37)]
+        }
+      );
+      for (let i = 1; i < categoryBinding.length; ++i) {
+        categoryPreviewInfoArray[0].value.push(categoryBinding[i].value.value.slice(37));
+      }
+    }
+  }
+  // We concat categoryPreviewInfoArray with previewInfoArray.
+  previewInfoArray = categoryPreviewInfoArray.concat(previewInfoArray);
+  // console.log(previewInfoArray);
+
   return previewInfoArray;
 }
 
