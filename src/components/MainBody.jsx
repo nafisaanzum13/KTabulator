@@ -4187,7 +4187,7 @@ function removePrefix(str) {
   return str;
 }
 
-// This function updates the key column's neighbours.
+// This function updates the key column's neighbours for ONE entry from the search column.
 
 // It taks three parameters:
 //  1) array "keyColNeighbour" storing list of neighbours for the key column
@@ -4286,79 +4286,33 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
     // We loop over processedBinding
     for (let i = 1; i < processedBinding.length; ++i) {
       let curNeighbour = processedBinding[i].p.value.slice(28);
-      // If the current neighbour is equal to neighbourToAdd, we increment the count, and push valuesToAdd
+      // If the current neighbour is equal to neighbourToAdd, we increment the count, and push onto valuesToAdd
       if (curNeighbour === neighbourToAdd) {
         ++neighbourCount;
         valuesToAdd.push(type === "subject" ? removePrefix(processedBinding[i].o.value) : removePrefix(processedBinding[i].s.value))
       }
-      // else, we decide if we want to push neighbourToAdd to keyColNeighbours. 
-      // We push if neighbourCount is <= maxNeighbourCount
+      // else, we push neighbourToAdd to keyColNeighbours. 
       else {
-        // First determine if we wnat to push
-        if (neighbourCount <= maxNeighbourCount) {
-          // set value.
-          let objValue = neighbourToAdd;
-          // set label. We want to change the neighbour label if type === "object".
-          let objLabel = neighbourToAdd;
-          if (type === "object") {
-            objLabel = "is " + objLabel + " of";
-          }
-          // set type
-          let objType = type;
-          // set count
-          let objCount = neighbourCount;
-          // set data
-          let objData = valuesToAdd;
-          // set range
-          let objRange = neighbourRange;
-          // set subPropertyOf
-          let objSubPropertyOf = neighbourSubPropertyOf;
-
-          // Set object from all its attributes
-          let tempObj = {
-            "value":objValue, 
-            "label":objLabel, 
-            "type":objType, 
-            "count":objCount, 
-            "filledCount":1, 
-            "data":objData,
-            "range":objRange,
-            "subPropertyOf":objSubPropertyOf
-          };
-          // we push this tempObj onto keyColNeighbours
-          keyColNeighbours.push(tempObj)
+        // set value.
+        let objValue = neighbourToAdd;
+        // set label. We want to change the neighbour label if type === "object".
+        let objLabel = neighbourToAdd;
+        if (type === "object") {
+          objLabel = "is " + objLabel + " of";
         }
-        // Regardless of pushing or not, 
-        // we now need to reset neighbourCount, neighbourToAdd, neighbourRange, neighbourSubPropertyOf, and valuesToAdd
-        neighbourCount = 1;
-        neighbourToAdd = curNeighbour;
-        valuesToAdd = [type === "subject" ? removePrefix(processedBinding[i].o.value) : removePrefix(processedBinding[i].s.value)];
-        neighbourRange = processedBinding[i].range !== undefined ? processedBinding[i].range.value : "";
-        neighbourSubPropertyOf = processedBinding[i].subPropertyOf !== undefined ? processedBinding[i].subPropertyOf.value : "";
-      }
-    }
-    // Now, after the loop is done, we need to do one more iteration to determine whether we want to add the last neighbour.
-    if (neighbourCount <= maxNeighbourCount) {
-      // set value.
-      let objValue = neighbourToAdd;
-      // set label. We want to change the neighbour label if type === "object".
-      let objLabel = neighbourToAdd;
-      if (type === "object") {
-        objLabel = "is " + objLabel + " of";
-      }
-      // set type
-      let objType = type;
-      // set count
-      let objCount = neighbourCount;
-      // set data
-      let objData = valuesToAdd;
-      // set range
-      let objRange = neighbourRange;
-      // set subPropertyOf
-      let objSubPropertyOf = neighbourSubPropertyOf;
+        // set type
+        let objType = type;
+        // set count
+        let objCount = neighbourCount;
+        // set data. Let's do some processing here: we want to ensure that valuesToAdd has a max length of maxNeighbourCount
+        let objData = valuesToAdd.length <= maxNeighbourCount ? valuesToAdd : valuesToAdd.slice(0, maxNeighbourCount);
+        // set range
+        let objRange = neighbourRange;
+        // set subPropertyOf
+        let objSubPropertyOf = neighbourSubPropertyOf;
 
-      // Set object from all its attributes
-      let tempObj = {
+        // Set object from all its attributes
+        let tempObj = {
           "value":objValue, 
           "label":objLabel, 
           "type":objType, 
@@ -4368,9 +4322,50 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
           "range":objRange,
           "subPropertyOf":objSubPropertyOf
         };
-      // we push this tempObj onto keyColNeighbours
-      keyColNeighbours.push(tempObj)
+        // We push this tempObj onto keyColNeighbours
+        keyColNeighbours.push(tempObj)
+
+        // We now need to reset neighbourCount, neighbourToAdd, neighbourRange, neighbourSubPropertyOf, and valuesToAdd
+        neighbourCount = 1;
+        neighbourToAdd = curNeighbour;
+        valuesToAdd = [type === "subject" ? removePrefix(processedBinding[i].o.value) : removePrefix(processedBinding[i].s.value)];
+        neighbourRange = processedBinding[i].range !== undefined ? processedBinding[i].range.value : "";
+        neighbourSubPropertyOf = processedBinding[i].subPropertyOf !== undefined ? processedBinding[i].subPropertyOf.value : "";
+      }
     }
+    // Now, after the loop is done, we need to do one more iteration to determine how we want to add the last neighbour.
+    
+    // set value.
+    let objValue = neighbourToAdd;
+    // set label. We want to change the neighbour label if type === "object".
+    let objLabel = neighbourToAdd;
+    if (type === "object") {
+      objLabel = "is " + objLabel + " of";
+    }
+    // set type
+    let objType = type;
+    // set count
+    let objCount = neighbourCount;
+    // set data. Let's do some processing here: we want to ensure that valuesToAdd has a max length of maxNeighbourCount
+    let objData = valuesToAdd.length <= maxNeighbourCount ? valuesToAdd : valuesToAdd.slice(0, maxNeighbourCount);
+    // set range
+    let objRange = neighbourRange;
+    // set subPropertyOf
+    let objSubPropertyOf = neighbourSubPropertyOf;
+
+    // Set object from all its attributes
+    let tempObj = {
+        "value":objValue, 
+        "label":objLabel, 
+        "type":objType, 
+        "count":objCount, 
+        "filledCount":1, 
+        "data":objData,
+        "range":objRange,
+        "subPropertyOf":objSubPropertyOf
+      };
+    // we push this tempObj onto keyColNeighbours
+    keyColNeighbours.push(tempObj)
   }
 
   // console.log(keyColNeighbours);
@@ -4492,8 +4487,8 @@ function updatePreviewInfo(resultsBinding, type) {
         ++curIndex;
       }
     }
-    // console.log(previewInfoArray);
   }
+  console.log(previewInfoArray);
   return previewInfoArray;
 }
 
@@ -4561,9 +4556,9 @@ function updateFirstColSelection(resultsBinding) {
          )
   );
   
-  // We then sort the processedBinding by the following criteria:
-  // 1) dct:subjects should show up at the top of the list
-  // 2) ther sort by p.value
+  // We then sort the processedBinding by some criterias.
+
+  // First Criteria: dct:subjects should show up at the top of the list, sorted by o.value.slice(37).
 
   // Since a customized sort is a bit hard to write, let's break this array into two, sort each one, then concat them back together
   let dctArray = [];
@@ -4577,9 +4572,11 @@ function updateFirstColSelection(resultsBinding) {
     }
   }
 
+  // We first sort the dctArray by o.value.slice(37).
+
   dctArray.sort((a, b) => (a.o.value.slice(37) < b.o.value.slice(37) ? -1 : 1));
 
-  // We want to sort dbop array by the following rules
+  // We then sort dbop array by the following rules:
   // Those that are dbr (so without a datatype) shows up higher
   // Then those with a smaller count shows up higher
   // Then alphabetical order.
@@ -4619,6 +4616,7 @@ function updateFirstColSelection(resultsBinding) {
   });
   // console.log(dbopArray);
 
+  // At this stage, we have finished sorting both dctArray and dbopArray. Let's put them back together.
   processedBinding = dctArray.concat(dbopArray);
 
   // console.log(processedBinding);
