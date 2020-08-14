@@ -55,7 +55,6 @@ class MainBody extends Component {
 
       // states below are useful for startSubject
       keyColIndex: 0,   // number storing the index of the search column. initially the key column is the first column
-      keyEntryIndex: 0, // number storing the index of the search entry in the search column. initially 0. (the first entry in the search column)
       // 1D array of objects with four properties storing the table headers. This array is used to create the column headers in table panel
       // 1) label:  string storing the label of an option (ex: spouse)
       // 2) value:  string storing the value of an option (ex: spouse)
@@ -2116,6 +2115,7 @@ class MainBody extends Component {
 
   contextSortColumn(e, colIndex, order) {
     // console.log("The column we are sorting is "+colIndex);
+    document.body.classList.add('waiting');
     let tableData = _.cloneDeep(this.state.tableData);
 
     // We first loop through this column to determine if it's a numeric column or a string column
@@ -2129,9 +2129,6 @@ class MainBody extends Component {
         }
       }
     }
-
-    // Let's also make a copy of the entry (row) containing the current search cell
-    let searchEntry = tableData[this.state.keyEntryIndex].slice();
 
     // In this case we are sorting a numerical column
     if (numericCol) {
@@ -2184,44 +2181,42 @@ class MainBody extends Component {
     // console.log("Search entry is ");
     // console.log(searchEntry);
 
-    // Note: keyColIndex does not change with a sort. But keyEntryIndex may. 
-    // Let's figure out what the updated keyEntryIndex should be.
-    let keyEntryIndex;
-    for (let i = 0; i < tableData.length; ++i) {
-      let matchFound = true;
-      for (let j = 0; j < searchEntry.length; ++j) {
-        if (searchEntry[j].data !== tableData[i][j].data) {
-          matchFound = false;
-          break;
-        }
-      }
-      if (matchFound === true) {
-        keyEntryIndex = i;
-        break;
-      }
-    }
     // console.log("Table Data is: ");
     // console.log(tableData);
     // console.log("Search entry is ");
     // console.log(searchEntry);
-    // console.log("New key entry index is "+keyEntryIndex);
 
-    // Support for undo: 
-    let lastAction = "contextSortColumn";
-    let prevState = 
-        {
-          "tableData": this.state.tableData,
-          "keyEntryIndex": this.state.keyEntryIndex,
-          "curActionInfo": this.state.curActionInfo,
-        };
+    // We need a bugfix here: since tableData is reordered, firstColSelection now do not have the correct data anymore.
+    // We have to update firstColSelection to include the correct data.
+    let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
+    let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+    allPromiseReady(promiseArrayOne).then((valuesOne) => {
+    allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
-    this.setState({
-      tableData: tableData,
-      keyEntryIndex: keyEntryIndex,
-      curActionInfo: {"task":"afterPopulateColumn"},
-      lastAction: lastAction,
-      prevState: prevState,
-    });
+      // We call updateNeighbourInfo here because we are changing the rows
+      let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+      let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+      document.body.classList.remove('waiting');
+
+      // Support for undo: 
+      let lastAction = "contextSortColumn";
+      let prevState = 
+          {
+            "tableData": this.state.tableData,
+            "curActionInfo": this.state.curActionInfo,
+            "firstDegNeighbours": this.state.firstDegNeighbours,
+          };
+
+      this.setState({
+        tableData: tableData,
+        curActionInfo: {"task":"afterPopulateColumn"},
+        firstDegNeighbours: firstDegNeighbours,
+        lastAction: lastAction,
+        prevState: prevState,
+      });
+    })
+    })
   }
 
   // The following function dedups the selected column.
@@ -3569,8 +3564,8 @@ class MainBody extends Component {
     else if (lastAction === "contextSortColumn") {
       this.setState({
         tableData: prevState.tableData,
-        keyEntryIndex: prevState.keyEntryIndex,
         curActionInfo: prevState.curActionInfo,
+        firstDegNeighbours: prevState.firstDegNeighbours,
         lastAction: "",
       })
     }
@@ -4002,7 +3997,6 @@ class MainBody extends Component {
                     tableHeader={this.state.tableHeader}
                     tableData={this.state.tableData}
                     keyColIndex={this.state.keyColIndex}
-                    keyEntryIndex={this.state.keyEntryIndex}
                     onCellChange={this.cellChange}
                     selectColHeader={this.selectColHeader}
                     getKeyOptions={this.getKeyOptions}

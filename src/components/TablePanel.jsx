@@ -80,7 +80,7 @@ class TablePanel extends Component {
     }
   }
 
-  // This function takes the states tableData, keyColIndex, keyEntryIndex, tableHeader, optionsMap
+  // This function takes the states tableData, keyColIndex, tableHeader, optionsMap
   // And convert them into HTML for the super table
 
   createSuperTable() {
