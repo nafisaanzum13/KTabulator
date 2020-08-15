@@ -145,6 +145,7 @@
 .action-panel-card {
   /* background-color: #a6d8d0; */
   border: double;
+  border-color: lightgray;
 }
 
 body.waiting * { cursor: wait; }

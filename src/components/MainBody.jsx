@@ -14,7 +14,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 10;
 const initialColNum = 4;
-const initialRowNum = 15;
+const initialRowNum = 45;
 
 class MainBody extends Component {
   constructor(props) {
@@ -508,11 +508,23 @@ class MainBody extends Component {
       previewColIndex = -1;
     }
 
+    // Support for undo:
+    let lastAction = "toggleOtherNeighbour";
+    let prevState = 
+    {
+      otherColChecked: this.state.otherColChecked,
+      otherColCheckedIndex: this.state.otherCheckedIndex,
+      tableData: this.state.tableData,
+      previewColIndex: this.state.previewColIndex,
+    }
+
     this.setState({
       otherColChecked: otherColChecked,
       otherCheckedIndex: otherCheckedIndex,
       tableData: tableData,
       previewColIndex: previewColIndex,
+      lastAction: lastAction,
+      prevState: prevState,
     })
   }
 
@@ -3398,6 +3410,7 @@ class MainBody extends Component {
         iframeURL: prevState.iframeURL,
         originTableArray: prevState.originTableArray,
         tableOpenList: prevState.tableOpenList,
+        lastAction: "",
       })
     }
 
@@ -3612,6 +3625,16 @@ class MainBody extends Component {
         firstDegNeighbours: prevState.firstDegNeighbours,
         keyColNeighbours: prevState.keyColNeighbours,
         firstColHeaderInfo: prevState.firstColHeaderInfo,
+        lastAction: "",
+      })
+    }
+
+    else if (lastAction === "toggleOtherNeighbour") {
+      this.setState({
+        tableData: prevState.tableData,
+        previewColIndex: prevState.previewColIndex,
+        otherColChecked: prevState.otherColChecked,
+        otherColCheckedIndex: prevState.otherColCheckedIndex,
         lastAction: "",
       })
     }
