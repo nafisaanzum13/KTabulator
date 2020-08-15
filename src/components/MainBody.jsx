@@ -2531,11 +2531,13 @@ class MainBody extends Component {
             "previewInfoArray": this.state.previewInfoArray,
             "previewInfoExpanded": this.state.previewInfoExpanded,
             "selectedCell": this.state.selectedCell,
+            "previewColIndex": this.state.previewColIndex,
           };
       
       this.setState({
         curActionInfo: tempObj,
         tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+        previewColIndex: -1,
         pageHidden: false,
         iframeURL: iframeURL,
         previewInfoArray: previewInfoArray,
@@ -3577,6 +3579,7 @@ class MainBody extends Component {
         previewInfoArray: prevState.previewInfoArray,
         previewInfoExpanded: prevState.previewInfoExpanded,
         selectedCell: prevState.selectedCell,
+        previewColIndex: prevState.previewColIndex,
         lastAction: "",
       })
     }
