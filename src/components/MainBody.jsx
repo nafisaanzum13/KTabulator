@@ -1169,6 +1169,7 @@ class MainBody extends Component {
               "keyColNeighbours": this.state.keyColNeighbours,
               "firstDegNeighbours": this.state.firstDegNeighbours,
               "firstColHeaderInfo": this.state.firstColHeaderInfo,
+              "previewColIndex": this.state.previewColIndex,
             }
   
           this.setState({
@@ -1177,6 +1178,7 @@ class MainBody extends Component {
             firstDegNeighbours: firstDegNeighbours,
             firstColHeaderInfo: firstColHeaderInfo,
             curActionInfo: {"task":"afterPopulateColumn"},
+            previewColIndex: -1,
             lastAction: lastAction,
             prevState: prevState,
           });
@@ -2034,6 +2036,7 @@ class MainBody extends Component {
           "keyColIndex": this.state.keyColIndex,
           "selectedClassAnnotation": this.state.selectedClassAnnotation,
           "tabIndex": this.state.tabIndex,
+          "previewColIndex": this.state.previewColIndex,
         };
 
     this.setState({
@@ -2043,6 +2046,7 @@ class MainBody extends Component {
       keyColIndex: keyColIndex,
       selectedClassAnnotation: selectedClassAnnotation,
       tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+      previewColIndex: -1, // we want to set the preview column index to -1
       lastAction: lastAction,
       prevState: prevState,
     });
@@ -2105,6 +2109,7 @@ class MainBody extends Component {
             "tableHeader": this.state.tableHeader,
             "selectedClassAnnotation": this.state.selectedClassAnnotation,
             "keyColIndex": this.state.keyColIndex,
+            "previewColIndex": this.state.previewColIndex,
             "propertyNeighbours": this.state.propertyNeighbours,
             "curActionInfo": this.state.curActionInfo,
           };
@@ -2114,6 +2119,7 @@ class MainBody extends Component {
         tableHeader: tableHeader,
         selectedClassAnnotation: selectedClassAnnotation,
         keyColIndex: keyColIndex,
+        previewColIndex: -1, // we want to set the preview column index to -1
         propertyNeighbours: propertyNeighbours,
         curActionInfo: {"task":"afterPopulateColumn"},
         lastAction: lastAction,
@@ -2218,12 +2224,14 @@ class MainBody extends Component {
             "tableData": this.state.tableData,
             "curActionInfo": this.state.curActionInfo,
             "firstDegNeighbours": this.state.firstDegNeighbours,
+            "previewColIndex": this.state.previewColIndex,
           };
 
       this.setState({
         tableData: tableData,
         curActionInfo: {"task":"afterPopulateColumn"},
         firstDegNeighbours: firstDegNeighbours,
+        previewColIndex: -1,
         lastAction: lastAction,
         prevState: prevState,
       });
@@ -2269,6 +2277,7 @@ class MainBody extends Component {
           "firstDegNeighbours": this.state.firstDegNeighbours,
           "curActionInfo": this.state.curActionInfo,
           "tabIndex": this.state.tabIndex,
+          "previewColIndex": this.state.previewColIndex,
         }
 
       this.setState({
@@ -2277,6 +2286,7 @@ class MainBody extends Component {
         firstDegNeighbours: firstDegNeighbours,
         curActionInfo: {"task":"afterPopulateColumn"},
         tabIndex: 0,
+        previewColIndex: -1,
         lastAction: lastAction,
         prevState: prevState,
       })
@@ -2353,6 +2363,7 @@ class MainBody extends Component {
               "firstDegNeighbours": this.state.firstDegNeighbours,
               "curActionInfo": this.state.curActionInfo,
               "tabIndex": this.state.tabIndex,
+              "previewColIndex": this.state.previewColIndex,
             };
 
         this.setState({
@@ -2361,6 +2372,7 @@ class MainBody extends Component {
           firstDegNeighbours: firstDegNeighbours,
           curActionInfo: {"task":"afterPopulateColumn"},
           tabIndex: 0, // we want to set the currently active tab to be wrangling actions
+          previewColIndex: -1,
           lastAction: lastAction,
           prevState: prevState,
         });
@@ -3057,12 +3069,14 @@ class MainBody extends Component {
             "tableData":this.state.tableData,
             "keyColNeighbours":this.state.keyColNeighbours,
             "firstDegNeighbours":this.state.firstDegNeighbours,
+            "previewColIndex": this.state.previewColIndex,
           };
       
       this.setState({
         tableData: tableData,
         keyColNeighbours: keyColNeighbours,
         firstDegNeighbours: firstDegNeighbours,
+        previewColIndex: -1,
         lastAction: lastAction,
         prevState: prevState,
       })
@@ -3139,12 +3153,14 @@ class MainBody extends Component {
             "tableData":this.state.tableData,
             "keyColNeighbours":this.state.keyColNeighbours,
             "firstDegNeighbours":this.state.firstDegNeighbours,
+            "previewColIndex": this.state.previewColIndex,
           };
       
       this.setState({
         tableData: tableData,
         keyColNeighbours: keyColNeighbours,
         firstDegNeighbours: firstDegNeighbours,
+        previewColIndex: -1,
         lastAction: lastAction,
         prevState: prevState,
       })
@@ -3352,6 +3368,7 @@ class MainBody extends Component {
             "curActionInfo":this.state.curActionInfo,
             "keyColNeighbours":this.state.keyColNeighbours,
             "firstDegNeighbours":this.state.firstDegNeighbours,
+            "previewColIndex": this.state.previewColIndex,
           };
       
       this.setState({
@@ -3361,6 +3378,7 @@ class MainBody extends Component {
         tableData: tableData,
         keyColNeighbours: keyColNeighbours,
         firstDegNeighbours: firstDegNeighbours,
+        previewColIndex: -1,
         lastAction: lastAction,
         prevState: prevState,
       })
@@ -3508,6 +3526,7 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         keyColNeighbours: prevState.keyColNeighbours,
         firstDegNeighbours: prevState.firstDegNeighbours,
+        previewColIndex: prevState.previewColIndex,
         lastAction: "",
       })
     }
@@ -3519,6 +3538,7 @@ class MainBody extends Component {
         tableHeader: prevState.tableHeader,
         curActionInfo: prevState.curActionInfo,
         keyColIndex: prevState.keyColIndex,
+        previewColIndex: prevState.previewColIndex,
         selectedClassAnnotation: prevState.selectedClassAnnotation,
         tabIndex: prevState.tabIndex,
         lastAction: "",
@@ -3533,6 +3553,7 @@ class MainBody extends Component {
         firstDegNeighbours: prevState.firstDegNeighbours,
         curActionInfo: prevState.curActionInfo,
         tabIndex: prevState.tabIndex,
+        previewColIndex: prevState.previewColIndex,
         lastAction: "",
       })
     }
@@ -3567,6 +3588,7 @@ class MainBody extends Component {
         tableHeader: prevState.tableHeader,
         selectedClassAnnotation: prevState.selectedClassAnnotation,
         keyColIndex: prevState.keyColIndex,
+        previewColIndex: prevState.previewColIndex,
         propertyNeighbours: prevState.propertyNeighbours,
         curActionInfo: prevState.curActionInfo,
         lastAction: "",
@@ -3579,6 +3601,7 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         curActionInfo: prevState.curActionInfo,
         firstDegNeighbours: prevState.firstDegNeighbours,
+        previewColIndex: prevState.previewColIndex,
         lastAction: "",
       })
     }
@@ -3591,6 +3614,7 @@ class MainBody extends Component {
         firstDegNeighbours: prevState.firstDegNeighbours,
         curActionInfo: prevState.curActionInfo,
         tabIndex: prevState.tabIndex,
+        previewColIndex: prevState.previewColIndex,
         lastAction: "",
       })
     }
@@ -3602,6 +3626,7 @@ class MainBody extends Component {
         keyColNeighbours: prevState.keyColNeighbours,
         firstDegNeighbours: prevState.firstDegNeighbours,
         curActionInfo: prevState.curActionInfo,
+        previewColIndex: prevState.previewColIndex,
         lastAction: "",
       })
     }
@@ -3613,6 +3638,7 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
         keyColNeighbours: prevState.keyColNeighbours,
+        previewColIndex: prevState.previewColIndex,
         firstDegNeighbours: prevState.firstDegNeighbours,
         selectedClassAnnotation: prevState.selectedClassAnnotation,
         lastAction: "",
@@ -3625,6 +3651,7 @@ class MainBody extends Component {
         firstDegNeighbours: prevState.firstDegNeighbours,
         keyColNeighbours: prevState.keyColNeighbours,
         firstColHeaderInfo: prevState.firstColHeaderInfo,
+        previewColIndex: prevState.previewColIndex,
         lastAction: "",
       })
     }
@@ -3955,6 +3982,7 @@ class MainBody extends Component {
           "keyColNeighbours":this.state.keyColNeighbours,
           "firstDegNeighbours":this.state.firstDegNeighbours,
           "selectedClassAnnotation":this.state.selectedClassAnnotation,
+          "previewColIndex": this.state.previewColIndex,
         };
 
       this.setState({
@@ -3965,6 +3993,7 @@ class MainBody extends Component {
         firstDegNeighbours:firstDegNeighbours,
         selectedClassAnnotation:selectedClassAnnotationUpdated,
         showJoinModal: false,
+        previewColIndex: -1,
         lastAction:lastAction,
         prevState:prevState,
       })
