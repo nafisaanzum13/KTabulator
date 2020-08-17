@@ -3327,56 +3327,73 @@ class MainBody extends Component {
     // console.log(this.state.dataAndChecked);
     // console.log(this.state.curFilterIndex);
 
-    let valuesToKeep = [];
-    for (let i=0;i<this.state.dataAndChecked.length;++i) {
+    // The following part are added for debugging purposes
+    let allFalse = true;
+    for (let i = 0; i < this.state.dataAndChecked.length; ++i) {
       if (this.state.dataAndChecked[i].checked === true) {
-        valuesToKeep.push(this.state.dataAndChecked[i].data);
-      }
-    }
-    let tableData = _.cloneDeep(this.state.tableData);
-    for (let i=0;i<tableData.length;++i) {
-      if (!valuesToKeep.includes(tableData[i][this.state.curFilterIndex].data)) {
-        tableData.splice(i,1);
-        --i;
+        allFalse = false;
+        break;
       }
     }
 
-    // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
-    // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
-    let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
-    let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
-    allPromiseReady(promiseArrayOne).then((valuesOne) => {
-    allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+    // We do not want users to toggle every value off
+    if (allFalse === true) {
+      alert("Please do not remove every value from the table!");
+    }
 
-      // We call updateNeighbourInfo here because we are changing the rows
-      let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
-      let keyColNeighbours = updatedNeighbours.keyColNeighbours;
-      let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+    // This else clause contains the original function body
+    else {
+      let valuesToKeep = [];
+      for (let i=0;i<this.state.dataAndChecked.length;++i) {
+        if (this.state.dataAndChecked[i].checked === true) {
+          valuesToKeep.push(this.state.dataAndChecked[i].data);
+        }
+      }
+      let tableData = _.cloneDeep(this.state.tableData);
+      for (let i=0;i<tableData.length;++i) {
+        if (!valuesToKeep.includes(tableData[i][this.state.curFilterIndex].data)) {
+          tableData.splice(i,1);
+          --i;
+        }
+      }
 
-      // Suppport for undo.
-      let lastAction = "applyFilter";
-      let prevState = 
-          {
-            "tableData":this.state.tableData,
-            "curActionInfo":this.state.curActionInfo,
-            "keyColNeighbours":this.state.keyColNeighbours,
-            "firstDegNeighbours":this.state.firstDegNeighbours,
-            "previewColIndex": this.state.previewColIndex,
-          };
-      
-      this.setState({
-        dataAndChecked: [],
-        showFilter: false,
-        curFilterIndex: -1,
-        tableData: tableData,
-        keyColNeighbours: keyColNeighbours,
-        firstDegNeighbours: firstDegNeighbours,
-        previewColIndex: -1,
-        lastAction: lastAction,
-        prevState: prevState,
+      // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
+      // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
+      let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
+      let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+      allPromiseReady(promiseArrayOne).then((valuesOne) => {
+      allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+
+        // We call updateNeighbourInfo here because we are changing the rows
+        let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+        let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+        let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+        // Suppport for undo.
+        let lastAction = "applyFilter";
+        let prevState = 
+            {
+              "tableData":this.state.tableData,
+              "curActionInfo":this.state.curActionInfo,
+              "keyColNeighbours":this.state.keyColNeighbours,
+              "firstDegNeighbours":this.state.firstDegNeighbours,
+              "previewColIndex": this.state.previewColIndex,
+            };
+        
+        this.setState({
+          dataAndChecked: [],
+          showFilter: false,
+          curFilterIndex: -1,
+          tableData: tableData,
+          keyColNeighbours: keyColNeighbours,
+          firstDegNeighbours: firstDegNeighbours,
+          previewColIndex: -1,
+          lastAction: lastAction,
+          prevState: prevState,
+        })
       })
-    })
-    })
+      })
+    }
   }
 
   // This function hanles switching tabs
