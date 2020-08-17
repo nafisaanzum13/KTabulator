@@ -3,14 +3,31 @@ import React, { Component } from "react";
 // import Tooltip from '@atlaskit/tooltip';
 // import Select from "react-select";
 // import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
-import { FaSearch, FaEdit, FaPlus, FaMinus, FaFilter, FaArrowDown } from "react-icons/fa";
+import { FaSearch, FaEdit, FaPlus, FaMinus, FaFilter, FaArrowDown, FaEllipsisH} from "react-icons/fa";
 
 class TablePanel extends Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+      showFullTitle: false, // boolean storing whether we want to display the full title for the first column, in the startSubject case
+    };
     this.createSuperTable = this.createSuperTable.bind(this);
     this.createSelectedTableView = this.createSelectedTableView.bind(this);
+    // The following functions are for first column's display in the startSubject case. They are helpers for columnHeaderGen
+    this.showFullTitle = this.showFullTitle.bind(this);
+    this.showPartialTitle = this.showPartialTitle.bind(this);
+  }
+
+  showFullTitle() {
+    this.setState({
+      showFullTitle: true,
+    })
+  }
+
+  showPartialTitle() {
+    this.setState({
+      showFullTitle: false,
+    })
   }
 
   // This function creates the i-th column header from this.props.tableHeader[i]
@@ -23,7 +40,7 @@ class TablePanel extends Component {
     // In this case we deal with the first column header
     // We want to divide it into two subcases: "start table" vs. "start subject"
     if (colIndex === 0) {
-      // First case is start table
+      // First subcase is start table
       if (this.props.tableHeader.length > 0 && 
           this.props.tableHeader[0].length === 1 && 
           this.props.tableHeader[0][0].label === "OriginURL") {
@@ -38,28 +55,99 @@ class TablePanel extends Component {
           </div>
         return textEle;
       }
-      // Second case is start subject
+      // Second subcase is start subject
       else {
-        // Here is the difference: textLiteral for this case is an array instead of a string
-        let textLiteral = [];
+        // In this subcase, we first check if firstColHeaderInfo has length < 2
         let firstColHeaderInfo = this.props.firstColHeaderInfo;
-        for (let i = 0; i < firstColHeaderInfo.length; ++i) {
-          let curText = "";
-          for (let j = 0; j < firstColHeaderInfo[i].length; ++j) {
-            let textToAdd = j > 0 ? "\nAND " + niceRender(firstColHeaderInfo[i][j].label) : niceRender(firstColHeaderInfo[i][j].label);
-            curText+=textToAdd;
+
+        // If yes, we simply display it
+        if (firstColHeaderInfo.length < 2) {
+          let textLiteral = [];
+          for (let i = 0; i < firstColHeaderInfo.length; ++i) {
+            let curText = "";
+            for (let j = 0; j < firstColHeaderInfo[i].length; ++j) {
+              let textToAdd = j > 0 ? "\nAND " + niceRender(firstColHeaderInfo[i][j].label) : niceRender(firstColHeaderInfo[i][j].label);
+              curText+=textToAdd;
+            }
+            textLiteral.push(
+              <p>
+                {curText}
+              </p>
+            )
           }
-          textLiteral.push(
-            <p>
-              {curText}
-            </p>
-          )
+          let textEle = 
+            <div>
+              {textLiteral}
+            </div>
+          return textEle;
         }
-        let textEle = 
-          <div>
-            {textLiteral}
-          </div>
-        return textEle;
+
+        // Else, firstColHeaderInfo has length longer than 1, so we have to check this.state.showFullTitle
+        // what we render depends on whether this.state.showFullTitle is true or not
+        else {
+          let showFullTitle = this.state.showFullTitle;
+
+          // If showFullTitle is false, we display the first element from firstColHeaderInfo
+          // As well as an icon that, on hover, sets showFullTitle to true
+          if (showFullTitle === false) {
+            let textLiteral = [];
+            let curText = "";
+            for (let j = 0; j < firstColHeaderInfo[0].length; ++j) {
+              let textToAdd = j > 0 ? "\nAND " + niceRender(firstColHeaderInfo[0][j].label) : niceRender(firstColHeaderInfo[0][j].label);
+              curText+=textToAdd;
+            }
+            textLiteral.push(
+              <p>
+                {curText}
+                {"\u00A0"}
+                <FaEllipsisH 
+                  onMouseEnter={() => this.showFullTitle()}
+                  onMouseLeave={() => this.showPartialTitle()}
+                />
+              </p>
+            )
+            let textEle = 
+              <div>
+                {textLiteral}
+              </div>
+            return textEle;
+          }
+          // If showFullTitle is true, we display the full table header for the first column
+          else {
+            let textLiteral = [];
+            for (let i = 0; i < firstColHeaderInfo.length; ++i) {
+              let curText = "";
+              for (let j = 0; j < firstColHeaderInfo[i].length; ++j) {
+                let textToAdd = j > 0 ? "\nAND " + niceRender(firstColHeaderInfo[i][j].label) : niceRender(firstColHeaderInfo[i][j].label);
+                curText+=textToAdd;
+              }
+              if (i === 0) {
+                textLiteral.push(
+                  <p>
+                    {curText}
+                    {"\u00A0"}
+                    <FaEllipsisH 
+                      onMouseEnter={() => this.showFullTitle()}
+                      onMouseLeave={() => this.showPartialTitle()}
+                    />
+                  </p>
+                )
+              }
+              else {
+                textLiteral.push(
+                  <p>
+                    {curText}
+                  </p>
+                )
+              }
+            }
+            let textEle = 
+              <div>
+                {textLiteral}
+              </div>
+            return textEle;
+          }
+        }
       }
     }
     // In this case we deal with non-first column headers

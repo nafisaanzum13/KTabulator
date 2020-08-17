@@ -13,8 +13,9 @@ import PagePanel from "../components/PagePanel";
 import _ from "lodash";
 
 const maxNeighbourCount = 10;
+const maxFetchCount = 30;
 const initialColNum = 4;
-const initialRowNum = 10;
+const initialRowNum = 45;
 
 class MainBody extends Component {
   constructor(props) {
@@ -971,6 +972,23 @@ class MainBody extends Component {
     // OPTIONAL {?p rdfs:subPropertyOf ?subPropertyOf}.
     // }
 
+    // BUGFIX August 17th: The query below may need to be used for performance issues
+
+    // select ?s ?p ?range ?subPropertyOf
+    // where {
+    // ?s ?p dbr:Barack_Obama.
+    // OPTIONAL {?p rdfs:range ?range}.
+    // OPTIONAL {?p rdfs:subPropertyOf ?subPropertyOf}.
+    // {
+    // select ?p (count(?s) as ?count) 
+    // where {
+    // ?s ?p dbr:Barack_Obama
+    // }
+    // group by ?p
+    // having (count(?s) <= 50)
+    // }
+    // }
+
     let promiseArray = [];
     let prefixURL =
       "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
@@ -987,10 +1005,20 @@ class MainBody extends Component {
           "+%3Fp+%3Fo.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3AsubPropertyOf+%3FsubPropertyOf%7D.%0D%0A%7D&";
       }
       else {
+        // queryBody = 
+        //   "select+%3Fs+%3Fp+%3Frange+%3FsubPropertyOf%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
+        //   cellValue +
+        //   ".%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3AsubPropertyOf+%3FsubPropertyOf%7D.%0D%0A%7D&";
+
+        // Above code is the query before bugfix on August 17th. Below is the fixed version of the code
         queryBody = 
-          "select+%3Fs+%3Fp+%3Frange+%3FsubPropertyOf%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
-          cellValue +
-          ".%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3AsubPropertyOf+%3FsubPropertyOf%7D.%0D%0A%7D&";
+          "select+%3Fs+%3Fp+%3Frange+%3FsubPropertyOf%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" + 
+          cellValue + 
+          ".%0D%0AOPTIONAL+%7B%3Fp+rdfs%3Arange+%3Frange%7D.%0D%0AOPTIONAL+%7B%3Fp+rdfs%3AsubPropertyOf+%3FsubPropertyOf%7D.%0D%0A%7B%0D%0Aselect+%3Fp+%28count%28%3Fs%29+as+%3Fcount%29+%0D%0Awhere+%7B%0D%0A%3Fs+%3Fp+dbr%3A" +
+          cellValue + 
+          "%0D%0A%7D%0D%0Agroup+by+%3Fp%0D%0Ahaving+%28count%28%3Fs%29+%3C%3D+" + 
+          maxFetchCount +
+          "%29%0D%0A%7D%0D%0A%7D%0D%0A&";
       }
       let queryURL = prefixURL + queryBody + suffixURL;
       let curPromise = fetchJSON(queryURL);
@@ -4216,7 +4244,7 @@ function fetchJSON(url) {
         })
         .catch(function (error) {
           document.body.classList.remove('waiting');
-          alert("Some error occured when accessing SPARQL public endpoint. If semantic mapping is enabled, disable it and try again.");
+          // alert("Some error occured when accessing SPARQL public endpoint. If semantic mapping is enabled, disable it and try again.");
           return 1;
         })
 }

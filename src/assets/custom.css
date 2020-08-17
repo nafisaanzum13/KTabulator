@@ -69,6 +69,7 @@
 .table-head {
   position: sticky;
   width: 20vw;
+  /* height: 2vh; */
   top: 0;
   background-color: #a6d8d0;
 }
