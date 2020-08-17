@@ -14,7 +14,7 @@ import _ from "lodash";
 
 const maxNeighbourCount = 10;
 const initialColNum = 4;
-const initialRowNum = 45;
+const initialRowNum = 10;
 
 class MainBody extends Component {
   constructor(props) {
@@ -2558,18 +2558,9 @@ class MainBody extends Component {
         tableOpenList[i] = false;
       }
     }
-    // We should change the Action Panel here, if we just toggled open a table
-    if (tableOpenList[index] === true) {
-      this.setState({
-        tableOpenList: tableOpenList,
-        curActionInfo: { task: "selectTableIndex", tableIndex: index },
-      });
-    } else {
-      this.setState({
-        tableOpenList: tableOpenList,
-        curActionInfo: null,
-      });
-    }
+    this.setState({
+      tableOpenList: tableOpenList,
+    });
   }
 
   // The following function is a helper function for handleStartTable.
@@ -3735,7 +3726,7 @@ class MainBody extends Component {
     // Note: both originTableHeader and joinTableHeader are array of objects with three properties: label, value, and index
 
     // First we get the header for the origin table
-    console.log(tableHeader);
+    // console.log(tableHeader);
     // Let's loop through this tableHeader to fill the originTableHeader
     for (let i = 0; i < tableHeader.length; ++i) {
       // If the current element in table header has length of 0, it means it's empty
@@ -3758,7 +3749,7 @@ class MainBody extends Component {
         )
       }
     }
-    console.log(originTableHeader);
+    // console.log(originTableHeader);
 
     // Now that we have originTableHeader working correctly, let's get the joinTableHeader
     let urlOrigin = decodeURIComponent(this.state.urlPasted.slice(30));
@@ -3784,13 +3775,19 @@ class MainBody extends Component {
     // It seems like we have fetched the right values. 
     // Now we use these to update states, so that jon modal can display the right content.
 
-    this.setState({
-      showJoinModal: true,
-      joinTableIndex: i,
-      joinTableData: joinTableData,
-      originColOptions: originTableHeader,
-      joinColOptions: joinTableHeader,
-    })
+    // Bugfix here: if either tableHeader is empty, we want to show an alert message
+    if (originTableHeader.length === 0 || joinTableHeader.length === 0) {
+      alert("One of the join tables have no data. Join cannot be performed.");
+    }
+    else {
+      this.setState({
+        showJoinModal: true,
+        joinTableIndex: i,
+        joinTableData: joinTableData,
+        originColOptions: originTableHeader,
+        joinColOptions: joinTableHeader,
+      })
+    }
   }
 
   // The following function handles cancelling the join operation.
@@ -4235,12 +4232,24 @@ function regexReplace(str) {
     .replace(/\+/g, "%5Cu002B")
     .replace(/-/g, "%5Cu002D")
     .replace(/;/g, "%5Cu003B")
+    .replace(/</g, "%5Cu003C")
     .replace(/=/g, "%5Cu003D")
+    .replace(/>/g, "%5Cu003E")
     .replace(/\?/g, "%5Cu003F")
     .replace(/\./g, "%5Cu002E")
     .replace(/\//g, "%5Cu002F")
     .replace(/,/g, "%5Cu002C")
-    .replace(/\s/g, "_");
+    .replace(/\s/g, "_")
+    .replace(/@/g, "%5Cu0040")
+    .replace(/\^/g, "%5Cu005E")
+    .replace(/~/g, "%5Cu007E")
+    .replace(/`/g, "%5Cu0060")
+    .replace(/\|/g, "%5Cu007C")
+    .replace(/\[/g, "%5Cu005B")
+    .replace(/\\/g, "%5Cu005C")
+    .replace(/\]/g, "%5Cu005D")
+    .replace(/\{/g, "%5Cu007B")
+    .replace(/\}/g, "%5Cu007D");
 }
 
 // This function replaces the URL pasted
@@ -4259,12 +4268,24 @@ function urlReplace(str) {
     .replace(/\+/g, "%5Cu002B")
     .replace(/-/g, "%5Cu002D")
     .replace(/;/g, "%5Cu003B")
+    .replace(/</g, "%5Cu003C")
     .replace(/=/g, "%5Cu003D")
+    .replace(/>/g, "%5Cu003E")
     .replace(/\?/g, "%5Cu003F")
     .replace(/\./g, "%5Cu002E")
     .replace(/\//g, "%5Cu002F")
     .replace(/,/g, "%5Cu002C")
-    .replace(/\s/g, "_");
+    .replace(/\s/g, "_")
+    .replace(/@/g, "%5Cu0040")
+    .replace(/\^/g, "%5Cu005E")
+    .replace(/~/g, "%5Cu007E")
+    .replace(/`/g, "%5Cu0060")
+    .replace(/\|/g, "%5Cu007C")
+    .replace(/\[/g, "%5Cu005B")
+    .replace(/\\/g, "%5Cu005C")
+    .replace(/\]/g, "%5Cu005D")
+    .replace(/\{/g, "%5Cu007B")
+    .replace(/\}/g, "%5Cu007D");
 }
 
 // This function removes the prefix "http://dbpedia.org/resource/" from query results, if it includes one
