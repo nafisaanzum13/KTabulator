@@ -682,15 +682,17 @@ class MainBody extends Component {
     // Case 1:
     // If this column is non-empty, and not completely filled, we want to deal with special otherColSelection
     if (colEmpty === false && colFilled === false) {
+      document.body.classList.add('waiting');
       let prefixURL =
         "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
       let suffixURL =
         "%0D%0A%7D%0D%0A%0D%0A&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
       let queryBody = "SELECT+%3Fsomevar%0D%0AWHERE+%7B";
-      for (let i = 0; i < nonEmptyInfo.length; ++i) {
+      // Bugfix added on August 17th: instead of using every entry from nonEmptyInfo to determine the relation, we will use the first one
+      // for (let i = 0; i < nonEmptyInfo.length; ++i) {
+      for (let i = 0; i < 1; ++i) {
         let curKeySubject = regexReplace(
-          this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex]
-            .data
+          this.state.tableData[nonEmptyInfo[i][0]][this.state.keyColIndex].data
         );
         let curEnteredSubject = regexReplace(nonEmptyInfo[i][1]);
         queryBody +=
@@ -750,6 +752,7 @@ class MainBody extends Component {
           "colIndex":colIndex,
         }
 
+      document.body.classList.remove('waiting');
       this.setState({
         otherColSelection:otherColSelection,
         otherColChecked:otherColChecked,
@@ -985,7 +988,7 @@ class MainBody extends Component {
     // ?s ?p dbr:Barack_Obama
     // }
     // group by ?p
-    // having (count(?s) <= 50)
+    // having (count(?s) <= maxFetchCount)
     // }
     // }
 
