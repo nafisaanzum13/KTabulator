@@ -110,6 +110,8 @@ class MainBody extends Component {
 
       // states below are for column filter
       showFilter: false,        // boolean storing whether we want to show column filter or not. Initially false.
+      checkAll: true,           // boolean that when toggled to true, all dataAndChecked will be set to true, 
+                                // and when false, all dataAndChecked will be set to false.
       curFilterIndex: -1,       // number storing the index of the column on which we apply the filter. Initially -1 (no filter.)
       dataAndChecked: [],       // array of [data, checked] pairs storing which data are in the filter column, and whether we should keep them.
     
@@ -191,6 +193,7 @@ class MainBody extends Component {
     this.openFilter = this.openFilter.bind(this);
     this.cancelFilter = this.cancelFilter.bind(this);
     this.toggleChecked = this.toggleChecked.bind(this);
+    this.toggleAll = this.toggleAll.bind(this);
     this.applyFilter = this.applyFilter.bind(this);
 
     // functions below are for join feature
@@ -3328,6 +3331,7 @@ class MainBody extends Component {
     this.setState({
       dataAndChecked: dataAndChecked,
       showFilter: true,
+      checkAll: true,   // we want to set checkAll to true whenever we open the filter modal
       curFilterIndex: colIndex,
     })
   }
@@ -3341,6 +3345,7 @@ class MainBody extends Component {
       curFilterIndex: -1,
     })
   }
+  
 
   // This function handles toggling the data checkboxes in filter modal.
 
@@ -3349,6 +3354,22 @@ class MainBody extends Component {
     dataAndChecked[checkIndex].checked = !dataAndChecked[checkIndex].checked;
     this.setState({
       dataAndChecked:dataAndChecked,
+    })
+  }
+
+  // This function handles toggling the Check/Uncheck all checkbox in filter modal.
+
+  toggleAll(e) {
+    let checkAll = this.state.checkAll;
+    let dataAndChecked = this.state.dataAndChecked;
+    checkAll = !checkAll;
+    // Now we loop through dataAndChecked to set all the checked attribute
+    for (let i = 0; i < dataAndChecked.length; ++i) {
+      dataAndChecked[i].checked = checkAll;
+    }
+    this.setState({
+      checkAll: checkAll,
+      dataAndChecked: dataAndChecked,
     })
   }
 
@@ -4201,9 +4222,11 @@ class MainBody extends Component {
                 <FilterModal
                   showFilter={this.state.showFilter}
                   dataAndChecked={this.state.dataAndChecked}
+                  checkAll={this.state.checkAll}
                   applyFilter={this.applyFilter}
                   cancelFilter={this.cancelFilter}
                   toggleChecked={this.toggleChecked}
+                  toggleAll={this.toggleAll}
                 />
               </div>
               <div>

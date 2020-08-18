@@ -33,6 +33,15 @@ class FilterModal extends Component {
             </div>
             <br />
             <div className="checkbox-list">
+              <div>
+                <input
+                  type="checkbox"
+                  checked={this.props.checkAll}
+                  onChange={(e) => this.props.toggleAll(e)}
+                />
+                Check/Uncheck all
+              </div>
+              <br />
               {optionsEle}
             </div>
             <br />
