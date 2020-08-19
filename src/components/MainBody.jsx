@@ -15,7 +15,7 @@ import _ from "lodash";
 const maxNeighbourCount = 10;
 const maxFetchCount = 30;
 const initialColNum = 4;
-const initialRowNum = 15;
+const initialRowNum = 45;
 
 class MainBody extends Component {
   constructor(props) {
@@ -2062,19 +2062,50 @@ class MainBody extends Component {
 
     // In the third part of the code, We start setting up the content for the Action Panel.
 
+    // First thing we want to do is to update the recommendArray: 
+    // We want to remove the recommendation just added from the recommendArray
+    let recommendArray = _.cloneDeep(this.state.curActionInfo.recommendArray)
+    let curRecommendation = neighbourArray[0];
+    let sliceIndex = -1;
+
+    // This for loop checks which index we want to remove
+    for (let i = 0; i < recommendArray.length; ++i) {
+      if (recommendArray[i].value === curRecommendation.value && recommendArray[i].type === curRecommendation.type) {
+        sliceIndex = i;
+        break;
+      }
+    }
+
+    // console.log(sliceIndex);
+    // console.log(curRecommendation);
+    // console.log(recommendArray);
+    
+    // This if condition removes the found element
+    if (sliceIndex !== -1) {
+      recommendArray.splice(sliceIndex, 1);
+    }
+
     // tempObj stores the information passed to ActionPanel
     let tempObj = {};
-    console.log(this.state.curActionInfo);
-    if (hasMultiple === true) {
+    // console.log(this.state.curActionInfo);
+    if (hasMultiple === true && recommendArray.length > 0) {
       tempObj["task"] = "sameNeighbourAndRecommendation";
       tempObj["colIndex"] = colIndex;
       tempObj["neighbourArray"] = neighbourArray;
-      tempObj["recommendArray"] = _.cloneDeep(this.state.curActionInfo.recommendArray);
+      tempObj["recommendArray"] = recommendArray;
     }
-    else {
+    else if (hasMultiple === false && recommendArray.length > 0) {
       tempObj["task"] = "populateRecommendation";
       tempObj["colIndex"] = colIndex;
-      tempObj["recommendArray"] = _.cloneDeep(this.state.curActionInfo.recommendArray);
+      tempObj["recommendArray"] = recommendArray;
+    }
+    else if (hasMultiple === true) {
+      tempObj["task"] = "populateSameNeighbour";
+      tempObj["colIndex"] = colIndex;
+      tempObj["neighbourArray"] = neighbourArray;
+    }
+    else {
+      tempObj["task"] = "afterPopulateColumn"
     }
 
     // console.log(tableData);

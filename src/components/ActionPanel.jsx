@@ -235,7 +235,7 @@ class ActionPanel extends Component {
                 onClick={(e) => this.props.populateRecommendation(e,
                                                                   colIndex,
                                                                   neighbourArray)}>
-                add {recommendText}
+                {recommendText}
               </Button>
               {/* <b>{recommendText}</b> */}
             </p>
@@ -250,7 +250,7 @@ class ActionPanel extends Component {
                 onClick={(e) => this.props.populateRecommendation(e,
                                                                   colIndex,
                                                                   neighbourArray)}>
-                add {recommendText}
+                {recommendText}
               </Button>
               {/* <b>{recommendText}</b> */}
             </p>
@@ -429,7 +429,15 @@ class ActionPanel extends Component {
       else if (actionInfo.task === "afterPopulateColumn") {
         actionEle = (
           <div>
-            Fill an <b>empty column header</b> by clicking on its <b>edit icon</b>
+            <p>
+              <b>Fill an empty column</b> by clicking on its <b>edit icon</b>
+            </p>
+            <p>
+              OR
+            </p>
+            <p>
+              <b>Add a new column</b> by clicking on a column's <b>plus icon</b>
+            </p>
           </div>
         )
       }

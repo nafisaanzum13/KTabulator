@@ -236,6 +236,18 @@ class TablePanel extends Component {
                 </button> */}
               </div>
           }
+          else {
+            buttonsEle =
+              <div>
+                <button
+                  className="btn btn-default"
+                  title="Add column to the right"
+                  onClick={(e) => this.props.contextAddColumn(e, colIndex)}
+                >
+                  <FaPlus />
+                </button>
+              </div>
+          }
         }
         tempHeader = (
           <th className="table-head">
