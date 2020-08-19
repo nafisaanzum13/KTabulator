@@ -220,36 +220,40 @@ class ActionPanel extends Component {
     let semanticRecommend = [];
     // stringRecommend and semanticRecommend are both HTML elements that should be constructed from recommend array
     for (let i = 0; i < recommendArray.length; ++i) {
-      // let neighbourArray = [
-      //   {
-      //     "value":recommendArray[i].value,
-      //     "type":recommendArray[i].type
-      //   }
-      // ]
+      let neighbourArray = [
+        {
+          "value":recommendArray[i].value,
+          "type":recommendArray[i].type
+        }
+      ]
       let recommendText = recommendArray[i].type === "subject" ? recommendArray[i].value: "is " + recommendArray[i].value + " of";
       if (recommendArray[i].relation === "string") {
         stringRecommend.push(
           <div>
-            {/* <Button
-              onClick={(e) => this.props.populateRecommendation(e,
-                                                                colIndex,
-                                                                neighbourArray)}>
-              add {recommendText}
-            </Button> */}
-            <p><b>{recommendText}</b></p>
+            <p>
+              <Button
+                onClick={(e) => this.props.populateRecommendation(e,
+                                                                  colIndex,
+                                                                  neighbourArray)}>
+                add {recommendText}
+              </Button>
+              {/* <b>{recommendText}</b> */}
+            </p>
           </div>
         )
       }
       else {
         semanticRecommend.push(
           <div>
-            {/* <Button
-              onClick={(e) => this.props.populateRecommendation(e,
-                                                                colIndex,
-                                                                neighbourArray)}>
-              add {recommendText}
-            </Button> */}
-            <p><b>{recommendText}</b></p>
+            <p>
+              <Button
+                onClick={(e) => this.props.populateRecommendation(e,
+                                                                  colIndex,
+                                                                  neighbourArray)}>
+                add {recommendText}
+              </Button>
+              {/* <b>{recommendText}</b> */}
+            </p>
           </div>
         )
       }
@@ -272,7 +276,7 @@ class ActionPanel extends Component {
         <p>Expand all other values that are also</p>
         <p><b>{neighbourArrayText}</b> ?</p>
         <div className="row">
-          <button
+          <Button
             className="col-md-4"
             onClick={(e) =>
               this.props.sameNeighbourOneRow(
@@ -283,8 +287,8 @@ class ActionPanel extends Component {
             }
           >
             In One Row
-          </button>
-          <button
+          </Button>
+          <Button
             className="offset-md-1 col-md-4"
             onClick={(e) =>
               this.props.sameNeighbourDiffRow(
@@ -295,7 +299,7 @@ class ActionPanel extends Component {
             }
           >
             In Separate Rows
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -412,11 +416,11 @@ class ActionPanel extends Component {
           actionEle = (
             <div>
               <p>Add more entities to the first column?</p>
-              <button
+              <Button
                 onClick={() => this.props.addToFirstCol()}
               >
                 OK
-              </button>
+              </Button>
             </div>
           )
         }
@@ -443,7 +447,7 @@ class ActionPanel extends Component {
             <div>
               <p>Fill this column with:</p>
               <p><b>{neighbourArrayText}</b> ?</p>
-              <button
+              <Button
                 onClick={(e) =>
                   this.props.populateKeyColumn(
                     e,
@@ -453,7 +457,7 @@ class ActionPanel extends Component {
                 }
               >
                 OK
-              </button>
+              </Button>
             </div>
           );
         }
@@ -474,7 +478,7 @@ class ActionPanel extends Component {
           <div>
             <p>Fill this column with:</p>
             <p><b>{neighbourArrayText}</b> ?</p>
-            <button
+            <Button
               onClick={(e) =>
                 this.props.populateOtherColumn(
                   e,
@@ -484,44 +488,14 @@ class ActionPanel extends Component {
               }
             >
               OK
-            </button>
+            </Button>
           </div>
         );
       } 
       // In this case we give user a button to allow the population of same neighbour
       else if (actionInfo.task === "populateSameNeighbour") {
         actionEle = this.createSameNeighbour(actionInfo);
-      } 
-      // In this case we give user a button to allow the population of all neighbours from the same range
-      else if (actionInfo.task === "populateSameRange") {
-        let siblingText = "";
-        let plural = "";
-        for (let i = 0; i < actionInfo.siblingNeighbour.length; ++i) {
-          if (i > 0) {
-            siblingText += ", ";
-            plural = "s";
-          }
-          siblingText += actionInfo.siblingNeighbour[i].value;
-        }
-        actionEle = (
-          <div>
-            <p>Add column{plural}: <b>{siblingText}</b></p>
-            <p>that also has type: {actionInfo.range} ?</p>
-            <button
-              onClick={(e) =>
-                this.props.populateSameRange(
-                  e,
-                  actionInfo.colIndex,
-                  actionInfo.range,
-                  actionInfo.siblingNeighbour
-                )
-              }
-            >
-              OK
-            </button>
-          </div>
-        );
-      } 
+      }  
       // In this case we give users an array of recommended neighbours to add to the table
       else if (actionInfo.task === "populateRecommendation") {
         let recommendArray = this.createRecommendArray(actionInfo.colIndex, actionInfo.recommendArray);
@@ -538,11 +512,11 @@ class ActionPanel extends Component {
         actionEle = (
           <div>
             <Card className="action-panel-card">
-              {sameNeighbourEle}
+              {recommendEle}
             </Card>
             <br />
             <Card className="action-panel-card">
-              {recommendEle}
+              {sameNeighbourEle}
             </Card>
           </div>
         )

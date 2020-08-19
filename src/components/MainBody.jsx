@@ -15,7 +15,7 @@ import _ from "lodash";
 const maxNeighbourCount = 10;
 const maxFetchCount = 30;
 const initialColNum = 4;
-const initialRowNum = 45;
+const initialRowNum = 15;
 
 class MainBody extends Component {
   constructor(props) {
@@ -1954,58 +1954,159 @@ class MainBody extends Component {
 
   // The following function populates one recommendation neighbour
   populateRecommendation(e, colIndex, neighbourArray) {
-    console.log(colIndex);
-    console.log(neighbourArray);
+    // console.log(colIndex);
+    // console.log(neighbourArray);
 
+    // First thing we need to do should be the same as contextAddColumn
+    const rowNum = this.state.tableData.length;
+    const colNum = this.state.tableData[0].length;
 
+    // we first take care of table data's addition
+    let tableData = [];
+    for (let i = 0; i < rowNum; ++i) {
+      let tempRow = [];
+      for (let j = 0; j < colIndex + 1; ++j) {
+        tempRow.push(this.state.tableData[i][j]);
+      }
+      // we add in one column of empty data
+      tempRow.push({ data: "", origin: [] });
+      for (let k = colIndex + 1; k < colNum; ++k) {
+        tempRow.push(this.state.tableData[i][k]);
+      }
+      tableData.push(tempRow);
+    }
+    // console.log(tableData);
 
+    // we now take care of tabler header, and selectedClassAnnotation's addition
+    let tableHeader = [];
+    for (let j = 0; j < colIndex + 1; ++j) {
+      tableHeader.push(this.state.tableHeader[j]);
+    }
+    tableHeader.push([]);
+    for (let k = colIndex + 1; k < colNum; ++k) {
+      tableHeader.push(this.state.tableHeader[k]);
+    }
+    // console.log(tableHeader);
 
-    // let numCols = 0;
-    // // We need to figure out what numCols should be, based on firstDegNeighbours
-    // let firstDegNeighbours = neighbourArray[0].type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
-    // for (let i = 0; i < firstDegNeighbours.length; ++i) {
-    //   let neighbourData = firstDegNeighbours[i][neighbourArray[0].value];
-    //   if (neighbourData !== undefined && neighbourData.length > numCols) {
-    //     numCols = neighbourData.length;
-    //   }
-    // }
-    // // console.log(numCols);
-    // // At this stage, we have gathered all the parameters needed for addAllNeighbours
-    // let newState = this.addAllNeighbour(colIndex,
-    //                                     neighbourArray,
-    //                                     numCols,
-    //                                     this.state.keyColIndex,
-    //                                     this.state.tableHeader,
-    //                                     this.state.tableData,
-    //                                     this.state.optionsMap,
-    //                                     this.state.selectedClassAnnotation,
-    //                                     true);
-    // // console.log(newState);
+    // we now take care of selectedClassAnnotation
+    let selectedClassAnnotation = [];
+    for (let j = 0; j < colIndex; ++j) {
+      selectedClassAnnotation.push(this.state.selectedClassAnnotation[j]);
+    }
+    selectedClassAnnotation.push([]);
+    for (let k = colIndex; k < colNum-1; ++k) {
+      selectedClassAnnotation.push(this.state.selectedClassAnnotation[k]);
+    }
+    // console.log(selectedClassAnnotation);
 
-    // let curActionInfo = _.cloneDeep(this.state.curActionInfo);
-    // curActionInfo["colIndex"]+=numCols;
+    // If colIndex is less than keyColIndex, we need to increase keyColIndex by 1
+    let keyColIndex = this.state.keyColIndex;
+    if (colIndex < keyColIndex) {
+      ++keyColIndex;
+    }
+    // console.log(keyColIndex);
 
-    // // Support for undo:
-    // let lastAction = "populateRecommendation";
-    // let prevState = 
-    //   {
-    //     "tableData":this.state.tableData,
-    //     "tableHeader":this.state.tableHeader,
-    //     "optionsMap":this.state.optionsMap,
-    //     "selectedClassAnnotation":this.state.selectedClassAnnotation,
-    //     "keyColIndex":this.state.keyColIndex,
-    //     "curActionInfo":this.state.curActionInfo,
-    //   };
-    // this.setState({
-    //   tableData:newState.tableData,
-    //   tableHeader:newState.tableHeader,
-    //   optionsMap:newState.optionsMap,
-    //   selectedClassAnnotation:newState.selectedClassAnnotation,
-    //   keyColIndex:newState.keyColIndex,
-    //   curActionInfo:curActionInfo,
-    //   lastAction: lastAction,
-    //   prevState: prevState,
-    // })
+    // Now, the part that's the same as contextAddColumn is over.
+    // The part below will be largely the same as populateOtherColumn.
+
+    // An important things for us to do how is to increment colIndex
+    ++colIndex;
+
+    // We use a boolean to keep track of if any cell contains multiple values
+    let hasMultiple = false;
+
+    for (let i = 0; i < tableData.length; ++i) {
+      // curColumnArray is the dataArray for each entry in search column, for all neighbours in neighbourArray.
+      let curColumnArray = [];
+      // We loop through the neighbourArray
+      for (let j = 0; j < neighbourArray.length; ++j) {
+        // For each neighbour in neighbourArray, we check to see if entries in search column have values for this neighbour
+        let curNeighbour = neighbourArray[j];
+        let firstDegNeighbours = 
+          curNeighbour.type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
+        // console.log(firstDegNeighbours);
+        let curNeighbourData = firstDegNeighbours[i][curNeighbour.value];
+        // console.log("Current neighbour data is "+curNeighbourData);
+        // If yes, we want to concat those values with curColumnArray
+        if (curNeighbourData !== undefined) {
+          curColumnArray = curColumnArray.concat(curNeighbourData);
+        }
+      }
+      // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
+      if (curColumnArray.length === 0) {
+        tableData[i][colIndex].data = "N/A";
+      }
+      // Otherwise, we have found at least one value.
+      else {
+        // we first set the data for the cell using curColumnArray[0]
+        tableData[i][colIndex].data = curColumnArray[0];
+        // we then set origin for the cell. Need to use neighbourArray to get the correct text for the origin
+        let originToAdd = createNeighbourText(neighbourArray) + ":" + curColumnArray[0];
+        let keyOrigin = tableData[i][keyColIndex].origin.slice();
+        keyOrigin.push(originToAdd);
+        tableData[i][colIndex].origin = keyOrigin;
+        // console.log(keyOrigin)
+
+        // Now, if curColumnArray has length longer than one, we want to set hasMultiple to true
+        // We also create an extra attribute for the current tableData cell, called dataArray, whose max length is maxNeighbourCount.
+        if (curColumnArray.length > 1) {
+          hasMultiple = true;
+          let lastIndex = Math.min(curColumnArray.length, maxNeighbourCount);
+          tableData[i][colIndex].dataArray = curColumnArray.slice(1, lastIndex);
+        } 
+      }
+    }
+    // Now, we are done with updating tableData.
+    // We want to update tableHeader as well.
+    tableHeader[colIndex] = neighbourArray;
+
+    // In the third part of the code, We start setting up the content for the Action Panel.
+
+    // tempObj stores the information passed to ActionPanel
+    let tempObj = {};
+    console.log(this.state.curActionInfo);
+    if (hasMultiple === true) {
+      tempObj["task"] = "sameNeighbourAndRecommendation";
+      tempObj["colIndex"] = colIndex;
+      tempObj["neighbourArray"] = neighbourArray;
+      tempObj["recommendArray"] = _.cloneDeep(this.state.curActionInfo.recommendArray);
+    }
+    else {
+      tempObj["task"] = "populateRecommendation";
+      tempObj["colIndex"] = colIndex;
+      tempObj["recommendArray"] = _.cloneDeep(this.state.curActionInfo.recommendArray);
+    }
+
+    // console.log(tableData);
+    // console.log(tableHeader);
+    // console.log(selectedClassAnnotation);
+    // console.log(keyColIndex);
+    // console.log(tempObj);
+
+    // Lastly, we add support for undo, and set the states
+    let lastAction = "populateRecommendation";
+    let prevState =
+      {
+        "tableData": this.state.tableData,
+        "tableHeader": this.state.tableHeader,
+        "curActionInfo": this.state.curActionInfo,
+        "keyColIndex": this.state.keyColIndex,
+        "selectedClassAnnotation": this.state.selectedClassAnnotation,
+        "tabIndex": this.state.tabIndex,
+        "previewColIndex": this.state.previewColIndex,
+      } 
+
+    this.setState({
+      tableData: tableData,
+      tableHeader: tableHeader,
+      selectedClassAnnotation: selectedClassAnnotation,
+      keyColIndex: keyColIndex,
+      curActionInfo: tempObj,
+      tabIndex: 0,
+      previewColIndex: -1,
+      prevState: prevState,
+      lastAction: lastAction,
+    })
   }
 
   // The following function adds a new column to the table, to the right of the selected column.
@@ -2035,7 +2136,7 @@ class MainBody extends Component {
     for (let j = 0; j < colIndex + 1; ++j) {
       tableHeader.push(this.state.tableHeader[j]);
     }
-    tableHeader.push("");
+    tableHeader.push([]);
     for (let k = colIndex + 1; k < colNum; ++k) {
       tableHeader.push(this.state.tableHeader[k]);
     }
@@ -3726,6 +3827,19 @@ class MainBody extends Component {
         previewColIndex: prevState.previewColIndex,
         otherColChecked: prevState.otherColChecked,
         otherColCheckedIndex: prevState.otherColCheckedIndex,
+        lastAction: "",
+      })
+    }
+
+    else if (lastAction === "populateRecommendation") {
+      this.setState({
+        tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        keyColIndex: prevState.keyColIndex,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        curActionInfo: prevState.curActionInfo,
+        tabIndex: prevState.tabIndex,
+        previewColIndex: prevState.previewColIndex,
         lastAction: "",
       })
     }
