@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { Button } from "reactstrap";
 
 class OtherColSelection extends Component {
 
@@ -42,8 +43,8 @@ class OtherColSelection extends Component {
       populateText+="?";
       populateEle = 
         <div>
-          <p><b>{populateText}</b></p>
-          <button onClick={(e) => this.props.populateOtherColumn(e, this.props.colIndex, selectedNeighbours)}>OK</button> 
+          <div><b>{populateText}</b></div>
+          <Button onClick={(e) => this.props.populateOtherColumn(e, this.props.colIndex, selectedNeighbours)}>OK</Button> 
         </div>
     }
 

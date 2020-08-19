@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { Button } from "reactstrap";
 
 class FirstColSelection extends Component {
 
@@ -48,16 +49,12 @@ class FirstColSelection extends Component {
       // If firstColFilled is false, we want to run populateKeyColumn
       // Otherwise, we want to run addKeyColumn
       let buttonEle = 
-        this.props.firstColFilled === false ? <button onClick={(e) => this.props.populateKeyColumn(e, 0, selectedNeighbours)}>Okay</button>
-        : <button onClick={(e) => this.props.confirmAddFirstCol(e, selectedNeighbours)}>Okay</button>;
+        this.props.firstColFilled === false ? <Button onClick={(e) => this.props.populateKeyColumn(e, 0, selectedNeighbours)}>OK</Button>
+        : <Button onClick={(e) => this.props.confirmAddFirstCol(e, selectedNeighbours)}>OK</Button>;
       populateEle = 
         <div>
-          <p>
-            <b>
-              {populateText}
-            </b>
-            {buttonEle}
-          </p>
+          <div><b>{populateText}</b></div>
+          {buttonEle}
         </div>
     }
 
