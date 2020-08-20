@@ -2978,7 +2978,7 @@ class MainBody extends Component {
           a.siblingArray.length < b.siblingArray.length ? 1 : -1
         );
         // Then we update the action in Action Panel
-        let curActionInfo = { task: "showPropertyNeighbours" };
+        let curActionInfo = { task: "afterPopulateColumn" };
         // Then we call the parse table helper function to update the tableDataExplore
         let selectedTableHTML = this.state.originTableArray[tableIndex];
         // setTableFromHTML is the function that prepares the data for tableDataExplore
