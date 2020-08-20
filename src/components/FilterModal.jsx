@@ -15,7 +15,7 @@ class FilterModal extends Component {
             checked={this.props.dataAndChecked[i].checked}
             onChange={(e) => this.props.toggleChecked(e, i)}
           />
-          {this.props.dataAndChecked[i].data}
+          {niceRender(this.props.dataAndChecked[i].data)}
         </div>
       )
     }
@@ -61,3 +61,11 @@ class FilterModal extends Component {
 }
 
 export default FilterModal;
+
+// This function renders data in a nicer way. 
+// It removes all occurence of (...), and changes all "_" to " ".
+
+function niceRender(str) {
+  return str.replace(/_\(.*?\)/g, "")
+            .replace(/_/g, " ");
+}
