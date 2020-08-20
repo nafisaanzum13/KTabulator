@@ -1842,13 +1842,17 @@ class MainBody extends Component {
     // console.log(firstDegNeighboursUpdated);
 
     // Now we set up the obj for Action Panel
+    // We check if the curActionInfo's task is sameNeighbourAndRecommendation or populateSameNeighbour
     let tempObj = {};
-    let recommendArray = createRecommendArray(neighbourArray);
-    if (recommendArray.length > 0) {
+    let curActionInfo = _.cloneDeep(this.state.curActionInfo);
+
+    // If it is sameNeighbourAndRecommendation, we will turn it to populateRecommendation
+    if (curActionInfo.task === "sameNeighbourAndRecommendation") {
       tempObj["task"] = "populateRecommendation";
-      tempObj["colIndex"] = colIndex;
-      tempObj["recommendArray"] = recommendArray; 
+      tempObj["colIndex"] = curActionInfo.colIndex;
+      tempObj["recommendArray"] = curActionInfo.recommendArray; 
     }
+    // Else, we turn the current action into afterPopulateColumn
     else {
       tempObj["task"] = "afterPopulateColumn";
     }
@@ -1925,13 +1929,17 @@ class MainBody extends Component {
     }
 
     // Now we set up the obj for Action Panel
+    // We check if the curActionInfo's task is sameNeighbourAndRecommendation or populateSameNeighbour
     let tempObj = {};
-    let recommendArray = createRecommendArray(neighbourArray);
-    if (recommendArray.length > 0) {
+    let curActionInfo = _.cloneDeep(this.state.curActionInfo);
+
+    // If it is sameNeighbourAndRecommendation, we will turn it to populateRecommendation
+    if (curActionInfo.task === "sameNeighbourAndRecommendation") {
       tempObj["task"] = "populateRecommendation";
-      tempObj["colIndex"] = colIndex;
-      tempObj["recommendArray"] = recommendArray; 
+      tempObj["colIndex"] = curActionInfo.colIndex;
+      tempObj["recommendArray"] = curActionInfo.recommendArray; 
     }
+    // Else, we turn the current action into afterPopulateColumn
     else {
       tempObj["task"] = "afterPopulateColumn";
     }
@@ -2387,14 +2395,12 @@ class MainBody extends Component {
       let prevState = 
           {
             "tableData": this.state.tableData,
-            "curActionInfo": this.state.curActionInfo,
             "firstDegNeighbours": this.state.firstDegNeighbours,
             "previewColIndex": this.state.previewColIndex,
           };
 
       this.setState({
         tableData: tableData,
-        curActionInfo: {"task":"afterPopulateColumn"},
         firstDegNeighbours: firstDegNeighbours,
         previewColIndex: -1,
         lastAction: lastAction,
@@ -3795,7 +3801,6 @@ class MainBody extends Component {
     else if (lastAction === "contextSortColumn") {
       this.setState({
         tableData: prevState.tableData,
-        curActionInfo: prevState.curActionInfo,
         firstDegNeighbours: prevState.firstDegNeighbours,
         previewColIndex: prevState.previewColIndex,
         lastAction: "",
