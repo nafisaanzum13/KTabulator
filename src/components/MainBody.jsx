@@ -1418,7 +1418,7 @@ class MainBody extends Component {
 
     // We start setting up the content for the Action Panel.
 
-    let recommendArray = createRecommendArray(neighbourArray);
+    let recommendArray = createRecommendArray(neighbourArray, this.state.keyColNeighbours);
     // console.log(recommendArray);
 
     // tempObj stores the information passed to ActionPanel
@@ -5979,6 +5979,7 @@ function processAllNeighbours(allNeighboursArray) {
   // Before we return, let's change the label to include filledCount
   for (let i = 0; i < keyColNeighbours.length; ++i) {
     let filledPercent = Math.round(keyColNeighbours[i].filledCount/allNeighboursArrayCopy.length * 100) / 100;
+    keyColNeighbours[i].filledPercent = filledPercent;
     keyColNeighbours[i].label = keyColNeighbours[i].label + " (" + filledPercent + ")";
   }
 
@@ -6019,7 +6020,7 @@ function createNeighbourText(neighbourArray) {
     if (i > 0) {
       neighbourArrayText+=" OR ";
     }
-    let curNeighbourText = neighbourArray[i].type === "subject" ? neighbourArray[i].value : "is " + neighbourArray[i].value + " of";
+    let curNeighbourText = neighbourArray[i].type === "object" ? "is " + neighbourArray[i].value + " of" : neighbourArray[i].value ;
     neighbourArrayText+=curNeighbourText;
   }
   return neighbourArrayText;
@@ -6091,7 +6092,7 @@ function addRecommendNeighbours(processedNeighboursCopy) {
 // It takes in one parameter: neighbourArray
 // returns an array: recommendArray
 
-function createRecommendArray(neighbourArray) {
+function createRecommendArray(neighbourArray, keyColNeighbours) {
   // We create the recommendArray variable using a simple rule:
   // It should be union of recommendNeighbours of all neighbours from neighbourArray, minus the neighbours from neighbourArray
   let recommendArray = [];
@@ -6112,7 +6113,27 @@ function createRecommendArray(neighbourArray) {
   recommendArray = _.differenceBy(recommendArray, neighbourArray, function(x) {
     return x.value || x.type;
   });
+
+  // We want to do one more thing here: get the filledPercentage for the recommendation attributes
+
   // console.log(recommendArray);
+  // console.log(keyColNeighbours);
+
+  for (let i = 0; i < recommendArray.length; ++i) {
+    for (let j = 0; j < keyColNeighbours.length; ++j) {
+      if (recommendArray[i].value === keyColNeighbours[j].value && recommendArray[i].type === keyColNeighbours[j].type) {
+        recommendArray[i]["label"] = keyColNeighbours[j].label;
+        recommendArray[i]["filledPercent"] = keyColNeighbours[j].filledPercent;
+        break;
+      }
+    }
+  }
+  // We now sort the recommendArray by filledPercent attribute
+  recommendArray.sort((a, b) =>
+    a.filledPercent < b.filledPercent ? 1 : -1
+  );
+  // console.log(recommendArray);
+
   return recommendArray;
 }
 

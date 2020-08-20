@@ -214,10 +214,10 @@ class ActionPanel extends Component {
   }
 
   // This function creates the HTML element for recommend array
+
   createRecommendArray(colIndex, recommendArray) {
     // console.log(recommendArray);
-    let stringRecommend = [];
-    let semanticRecommend = [];
+    let recommendEle = [];
     // stringRecommend and semanticRecommend are both HTML elements that should be constructed from recommend array
     for (let i = 0; i < recommendArray.length; ++i) {
       let neighbourArray = [
@@ -226,43 +226,35 @@ class ActionPanel extends Component {
           "type":recommendArray[i].type
         }
       ]
-      let recommendText = recommendArray[i].type === "subject" ? recommendArray[i].value: "is " + recommendArray[i].value + " of";
-      if (recommendArray[i].relation === "string") {
-        stringRecommend.push(
-          <div>
-            <p>
-              <Button
-                onClick={(e) => this.props.populateRecommendation(e,
-                                                                  colIndex,
-                                                                  neighbourArray)}>
-                {recommendText}
-              </Button>
-              {/* <b>{recommendText}</b> */}
-            </p>
-          </div>
-        )
-      }
-      else {
-        semanticRecommend.push(
-          <div>
-            <p>
-              <Button
-                onClick={(e) => this.props.populateRecommendation(e,
-                                                                  colIndex,
-                                                                  neighbourArray)}>
-                {recommendText}
-              </Button>
-              {/* <b>{recommendText}</b> */}
-            </p>
-          </div>
-        )
-      }
+      let recommendText = recommendArray[i].label;
+      recommendEle.push(
+        <div>
+          <p>
+            <Button
+              onClick={(e) => this.props.populateRecommendation(e,
+                                                                colIndex,
+                                                                neighbourArray)}>
+              {recommendText}
+            </Button>
+          </p>
+        </div>
+      )
+    }
+    // Now, we also want to tell user they are adding attributes with respect to which column.
+    let recommendationText = "";
+    if (this.props.keyColIndex !== -1) {
+      let neighbourArray = this.props.tableHeader[this.props.keyColIndex];
+      recommendationText = this.props.keyColIndex !== 0 ? createNeighbourText(neighbourArray) : "First Column";
     }
     let returnEle = 
       <div className="container">
-        <p>Attribute Recommendations:</p>
-        {stringRecommend}
-        {semanticRecommend}
+        <p>
+          Attribute recommendations:
+        </p>
+        <p>
+          Current Search Column: <b>{recommendationText}</b>
+        </p>
+        {recommendEle}
       </div>
     return returnEle;
   }
