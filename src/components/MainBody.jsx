@@ -156,13 +156,11 @@ class MainBody extends Component {
     this.getTableStates = this.getTableStates.bind(this);
     this.sameNeighbourDiffRow = this.sameNeighbourDiffRow.bind(this);
     this.sameNeighbourOneRow = this.sameNeighbourOneRow.bind(this);
-    this.populateRecommendation = this.populateRecommendation.bind(this);
 
     // functions below are for column processing
     this.contextAddColumn = this.contextAddColumn.bind(this);
     this.contextDeleteColumn = this.contextDeleteColumn.bind(this);
     this.contextSetColumn = this.contextSetColumn.bind(this);
-    // this.contextCellOrigin = this.contextCellOrigin.bind(this);
     this.originPreviewPage = this.originPreviewPage.bind(this);
     this.contextSortColumn = this.contextSortColumn.bind(this);
     this.contextDedupColumn = this.contextDedupColumn.bind(this);
@@ -213,6 +211,10 @@ class MainBody extends Component {
 
     // functions below are for cell preview and origin
     this.togglePreviewElement = this.togglePreviewElement.bind(this);
+
+    // functions below are for recommendations
+    this.populateRecommendation = this.populateRecommendation.bind(this);
+    this.populateStartRecommend = this.populateStartRecommend.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -1122,7 +1124,8 @@ class MainBody extends Component {
             keyColIndex: colIndex,
             keyColNeighbours: keyColNeighbours,
             firstDegNeighbours: firstDegNeighbours,
-            curActionInfo: {"task":"afterPopulateColumn"},
+            // curActionInfo: {"task":"afterPopulateColumn"},
+            curActionInfo: {"task":"showStartRecommend"}, // Changed on Aug 20th
             tableData: tableData,
             tableHeader: tableHeader,
             firstColFilled: true,
@@ -2148,6 +2151,13 @@ class MainBody extends Component {
     })
   }
 
+  // This function below should mostly be similar to populateRecommendation, with some small differences. 
+
+  populateStartRecommend(e, keyColIndex, neighbourArray) {
+    console.log(keyColIndex);
+    console.log(neighbourArray);
+  }
+
   // The following function adds a new column to the table, to the right of the selected column.
   // In here, let's also set tabIndex to 0.
 
@@ -2977,8 +2987,6 @@ class MainBody extends Component {
         propertyNeighbours.sort((a, b) =>
           a.siblingArray.length < b.siblingArray.length ? 1 : -1
         );
-        // Then we update the action in Action Panel
-        let curActionInfo = { task: "afterPopulateColumn" };
         // Then we call the parse table helper function to update the tableDataExplore
         let selectedTableHTML = this.state.originTableArray[tableIndex];
         // setTableFromHTML is the function that prepares the data for tableDataExplore
@@ -3016,7 +3024,8 @@ class MainBody extends Component {
             firstColFilled: true,
             selectedTableIndex: tableIndex,
             propertyNeighbours: propertyNeighbours,
-            curActionInfo: curActionInfo,
+            // curActionInfo: {"task":"afterPopulateColumn"},
+            curActionInfo: {"task":"showStartRecommend"}, // Changed on Aug 20th
             selectedClassAnnotation: selectedClassAnnotation,
             keyColIndex: stateInfo.keyColIndex,
             keyColNeighbours: stateInfo.keyColNeighbours,
@@ -4299,6 +4308,7 @@ class MainBody extends Component {
                     sameNeighbourDiffRow={this.sameNeighbourDiffRow}
                     sameNeighbourOneRow={this.sameNeighbourOneRow}
                     populateRecommendation={this.populateRecommendation}
+                    populateStartRecommend={this.populateStartRecommend}
                     // Folloiwng states are passed to "startTable"
                     handleStartTable={this.handleStartTable}
                     propertyNeighbours={this.state.propertyNeighbours}
@@ -4347,6 +4357,8 @@ class MainBody extends Component {
                     previewInfoExpanded={this.state.previewInfoExpanded}
                     selectedCell={this.state.selectedCell}
                     togglePreviewElement={this.togglePreviewElement}
+                    // Following states are for showStartRecommend
+                    keyColNeighbours={this.state.keyColNeighbours}
                   />
                 </div>
               </div>

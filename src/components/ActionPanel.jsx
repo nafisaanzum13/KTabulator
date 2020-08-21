@@ -22,6 +22,7 @@ class ActionPanel extends Component {
     this.createSiblingArray = this.createSiblingArray.bind(this);
     this.createTableArray = this.createTableArray.bind(this);
     this.createRecommendArray = this.createRecommendArray.bind(this);
+    this.createStartRecommend = this.createStartRecommend.bind(this);
   }
 
   createTableArray(firstIndex, secondIndex) {
@@ -295,6 +296,50 @@ class ActionPanel extends Component {
         </div>
       </div>
     );
+    return returnEle;
+  }
+
+  // This function creates the starting recommendations, when actionInfo.task is showStartRecommend
+  createStartRecommend() {
+    let recommendEle = [];
+    let keyColNeighbours = this.props.keyColNeighbours;
+    let numRecommend = Math.min(5, keyColNeighbours.length);
+    for (let i = 0; i < numRecommend; ++i) {
+      let neighbourArray = [
+        {
+          "value":keyColNeighbours[i].value,
+          "type":keyColNeighbours[i].type,
+        }
+      ]
+      let recommendText = keyColNeighbours[i].label;
+      recommendEle.push(
+        <div>
+          <p>
+            <Button
+              onClick={(e) => this.props.populateStartRecommend(e, this.props.keyColIndex, neighbourArray)}
+            >
+              {recommendText}
+            </Button>
+          </p>
+        </div>
+      )
+    }
+    // Now, we also want to tell user they are adding attributes with respect to which column.
+    let recommendationText = "";
+    if (this.props.keyColIndex !== -1) {
+      let neighbourArray = this.props.tableHeader[this.props.keyColIndex];
+      recommendationText = this.props.keyColIndex !== 0 ? createNeighbourText(neighbourArray) : "First Column";
+    }
+    let returnEle = 
+      <div className="container">
+        <p>
+          Attribute recommendations:
+        </p>
+        <p>
+          Current Search Column: <b>{recommendationText}</b>
+        </p>
+        {recommendEle}
+      </div>
     return returnEle;
   }
 
@@ -583,7 +628,7 @@ class ActionPanel extends Component {
       }
       // In this case we display the origin of selected cell
       else if (actionInfo.task === "originPreviewPage") {
-      actionEle = (
+        actionEle = (
         // <div>
         //   <div>
         //     <p>Preview of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
@@ -605,6 +650,15 @@ class ActionPanel extends Component {
           />
         );
       }  
+      // In this case we display the starting recommendations
+      else if (actionInfo.task === "showStartRecommend") {
+        let recommendEle = this.createStartRecommend();
+        actionEle = (
+          <div>
+            {recommendEle}
+          </div>
+        )
+      }
     } 
     // This is an empty else clause
     else {
