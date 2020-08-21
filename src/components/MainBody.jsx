@@ -214,6 +214,7 @@ class MainBody extends Component {
 
     // functions below are for recommendations
     this.populateRecommendation = this.populateRecommendation.bind(this);
+    this.createStartRecommend = this.createStartRecommend.bind(this);
     this.populateStartRecommend = this.populateStartRecommend.bind(this);
   }
 
@@ -1102,6 +1103,12 @@ class MainBody extends Component {
           let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
           let keyColNeighbours = updatedNeighbours.keyColNeighbours;
           let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+          // Lastly, we set up the information for the action panel
+          let tempObj = {};
+          tempObj["task"] = "showStartRecommend";
+          tempObj["colIndex"] = colIndex;
+          tempObj["recommendArray"] = this.createStartRecommend(keyColNeighbours);
   
           // Support for undo: 
           // Let's save the previous state in an object
@@ -1125,7 +1132,7 @@ class MainBody extends Component {
             keyColNeighbours: keyColNeighbours,
             firstDegNeighbours: firstDegNeighbours,
             // curActionInfo: {"task":"afterPopulateColumn"},
-            curActionInfo: {"task":"showStartRecommend"}, // Changed on Aug 20th
+            curActionInfo: tempObj, // Changed on Aug 20th
             tableData: tableData,
             tableHeader: tableHeader,
             firstColFilled: true,
@@ -1855,6 +1862,12 @@ class MainBody extends Component {
       tempObj["colIndex"] = curActionInfo.colIndex;
       tempObj["recommendArray"] = curActionInfo.recommendArray; 
     }
+    // Else, if it is sameNeighbourAndStartRecommend, we will turn it to showStartRecommend
+    else if (curActionInfo.task === "sameNeighbourAndStartRecommend") {
+      tempObj["task"] = "showStartRecommend";
+      tempObj["colIndex"] = curActionInfo.colIndex;
+      tempObj["recommendArray"] = curActionInfo.recommendArray; 
+    }
     // Else, we turn the current action into afterPopulateColumn
     else {
       tempObj["task"] = "afterPopulateColumn";
@@ -1939,6 +1952,12 @@ class MainBody extends Component {
     // If it is sameNeighbourAndRecommendation, we will turn it to populateRecommendation
     if (curActionInfo.task === "sameNeighbourAndRecommendation") {
       tempObj["task"] = "populateRecommendation";
+      tempObj["colIndex"] = curActionInfo.colIndex;
+      tempObj["recommendArray"] = curActionInfo.recommendArray; 
+    }
+    // Else, if it is sameNeighbourAndStartRecommend, we will turn it to showStartRecommend
+    else if (curActionInfo.task === "sameNeighbourAndStartRecommend") {
+      tempObj["task"] = "showStartRecommend";
       tempObj["colIndex"] = curActionInfo.colIndex;
       tempObj["recommendArray"] = curActionInfo.recommendArray; 
     }
@@ -2151,11 +2170,205 @@ class MainBody extends Component {
     })
   }
 
+  // This function
+
+  createStartRecommend(keyColNeighbours) {
+    let recommendArray = [];
+    let numRecommend = Math.min(5, keyColNeighbours.length);
+    for (let i = 0; i < numRecommend; ++i) {
+      recommendArray.push(keyColNeighbours[i]);
+    }
+    return recommendArray;
+  }
+
   // This function below should mostly be similar to populateRecommendation, with some small differences. 
 
-  populateStartRecommend(e, keyColIndex, neighbourArray) {
-    console.log(keyColIndex);
-    console.log(neighbourArray);
+  populateStartRecommend(e, colIndex, neighbourArray) {
+    // console.log(colIndex);
+    // console.log(neighbourArray);
+    // console.log(this.state.curActionInfo);
+
+    // First thing we need to do should be the same as contextAddColumn
+    const rowNum = this.state.tableData.length;
+    const colNum = this.state.tableData[0].length;
+
+    // we first take care of table data's addition
+    let tableData = [];
+    for (let i = 0; i < rowNum; ++i) {
+      let tempRow = [];
+      for (let j = 0; j < colIndex + 1; ++j) {
+        tempRow.push(this.state.tableData[i][j]);
+      }
+      // we add in one column of empty data
+      tempRow.push({ data: "", origin: [] });
+      for (let k = colIndex + 1; k < colNum; ++k) {
+        tempRow.push(this.state.tableData[i][k]);
+      }
+      tableData.push(tempRow);
+    }
+    // console.log(tableData);
+
+    // we now take care of tabler header, and selectedClassAnnotation's addition
+    let tableHeader = [];
+    for (let j = 0; j < colIndex + 1; ++j) {
+      tableHeader.push(this.state.tableHeader[j]);
+    }
+    tableHeader.push([]);
+    for (let k = colIndex + 1; k < colNum; ++k) {
+      tableHeader.push(this.state.tableHeader[k]);
+    }
+    // console.log(tableHeader);
+
+    // we now take care of selectedClassAnnotation
+    let selectedClassAnnotation = [];
+    for (let j = 0; j < colIndex; ++j) {
+      selectedClassAnnotation.push(this.state.selectedClassAnnotation[j]);
+    }
+    selectedClassAnnotation.push([]);
+    for (let k = colIndex; k < colNum-1; ++k) {
+      selectedClassAnnotation.push(this.state.selectedClassAnnotation[k]);
+    }
+    // console.log(selectedClassAnnotation);
+
+    // If colIndex is less than keyColIndex, we need to increase keyColIndex by 1
+    let keyColIndex = this.state.keyColIndex;
+    if (colIndex < keyColIndex) {
+      ++keyColIndex;
+    }
+    // console.log(keyColIndex);
+
+    // Now, the part that's the same as contextAddColumn is over.
+    // The part below will be largely the same as populateOtherColumn.
+
+    // An important things for us to do how is to increment colIndex
+    ++colIndex;
+
+    // We use a boolean to keep track of if any cell contains multiple values
+    let hasMultiple = false;
+
+    for (let i = 0; i < tableData.length; ++i) {
+      // curColumnArray is the dataArray for each entry in search column, for all neighbours in neighbourArray.
+      let curColumnArray = [];
+      // We loop through the neighbourArray
+      for (let j = 0; j < neighbourArray.length; ++j) {
+        // For each neighbour in neighbourArray, we check to see if entries in search column have values for this neighbour
+        let curNeighbour = neighbourArray[j];
+        let firstDegNeighbours = 
+          curNeighbour.type === "subject" ? this.state.firstDegNeighbours.subject : this.state.firstDegNeighbours.object;
+        // console.log(firstDegNeighbours);
+        let curNeighbourData = firstDegNeighbours[i][curNeighbour.value];
+        // console.log("Current neighbour data is "+curNeighbourData);
+        // If yes, we want to concat those values with curColumnArray
+        if (curNeighbourData !== undefined) {
+          curColumnArray = curColumnArray.concat(curNeighbourData);
+        }
+      }
+      // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
+      if (curColumnArray.length === 0) {
+        tableData[i][colIndex].data = "N/A";
+      }
+      // Otherwise, we have found at least one value.
+      else {
+        // we first set the data for the cell using curColumnArray[0]
+        tableData[i][colIndex].data = curColumnArray[0];
+        // we then set origin for the cell. Need to use neighbourArray to get the correct text for the origin
+        let originToAdd = createNeighbourText(neighbourArray) + ":" + curColumnArray[0];
+        let keyOrigin = tableData[i][keyColIndex].origin.slice();
+        keyOrigin.push(originToAdd);
+        tableData[i][colIndex].origin = keyOrigin;
+        // console.log(keyOrigin)
+
+        // Now, if curColumnArray has length longer than one, we want to set hasMultiple to true
+        // We also create an extra attribute for the current tableData cell, called dataArray, whose max length is maxNeighbourCount.
+        if (curColumnArray.length > 1) {
+          hasMultiple = true;
+          let lastIndex = Math.min(curColumnArray.length, maxNeighbourCount);
+          tableData[i][colIndex].dataArray = curColumnArray.slice(1, lastIndex);
+        } 
+      }
+    }
+    // Now, we are done with updating tableData.
+    // We want to update tableHeader as well.
+    tableHeader[colIndex] = neighbourArray;
+
+    // In the third part of the code, We start setting up the content for the Action Panel.
+
+    // First thing we want to do is to update the recommendArray: 
+    // We want to remove the recommendation just added from the recommendArray
+    let recommendArray = _.cloneDeep(this.state.curActionInfo.recommendArray)
+    let curRecommendation = neighbourArray[0];
+    let sliceIndex = -1;
+
+    // This for loop checks which index we want to remove
+    for (let i = 0; i < recommendArray.length; ++i) {
+      if (recommendArray[i].value === curRecommendation.value && recommendArray[i].type === curRecommendation.type) {
+        sliceIndex = i;
+        break;
+      }
+    }
+
+    // console.log(sliceIndex);
+    // console.log(curRecommendation);
+    // console.log(recommendArray);
+    
+    // This if condition removes the found element
+    if (sliceIndex !== -1) {
+      recommendArray.splice(sliceIndex, 1);
+    }
+
+    // tempObj stores the information passed to ActionPanel
+    let tempObj = {};
+    // console.log(this.state.curActionInfo);
+    if (hasMultiple === true && recommendArray.length > 0) {
+      tempObj["task"] = "sameNeighbourAndStartRecommend";
+      tempObj["colIndex"] = colIndex;
+      tempObj["neighbourArray"] = neighbourArray;
+      tempObj["recommendArray"] = recommendArray;
+    }
+    else if (hasMultiple === false && recommendArray.length > 0) {
+      tempObj["task"] = "showStartRecommend";
+      tempObj["colIndex"] = colIndex;
+      tempObj["recommendArray"] = recommendArray;
+    }
+    else if (hasMultiple === true) {
+      tempObj["task"] = "populateSameNeighbour";
+      tempObj["colIndex"] = colIndex;
+      tempObj["neighbourArray"] = neighbourArray;
+    }
+    else {
+      tempObj["task"] = "afterPopulateColumn";
+    }
+
+    // console.log(tableData);
+    // console.log(tableHeader);
+    // console.log(selectedClassAnnotation);
+    // console.log(keyColIndex);
+    // console.log(tempObj);
+
+    // Lastly, we add support for undo, and set the states
+    let lastAction = "populateStartRecommend";
+    let prevState =
+      {
+        "tableData": this.state.tableData,
+        "tableHeader": this.state.tableHeader,
+        "curActionInfo": this.state.curActionInfo,
+        "keyColIndex": this.state.keyColIndex,
+        "selectedClassAnnotation": this.state.selectedClassAnnotation,
+        "tabIndex": this.state.tabIndex,
+        "previewColIndex": this.state.previewColIndex,
+      } 
+
+    this.setState({
+      tableData: tableData,
+      tableHeader: tableHeader,
+      selectedClassAnnotation: selectedClassAnnotation,
+      keyColIndex: keyColIndex,
+      curActionInfo: tempObj,
+      tabIndex: 0,
+      previewColIndex: -1,
+      prevState: prevState,
+      lastAction: lastAction,
+    })
   }
 
   // The following function adds a new column to the table, to the right of the selected column.
@@ -3001,6 +3214,12 @@ class MainBody extends Component {
           let stateInfo = values[0];
           // console.log(stateInfo);
 
+          // Lastly, we set up the information for the action panel
+          let tempObj = {};
+          tempObj["task"] = "showStartRecommend";
+          tempObj["colIndex"] = stateInfo.keyColIndex;
+          tempObj["recommendArray"] = this.createStartRecommend(stateInfo.keyColNeighbours);
+
           document.body.classList.remove('waiting');
           // Support for undo: 
           let lastAction = "handleStartTable";
@@ -3025,7 +3244,7 @@ class MainBody extends Component {
             selectedTableIndex: tableIndex,
             propertyNeighbours: propertyNeighbours,
             // curActionInfo: {"task":"afterPopulateColumn"},
-            curActionInfo: {"task":"showStartRecommend"}, // Changed on Aug 20th
+            curActionInfo: tempObj, // Changed on Aug 20th
             selectedClassAnnotation: selectedClassAnnotation,
             keyColIndex: stateInfo.keyColIndex,
             keyColNeighbours: stateInfo.keyColNeighbours,
@@ -3877,6 +4096,19 @@ class MainBody extends Component {
     }
 
     else if (lastAction === "populateRecommendation") {
+      this.setState({
+        tableData: prevState.tableData,
+        tableHeader: prevState.tableHeader,
+        keyColIndex: prevState.keyColIndex,
+        selectedClassAnnotation: prevState.selectedClassAnnotation,
+        curActionInfo: prevState.curActionInfo,
+        tabIndex: prevState.tabIndex,
+        previewColIndex: prevState.previewColIndex,
+        lastAction: "",
+      })
+    }
+
+    else if (lastAction === "populateStartRecommend") {
       this.setState({
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,

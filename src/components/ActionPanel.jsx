@@ -301,22 +301,22 @@ class ActionPanel extends Component {
 
   // This function creates the starting recommendations, when actionInfo.task is showStartRecommend
   createStartRecommend() {
+    console.log(this.props.curActionInfo);
     let recommendEle = [];
-    let keyColNeighbours = this.props.keyColNeighbours;
-    let numRecommend = Math.min(5, keyColNeighbours.length);
-    for (let i = 0; i < numRecommend; ++i) {
+    let recommendArray = this.props.curActionInfo.recommendArray;
+    for (let i = 0; i < recommendArray.length; ++i) {
       let neighbourArray = [
         {
-          "value":keyColNeighbours[i].value,
-          "type":keyColNeighbours[i].type,
+          "value":recommendArray[i].value,
+          "type":recommendArray[i].type,
         }
       ]
-      let recommendText = keyColNeighbours[i].label;
+      let recommendText = recommendArray[i].label;
       recommendEle.push(
         <div>
           <p>
             <Button
-              onClick={(e) => this.props.populateStartRecommend(e, this.props.keyColIndex, neighbourArray)}
+              onClick={(e) => this.props.populateStartRecommend(e, this.props.curActionInfo.colIndex, neighbourArray)}
             >
               {recommendText}
             </Button>
@@ -656,6 +656,22 @@ class ActionPanel extends Component {
         actionEle = (
           <div>
             {recommendEle}
+          </div>
+        )
+      }
+      // In this case we have to include both populateSameNeighbour and populateStartRecommend
+      else if (actionInfo.task === "sameNeighbourAndStartRecommend") {
+        let sameNeighbourEle = this.createSameNeighbour(actionInfo);
+        let recommendEle = this.createStartRecommend();
+        actionEle = (
+          <div>
+            <Card className="action-panel-card">
+              {recommendEle}
+            </Card>
+            <br />
+            <Card className="action-panel-card">
+              {sameNeighbourEle}
+            </Card>
           </div>
         )
       }
