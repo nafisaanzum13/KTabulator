@@ -4821,6 +4821,8 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
          || a.p.value === "http://dbpedia.org/property/3PatternS"
          || a.p.value === "http://dbpedia.org/property/3PatternB"
          || a.p.value === "http://dbpedia.org/property/3Body"
+         || a.p.value === "http://dbpedia.org/property/nba"
+         || a.p.value === "http://dbpedia.org/ontology/termPeriod"
          )
   );
 
@@ -5016,6 +5018,8 @@ function updatePreviewInfo(resultsBinding, type) {
          || a.p.value === "http://dbpedia.org/property/3PatternS"
          || a.p.value === "http://dbpedia.org/property/3PatternB"
          || a.p.value === "http://dbpedia.org/property/3Body"
+         || a.p.value === "http://dbpedia.org/property/nba"
+         || a.p.value === "http://dbpedia.org/ontology/termPeriod"
          )
   );
 
@@ -5155,6 +5159,8 @@ function updateFirstColSelection(resultsBinding) {
          || a.p.value === "http://dbpedia.org/property/3PatternS"
          || a.p.value === "http://dbpedia.org/property/3PatternB"
          || a.p.value === "http://dbpedia.org/property/3Body"
+         || a.p.value === "http://dbpedia.org/property/nba"
+         || a.p.value === "http://dbpedia.org/ontology/termPeriod"
          )
   );
   
