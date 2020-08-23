@@ -138,7 +138,7 @@ class ActionPanel extends Component {
               this.props.toggleSibling(e, firstIndex, secondIndex)
             }
           >
-            {siblingArray[secondIndex].name + " "}
+            {niceRender(siblingArray[secondIndex].name) + " "}
             <FaList />
           </span>
 
@@ -175,7 +175,7 @@ class ActionPanel extends Component {
       // We create the text for property buttons: table index plus column names
       const predicate = propertyNeighbours[i].predicate;
       const object = propertyNeighbours[i].object;
-      let propertyText = predicate + ": " + object + " ";
+      let propertyText = predicate !== "subject" ? predicate + ": " + object + " " : object + " ";
       let tooltipText = "Show other pages with " + predicate + ": " + object;
 
       let listClass = "list-group-item";
@@ -186,7 +186,7 @@ class ActionPanel extends Component {
       propertyElement.push(
         <li class={listClass} title={tooltipText}>
           <span onClick={(e) => this.props.togglePropertyNeighbours(e, i)}>
-            {propertyText}
+            {niceRender(propertyText)}
             <FaList />
           </span>
 
@@ -897,5 +897,13 @@ function createNeighbourText(neighbourArray) {
     neighbourArrayText+=curNeighbourText;
   }
   return neighbourArrayText;
+}
+
+// This function renders this.props.tableData[i][j].data in a nicer way. 
+// It removes all occurence of (...), and changes all "_" to " ".
+
+function niceRender(str) {
+  return str.replace(/_\(.*?\)/g, "")
+            .replace(/_/g, " ");
 }
 
