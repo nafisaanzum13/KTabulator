@@ -14,8 +14,6 @@ class FirstColSelection extends Component {
     let firstColSelection = this.props.firstColSelection;
     let firstColChecked = this.props.firstColChecked;
 
-    let populateEle = null;
-
     let selectedNeighbours = [];
     // We will create the selectedNeighbours array from this.props.firstColSelection and this.props.firstColChecked
     if (firstColChecked.length !== firstColSelection.length) {
@@ -28,6 +26,14 @@ class FirstColSelection extends Component {
     }
 
     // console.log(selectedNeighbours);
+
+    // We initialize the populateEle as text telling users they should select from the attribute list
+    let populateEle = 
+      <div>
+        <b>Choose from attributes below</b> to determine the content for the first column
+        <br />
+        <br />
+      </div>
 
     // If selectedNeighbours is not empty, we have to create the populateText and populateEle
     if (keyCheckedIndex !== -1 && selectedNeighbours.length > 0) {
@@ -53,16 +59,20 @@ class FirstColSelection extends Component {
         : <Button onClick={(e) => this.props.confirmAddFirstCol(e, selectedNeighbours)}>OK</Button>;
       populateEle = 
         <div>
-          <div><b>{populateText}</b></div>
+          <b>{populateText}</b>
+          {"\u00A0"}
           {buttonEle}
+          <br />
+          <br />
         </div>
     }
 
+    // We now create the returnEle. First, we push on the populateEle
     let returnEle = [];
+    returnEle.push(populateEle);
+
     // We loop over the firstColSelection array, and push on the needed radio checkbox and textual information
     for (let i = 0; i < firstColSelection.length; ++i) {
-      // additionEle is basically a copy of populateEle
-      let additionEle = i === keyCheckedIndex ? populateEle: null;
       if (firstColSelection[i].pValue === "category") {
         returnEle.push(
           <div>
@@ -77,7 +87,6 @@ class FirstColSelection extends Component {
                 {niceRender(firstColSelection[i].oValue)}
               </p>
             </div>
-            {additionEle}
           </div>
         )
       }
@@ -97,7 +106,6 @@ class FirstColSelection extends Component {
                 {niceRender(firstColSelection[i].oValue)}
               </p>
             </div>
-            {additionEle}
           </div>
         )
       }
@@ -111,13 +119,7 @@ class FirstColSelection extends Component {
 
     return (
       <div>
-        <div>
-          <p><b>Choose from attributes below</b> to determine the content for the first column</p>
-        </div>
-        <br />
-        <div>
-          {selectionEle}
-        </div>
+        {selectionEle}
       </div>
     );
   }

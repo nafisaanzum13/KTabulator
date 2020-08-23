@@ -31,8 +31,15 @@ class OtherColSelection extends Component {
       }
     }
 
+    // We initialize the populateEle as text telling users they should select from the attribute list
+    let populateEle = 
+      <div>
+        <b>Choose from attributes below</b> to determine the content for this column
+        <br />
+        <br />
+      </div>
+
     // If selectedNeighbours is not empty, we have to create the populateText and populateEle
-    let populateEle = null;
     if (otherCheckedIndex !== -1 && selectedNeighbours.length > 0) {
       let populateText = "Populate this column with attributes ";
       for (let i = 0; i < selectedNeighbours.length; ++i) {
@@ -43,15 +50,21 @@ class OtherColSelection extends Component {
       populateText+="?";
       populateEle = 
         <div>
-          <div><b>{populateText}</b></div>
+          <b>{populateText}</b>
+          {"\u00A0"}
           <Button onClick={(e) => this.props.populateOtherColumn(e, this.props.colIndex, selectedNeighbours)}>OK</Button> 
+          <br />
+          <br />
         </div>
     }
 
     let returnEle = [];
-    // We loop through the otherColSelection array, and push on the needed radio checkbox and textual information
+    // Modified on August 23rd: We want to display the textual information separately (not right next to any attribute)
+    // We also want to make this div fixed
+    returnEle.push(populateEle);
+
+    // We loop through the otherColSelection array, and push on the needed radio checkbox
     for (let i = 0; i < otherColSelection.length; ++i) {
-      let additionEle = i === otherCheckedIndex ? populateEle : null;
       returnEle.push(
         <div>
           <div>
@@ -65,7 +78,6 @@ class OtherColSelection extends Component {
               {otherColSelection[i].label}
             </p>
           </div>
-          {additionEle}
         </div>
       )
     }
@@ -78,13 +90,7 @@ class OtherColSelection extends Component {
 
     return (
       <div>
-        <div>
-          <p><b>Choose from attributes below</b> to determine the content for this column</p>
-        </div>
-        <br />
-        <div>
-          {selectionEle}
-        </div>
+        {selectionEle}
       </div>
     );
   }
