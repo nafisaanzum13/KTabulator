@@ -29,7 +29,7 @@ class FilterModal extends Component {
         >
           <div className="container">
             <div>
-              Here is the list of data to filter from selected column.
+              Here is the list of data to filter.
             </div>
             <br />
             <div className="checkbox-list">
