@@ -539,6 +539,7 @@ class MainBody extends Component {
   handlePlusClick() {
     this.setState({
       curActionInfo:{"task":"plusClicked"},
+      previewColIndex: -1, // we also want to set preview column index to -1 (clear previews)
       tabIndex: 0,
     })
   }
@@ -2706,6 +2707,7 @@ class MainBody extends Component {
     this.setState({
       curActionInfo: tempObj,
       tabIndex: 0, // we also want to set the currentlly active tab index to 0
+      previewColIndex: -1, // we also want to set preview column index to -1 (clear previews)
     })
   }
 

@@ -33,7 +33,7 @@ class OtherColSelection extends Component {
 
     // We initialize the populateEle as text telling users they should select from the attribute list
     let populateEle = 
-      <div>
+      <div className="fixed-populateEle">
         <b>Choose from attributes below</b> to determine the content for this column
         <br />
         <br />
@@ -49,7 +49,7 @@ class OtherColSelection extends Component {
       }
       populateText+="?";
       populateEle = 
-        <div>
+        <div className="fixed-populateEle">
           <b>{populateText}</b>
           {"\u00A0"}
           <Button onClick={(e) => this.props.populateOtherColumn(e, this.props.colIndex, selectedNeighbours)}>OK</Button> 

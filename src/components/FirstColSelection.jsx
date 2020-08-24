@@ -29,7 +29,7 @@ class FirstColSelection extends Component {
 
     // We initialize the populateEle as text telling users they should select from the attribute list
     let populateEle = 
-      <div>
+      <div className="fixed-populateEle">
         <b>Choose from attributes below</b> to determine the content for the first column
         <br />
         <br />
@@ -58,7 +58,7 @@ class FirstColSelection extends Component {
         this.props.firstColFilled === false ? <Button onClick={(e) => this.props.populateKeyColumn(e, 0, selectedNeighbours)}>OK</Button>
         : <Button onClick={(e) => this.props.confirmAddFirstCol(e, selectedNeighbours)}>OK</Button>;
       populateEle = 
-        <div>
+        <div className="fixed-populateEle">
           <b>{populateText}</b>
           {"\u00A0"}
           {buttonEle}

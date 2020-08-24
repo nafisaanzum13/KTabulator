@@ -149,4 +149,9 @@
   border-color: lightgray;
 }
 
+/* This is the class to use for fixed position populate element */
+/* .fixed-populateEle {
+  position: fixed;
+} */
+
 body.waiting * { cursor: wait; }
