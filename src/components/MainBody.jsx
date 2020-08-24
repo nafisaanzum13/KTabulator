@@ -4533,6 +4533,7 @@ class MainBody extends Component {
                 </div>
                 <div className="col-md-5 small-padding action-panel">
                   <ActionPanel
+                    
                     urlPasted={this.state.urlPasted}
                     usecaseSelected={this.state.usecaseSelected}
                     curActionInfo={this.state.curActionInfo}

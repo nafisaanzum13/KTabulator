@@ -65,7 +65,8 @@ class ActionPanel extends Component {
                           secondIndex,
                           tableArray[thirdIndex].data,
                           tableArray[thirdIndex].colMapping
-                        )}
+                        )
+                      }
                     >
                       Union table
                     </li>
@@ -126,8 +127,8 @@ class ActionPanel extends Component {
       }
 
       siblingElement.push(
-        <li 
-          className={listClassSib} 
+        <li
+          className={listClassSib}
           title={tooltipText}
           // onClick={(e) =>
           //   this.props.toggleSibling(e, firstIndex, secondIndex)
@@ -175,7 +176,10 @@ class ActionPanel extends Component {
       // We create the text for property buttons: table index plus column names
       const predicate = propertyNeighbours[i].predicate;
       const object = propertyNeighbours[i].object;
-      let propertyText = predicate !== "subject" ? predicate + ": " + object + " " : object + " ";
+      let propertyText =
+        predicate !== "subject"
+          ? predicate + ": " + object + " "
+          : object + " ";
       let tooltipText = "Show other pages with " + predicate + ": " + object;
 
       let listClass = "list-group-item";
@@ -223,40 +227,43 @@ class ActionPanel extends Component {
     for (let i = 0; i < recommendArray.length; ++i) {
       let neighbourArray = [
         {
-          "value":recommendArray[i].value,
-          "type":recommendArray[i].type
-        }
-      ]
+          value: recommendArray[i].value,
+          type: recommendArray[i].type,
+        },
+      ];
       let recommendText = recommendArray[i].label;
       recommendEle.push(
         <div>
           <p>
             <Button
-              onClick={(e) => this.props.populateRecommendation(e,
-                                                                colIndex,
-                                                                neighbourArray)}>
+              onClick={(e) =>
+                this.props.populateRecommendation(e, colIndex, neighbourArray)
+              }
+            >
               {recommendText}
             </Button>
           </p>
         </div>
-      )
+      );
     }
     // Now, we also want to tell user they are adding attributes with respect to which column.
     let recommendationText = "";
     if (this.props.keyColIndex !== -1) {
       let neighbourArray = this.props.tableHeader[this.props.keyColIndex];
-      recommendationText = this.props.keyColIndex !== 0 ? createNeighbourText(neighbourArray) : "First Column";
+      recommendationText =
+        this.props.keyColIndex !== 0
+          ? createNeighbourText(neighbourArray)
+          : "First Column";
     }
-    let returnEle = 
+    let returnEle = (
       <div className="container">
-        <p>
-          Attribute recommendations:
-        </p>
+        <p>Attribute recommendations:</p>
         <p>
           Current Search Column: <b>{recommendationText}</b>
         </p>
         {recommendEle}
       </div>
+    );
     return returnEle;
   }
 
@@ -267,7 +274,9 @@ class ActionPanel extends Component {
       <div className="container">
         <p>Some cells in this column contain multiple values.</p>
         <p>Expand all other values that are also</p>
-        <p><b>{neighbourArrayText}</b> ?</p>
+        <p>
+          <b>{neighbourArrayText}</b> ?
+        </p>
         <div className="row">
           <Button
             className="col-md-4"
@@ -275,7 +284,7 @@ class ActionPanel extends Component {
               this.props.sameNeighbourOneRow(
                 e,
                 actionInfo.colIndex,
-                actionInfo.neighbourArray,
+                actionInfo.neighbourArray
               )
             }
           >
@@ -287,7 +296,7 @@ class ActionPanel extends Component {
               this.props.sameNeighbourDiffRow(
                 e,
                 actionInfo.colIndex,
-                actionInfo.neighbourArray,
+                actionInfo.neighbourArray
               )
             }
           >
@@ -307,50 +316,58 @@ class ActionPanel extends Component {
     for (let i = 0; i < recommendArray.length; ++i) {
       let neighbourArray = [
         {
-          "value":recommendArray[i].value,
-          "type":recommendArray[i].type,
-        }
-      ]
+          value: recommendArray[i].value,
+          type: recommendArray[i].type,
+        },
+      ];
       let recommendText = recommendArray[i].label;
       recommendEle.push(
         <div>
           <p>
             <Button
-              onClick={(e) => this.props.populateStartRecommend(e, this.props.curActionInfo.colIndex, neighbourArray)}
+              onClick={(e) =>
+                this.props.populateStartRecommend(
+                  e,
+                  this.props.curActionInfo.colIndex,
+                  neighbourArray
+                )
+              }
             >
               {recommendText}
             </Button>
           </p>
         </div>
-      )
+      );
     }
     // Now, we also want to tell user they are adding attributes with respect to which column.
     let recommendationText = "";
     if (this.props.keyColIndex !== -1) {
       let neighbourArray = this.props.tableHeader[this.props.keyColIndex];
-      recommendationText = this.props.keyColIndex !== 0 ? createNeighbourText(neighbourArray) : "First Column";
+      recommendationText =
+        this.props.keyColIndex !== 0
+          ? createNeighbourText(neighbourArray)
+          : "First Column";
     }
-    let returnEle = 
+    let returnEle = (
       <div className="container">
-        <p>
-          Attribute recommendations:
-        </p>
+        <p>Attribute recommendations:</p>
         <p>
           Current Search Column: <b>{recommendationText}</b>
         </p>
         {recommendEle}
       </div>
+    );
     return returnEle;
   }
 
   render() {
-    let actionEle;  // contains either wrangling actions or unionable tables for the action panel
+    let actionEle; // contains either wrangling actions or unionable tables for the action panel
     let wrapperEle; // wrapper element for actionEle. This is what we will render in the HTML.
-    let titleEle;   // contains what we will display as the title for the action panel
+    let titleEle; // contains what we will display as the title for the action panel
 
     // We first decide the content for the titleElement
     if (
-      this.props.usecaseSelected === "" 
+      this.props.usecaseSelected === ""
       // ||
       // (this.props.usecaseSelected === "startTable" &&
       //   this.props.selectedTableIndex === -1)
@@ -368,8 +385,7 @@ class ActionPanel extends Component {
           </div>
         </div>
       );
-    } 
-    else {
+    } else {
       titleEle = (
         <div className="row action-header">
           <div className="col-md-8">
@@ -388,9 +404,9 @@ class ActionPanel extends Component {
     // We now decide the content for the actionElement
     // Case 1: URL has been pasted, but task has not been selected. User needs to select task.
     if (this.props.usecaseSelected === "") {
-      wrapperEle = 
-        <TaskMenu 
-          handleStartSubject={this.props.handleStartSubject} 
+      wrapperEle = (
+        <TaskMenu
+          handleStartSubject={this.props.handleStartSubject}
           urlPasted={this.props.urlPasted}
           showTableSelection={this.props.showTableSelection}
           toggleTableSelection={this.props.toggleTableSelection}
@@ -399,7 +415,8 @@ class ActionPanel extends Component {
           toggleTable={this.props.toggleTable}
           selectedTableIndex={this.props.selectedTableIndex}
           handleStartTable={this.props.handleStartTable}
-        />;
+        />
+      );
     }
     // Case 2: Task has been selected. curActionInfo is not null, meaning we have to display some task in ActionPanel
     else if (this.props.curActionInfo !== null) {
@@ -418,7 +435,7 @@ class ActionPanel extends Component {
             populateKeyColumn={this.props.populateKeyColumn}
             confirmAddFirstCol={this.props.confirmAddFirstCol}
           />
-        )
+        );
       }
       // Case 2.2: Users have clicked on the down arrow for non-first columns.
       // We ask users to select a column header for this column.
@@ -432,7 +449,7 @@ class ActionPanel extends Component {
             populateOtherColumn={this.props.populateOtherColumn}
             colIndex={actionInfo.colIndex}
           />
-        )
+        );
       }
       // Case 2.2: Users have click on the PLUS icon on first column's header.
       // We ask users if they want to add more entities to the first column.
@@ -443,23 +460,19 @@ class ActionPanel extends Component {
             <div>
               <p>
                 <b>
-                  Please set the first column as the search column before adding more entities to it.
+                  Please set the first column as the search column before adding
+                  more entities to it.
                 </b>
               </p>
             </div>
-          )
-        }
-        else {
+          );
+        } else {
           actionEle = (
             <div>
               <p>Add more entities to the first column?</p>
-              <Button
-                onClick={() => this.props.addToFirstCol()}
-              >
-                OK
-              </Button>
+              <Button onClick={() => this.props.addToFirstCol()}>OK</Button>
             </div>
-          )
+          );
         }
       }
       // In this case, we tell users they can keep wrangling by selecting column header for empty columns
@@ -469,14 +482,12 @@ class ActionPanel extends Component {
             <p>
               <b>Fill an empty column</b> by clicking on its <b>edit icon</b>
             </p>
-            <p>
-              OR
-            </p>
+            <p>OR</p>
             <p>
               <b>Add a new column</b> by clicking on a column's <b>plus icon</b>
             </p>
           </div>
-        )
+        );
       }
       // In this case we give user a button to allow the population of first column
       else if (actionInfo.task === "populateKeyColumn") {
@@ -491,7 +502,9 @@ class ActionPanel extends Component {
           actionEle = (
             <div>
               <p>Fill this column with:</p>
-              <p><b>{neighbourArrayText}</b> ?</p>
+              <p>
+                <b>{neighbourArrayText}</b> ?
+              </p>
               <Button
                 onClick={(e) =>
                   this.props.populateKeyColumn(
@@ -505,30 +518,32 @@ class ActionPanel extends Component {
               </Button>
             </div>
           );
-        }
-        else {
+        } else {
           actionEle = (
             <div>
               <p className="suggestion-text">
-                Fill the <b>first column header</b> by choosing from its <b>down arrow</b>
+                Fill the <b>first column header</b> by choosing from its{" "}
+                <b>down arrow</b>
               </p>
             </div>
           );
         }
-      } 
+      }
       // In this case we give user a button to allow the population of a new column
       else if (actionInfo.task === "populateOtherColumn") {
         let neighbourArrayText = createNeighbourText(actionInfo.neighbourArray);
         actionEle = (
           <div>
             <p>Fill this column with:</p>
-            <p><b>{neighbourArrayText}</b> ?</p>
+            <p>
+              <b>{neighbourArrayText}</b> ?
+            </p>
             <Button
               onClick={(e) =>
                 this.props.populateOtherColumn(
                   e,
                   actionInfo.colIndex,
-                  actionInfo.neighbourArray,
+                  actionInfo.neighbourArray
                 )
               }
             >
@@ -536,56 +551,69 @@ class ActionPanel extends Component {
             </Button>
           </div>
         );
-      } 
+      }
       // In this case we give user a button to allow the population of same neighbour
       else if (actionInfo.task === "populateSameNeighbour") {
         actionEle = this.createSameNeighbour(actionInfo);
-      }  
+      }
       // In this case we give users an array of recommended neighbours to add to the table
       else if (actionInfo.task === "populateRecommendation") {
-        let recommendArray = this.createRecommendArray(actionInfo.colIndex, actionInfo.recommendArray);
-        actionEle = (
-          <div>
-            {recommendArray}
-          </div>
-        )
+        let recommendArray = this.createRecommendArray(
+          actionInfo.colIndex,
+          actionInfo.recommendArray
+        );
+        actionEle = <div>{recommendArray}</div>;
       }
       // In this case we have to include both populateSameNeighbour and populateRecommendation
       else if (actionInfo.task === "sameNeighbourAndRecommendation") {
         let sameNeighbourEle = this.createSameNeighbour(actionInfo);
-        let recommendEle = this.createRecommendArray(actionInfo.colIndex, actionInfo.recommendArray);
+        let recommendEle = this.createRecommendArray(
+          actionInfo.colIndex,
+          actionInfo.recommendArray
+        );
         actionEle = (
           <div>
-            <Card className="action-panel-card">
-              {recommendEle}
-            </Card>
+            <Card className="action-panel-card">{recommendEle}</Card>
             <br />
-            <Card className="action-panel-card">
-              {sameNeighbourEle}
-            </Card>
+            <Card className="action-panel-card">{sameNeighbourEle}</Card>
           </div>
-        )
+        );
       }
       // In this case we give user four column filter methods: sort asc, sort des, filter, and dedup
       else if (actionInfo.task === "showFilterMethods") {
         let textEle = null;
         if (actionInfo.colIndex === 0) {
-          textEle = 
-            <p><b>How would you like to process the first column?</b></p>
-        }
-        else {
-          textEle = 
-            <p><b>How would you like to process column {createNeighbourText(this.props.tableHeader[actionInfo.colIndex])} ?</b></p>
+          textEle = (
+            <p>
+              <b>How would you like to process the first column?</b>
+            </p>
+          );
+        } else {
+          textEle = (
+            <p>
+              <b>
+                How would you like to process column{" "}
+                {createNeighbourText(
+                  this.props.tableHeader[actionInfo.colIndex]
+                )}{" "}
+                ?
+              </b>
+            </p>
+          );
         }
         // console.log(textEle);
         actionEle = (
           <div>
-            <div>
-              {textEle}
-            </div>
+            <div>{textEle}</div>
             <div>
               <Button
-                onClick={(e) => this.props.contextSortColumn(e, actionInfo.colIndex, "ascending")}
+                onClick={(e) =>
+                  this.props.contextSortColumn(
+                    e,
+                    actionInfo.colIndex,
+                    "ascending"
+                  )
+                }
               >
                 Sort ascending
               </Button>
@@ -593,7 +621,13 @@ class ActionPanel extends Component {
             <br />
             <div>
               <Button
-                onClick={(e) => this.props.contextSortColumn(e, actionInfo.colIndex, "descending")}
+                onClick={(e) =>
+                  this.props.contextSortColumn(
+                    e,
+                    actionInfo.colIndex,
+                    "descending"
+                  )
+                }
               >
                 Sort descending
               </Button>
@@ -609,13 +643,15 @@ class ActionPanel extends Component {
             <br />
             <div>
               <Button
-                onClick={(e) => this.props.contextDedupColumn(e, actionInfo.colIndex)}
+                onClick={(e) =>
+                  this.props.contextDedupColumn(e, actionInfo.colIndex)
+                }
               >
                 Dedup this column
               </Button>
             </div>
           </div>
-        )
+        );
       }
       // In this case we display the origin of selected cell
       else if (actionInfo.task === "contextCellOrigin") {
@@ -629,19 +665,19 @@ class ActionPanel extends Component {
       // In this case we display the origin of selected cell
       else if (actionInfo.task === "originPreviewPage") {
         actionEle = (
-        // <div>
-        //   <div>
-        //     <p>Preview of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
-        //     <div>
-        //       {renderPreview(actionInfo.preview)}
-        //     </div>
-        //   </div>
-        //   <hr className="preview-origin-divider"/>
-        //   <div>
-        //     <p>Origin of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
-        //     <div>{actionInfo.origin}</div>
-        //   </div>
-        // </div>
+          // <div>
+          //   <div>
+          //     <p>Preview of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
+          //     <div>
+          //       {renderPreview(actionInfo.preview)}
+          //     </div>
+          //   </div>
+          //   <hr className="preview-origin-divider"/>
+          //   <div>
+          //     <p>Origin of <b>{niceRender(actionInfo.cellValue)}</b> is:</p>
+          //     <div>{actionInfo.origin}</div>
+          //   </div>
+          // </div>
           <PreviewOrigin
             previewInfoArray={this.props.previewInfoArray}
             previewInfoExpanded={this.props.previewInfoExpanded}
@@ -649,15 +685,11 @@ class ActionPanel extends Component {
             togglePreviewElement={this.props.togglePreviewElement}
           />
         );
-      }  
+      }
       // In this case we display the starting recommendations
       else if (actionInfo.task === "showStartRecommend") {
         let recommendEle = this.createStartRecommend();
-        actionEle = (
-          <div>
-            {recommendEle}
-          </div>
-        )
+        actionEle = <div>{recommendEle}</div>;
       }
       // In this case we have to include both populateSameNeighbour and populateStartRecommend
       else if (actionInfo.task === "sameNeighbourAndStartRecommend") {
@@ -665,17 +697,13 @@ class ActionPanel extends Component {
         let recommendEle = this.createStartRecommend();
         actionEle = (
           <div>
-            <Card className="action-panel-card">
-              {recommendEle}
-            </Card>
+            <Card className="action-panel-card">{recommendEle}</Card>
             <br />
-            <Card className="action-panel-card">
-              {sameNeighbourEle}
-            </Card>
+            <Card className="action-panel-card">{sameNeighbourEle}</Card>
           </div>
-        )
+        );
       }
-    } 
+    }
     // This is an empty else clause
     else {
     }
@@ -692,7 +720,7 @@ class ActionPanel extends Component {
     if (this.props.usecaseSelected === "startSubject") {
       let curIndex = this.props.tabIndex;
       wrapperEle = (
-        <div>
+        <div className="height-inherit">
           <Tabs
             selectedIndex={curIndex}
             onSelect={(index) => this.props.handleTabSwitch(index)}
@@ -701,17 +729,14 @@ class ActionPanel extends Component {
               <Tab>Wrangling Actions</Tab>
               <Tab>Table Actions</Tab>
             </TabList>
-              <TabPanel>
-                {actionEle}
-              </TabPanel>
+            <div className="action-scrollable">
+              <TabPanel>{actionEle}</TabPanel>
               <TabPanel>
                 <div>
                   <ul class="list-group list-css list-group-flush">
                     <hr className="m-0"></hr>
-                    <li
-                      className="list-group-item"
-                    >
-                      <span 
+                    <li className="list-group-item">
+                      <span
                         onClick={(e) => this.props.toggleUnionJoin(e, "union")}
                       >
                         Union Tables from Wikipedia
@@ -720,15 +745,14 @@ class ActionPanel extends Component {
                       <Collapse isOpen={this.props.showUnionTables}>
                         <CardBody>
                           <Card>
-                            Currently, finding unionable tables for customized table is not supported.
+                            Currently, finding unionable tables for customized
+                            table is not supported.
                           </Card>
                         </CardBody>
                       </Collapse>
                     </li>
-                    <li
-                      className="list-group-item"
-                    >
-                      <span 
+                    <li className="list-group-item">
+                      <span
                         onClick={(e) => this.props.toggleUnionJoin(e, "join")}
                       >
                         Join Tables from Wikipedia
@@ -738,9 +762,14 @@ class ActionPanel extends Component {
                         <CardBody>
                           <Card>
                             <p>
-                              The following tables are from page: <b>{decodeURIComponent(this.props.urlPasted.slice(30))}</b>
+                              The following tables are from page:{" "}
+                              <b>
+                                {decodeURIComponent(
+                                  this.props.urlPasted.slice(30)
+                                )}
+                              </b>
                             </p>
-                            <TableSelection 
+                            <TableSelection
                               originTableArray={this.props.originTableArray}
                               tableOpenList={this.props.tableOpenList}
                               toggleTable={this.props.toggleTable}
@@ -755,98 +784,99 @@ class ActionPanel extends Component {
                   </ul>
                 </div>
               </TabPanel>
+            </div>
           </Tabs>
         </div>
       );
-    }
-    else if (this.props.usecaseSelected === "startTable") {
+    } else if (this.props.usecaseSelected === "startTable") {
       // If we have not selected a table, we show both tabs, as we are fully ready.
       if (this.props.selectedTableIndex !== -1) {
         let curIndex = this.props.tabIndex;
         wrapperEle = (
-          <div>
-            <Tabs 
+          <div className="height-inherit">
+            <Tabs
               selectedIndex={curIndex}
               onSelect={(index) => this.props.handleTabSwitch(index)}
+              className="height-inherit"
             >
               <TabList>
                 <Tab>Wrangling Actions</Tab>
                 <Tab>Table Actions</Tab>
               </TabList>
-              <TabPanel>
-                {actionEle}
-              </TabPanel>
-              <TabPanel>
-                <div>
-                  <ul class="list-group list-css list-group-flush">
-                    <hr className="m-0"></hr>
-                    <li
-                      className="list-group-item"
-                    >
-                      <span 
-                        onClick={(e) => this.props.toggleUnionJoin(e, "union")}
-                      >
-                        Union Tables from Wikipedia
-                      </span>
+              <div className="action-scrollable">
+                <TabPanel>{actionEle}</TabPanel>
+                <TabPanel>
+                  <div>
+                    <ul class="list-group list-css list-group-flush">
+                      <hr className="m-0"></hr>
+                      <li className="list-group-item">
+                        <span
+                          onClick={(e) =>
+                            this.props.toggleUnionJoin(e, "union")
+                          }
+                        >
+                          Union Tables from Wikipedia
+                        </span>
 
-                      <Collapse isOpen={this.props.showUnionTables}>
-                        <CardBody>
-                          <Card>
-                              Expand relations below to look at other pages with similar
-                              tables:
-                            <br /><br />
-                            {this.createPropertyArray()}
-                          </Card>
-                        </CardBody>
-                      </Collapse>
-                    </li>
-                    <li
-                      className="list-group-item"
-                    >
-                      <span 
-                        onClick={(e) => this.props.toggleUnionJoin(e, "join")}
-                      >
-                        Join Tables from Wikipedia
-                      </span>
+                        <Collapse isOpen={this.props.showUnionTables}>
+                          <CardBody>
+                            <Card>
+                              Expand relations below to look at other pages with
+                              similar tables:
+                              <br />
+                              <br />
+                              {this.createPropertyArray()}
+                            </Card>
+                          </CardBody>
+                        </Collapse>
+                      </li>
+                      <li className="list-group-item">
+                        <span
+                          onClick={(e) => this.props.toggleUnionJoin(e, "join")}
+                        >
+                          Join Tables from Wikipedia
+                        </span>
 
-                      <Collapse isOpen={this.props.showJoinTables}>
-                        <CardBody>
-                          <Card>
-                            <p>
-                              The following tables are from page: <b>{decodeURIComponent(this.props.urlPasted.slice(30))}</b>
-                            </p>
-                            <TableSelection 
-                              originTableArray={this.props.originTableArray}
-                              tableOpenList={this.props.tableOpenList}
-                              toggleTable={this.props.toggleTable}
-                              buttonFunction={this.props.handleJoinTable}
-                              listType={"join"}
-                            />
-                          </Card>
-                        </CardBody>
-                      </Collapse>
-                    </li>
-                    <hr className="m-0"></hr>
-                  </ul>
-                </div>
-              </TabPanel>
+                        <Collapse isOpen={this.props.showJoinTables}>
+                          <CardBody>
+                            <Card>
+                              <p>
+                                The following tables are from page:{" "}
+                                <b>
+                                  {decodeURIComponent(
+                                    this.props.urlPasted.slice(30)
+                                  )}
+                                </b>
+                              </p>
+                              <TableSelection
+                                originTableArray={this.props.originTableArray}
+                                tableOpenList={this.props.tableOpenList}
+                                toggleTable={this.props.toggleTable}
+                                buttonFunction={this.props.handleJoinTable}
+                                listType={"join"}
+                              />
+                            </Card>
+                          </CardBody>
+                        </Collapse>
+                      </li>
+                      <hr className="m-0"></hr>
+                    </ul>
+                  </div>
+                </TabPanel>
+              </div>
             </Tabs>
           </div>
-        )
+        );
       }
       // Else, we have not selected a table yet. In this case, wrapperEle should be equal to actionEle
-      else {  
+      else {
         wrapperEle = actionEle;
       }
     }
     return (
-      <div>
-        <div>
-          {titleEle}
-        </div>
-        <div>
-          {wrapperEle}
-        </div>
+      <div className="height-inherit">
+        <div>{titleEle}</div>
+        <div className="height-inherit">{wrapperEle}</div>
       </div>
     );
   }
@@ -854,7 +884,7 @@ class ActionPanel extends Component {
 
 export default ActionPanel;
 
-// // The following helper function creates HTML elements from previewInfoArray, 
+// // The following helper function creates HTML elements from previewInfoArray,
 // // an array of key-val pairs containing the info for a cell's preview.
 
 // // It also makes use of niceRender, so that preview looks clean.
@@ -877,7 +907,7 @@ export default ActionPanel;
 //   return infoEle;
 // }
 
-// // This function renders this.props.tableData[i][j].data in a nicer way. 
+// // This function renders this.props.tableData[i][j].data in a nicer way.
 // // It removes all occurence of (...), and changes all "_" to " ".
 
 // function niceRender(str) {
@@ -891,19 +921,20 @@ function createNeighbourText(neighbourArray) {
   let neighbourArrayText = "";
   for (let i = 0; i < neighbourArray.length; ++i) {
     if (i > 0) {
-      neighbourArrayText+=" OR ";
+      neighbourArrayText += " OR ";
     }
-    let curNeighbourText = neighbourArray[i].type === "object" ? "is " + neighbourArray[i].value + " of" : neighbourArray[i].value;
-    neighbourArrayText+=curNeighbourText;
+    let curNeighbourText =
+      neighbourArray[i].type === "object"
+        ? "is " + neighbourArray[i].value + " of"
+        : neighbourArray[i].value;
+    neighbourArrayText += curNeighbourText;
   }
   return neighbourArrayText;
 }
 
-// This function renders this.props.tableData[i][j].data in a nicer way. 
+// This function renders this.props.tableData[i][j].data in a nicer way.
 // It removes all occurence of (...), and changes all "_" to " ".
 
 function niceRender(str) {
-  return str.replace(/_\(.*?\)/g, "")
-            .replace(/_/g, " ");
+  return str.replace(/_\(.*?\)/g, "").replace(/_/g, " ");
 }
-

@@ -150,8 +150,14 @@
 }
 
 /* This is the class to use for fixed position populate element */
-/* .fixed-populateEle {
+.fixed-populateEle {
   position: fixed;
-} */
+  background: #a6d8d0;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  padding-bottom: 0px;
+}
 
-body.waiting * { cursor: wait; }
+body.waiting * {
+  cursor: wait;
+}

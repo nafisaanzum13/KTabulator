@@ -12,7 +12,7 @@ class TaskMenu extends Component {
   render() {
     const subject = niceRender(reverseReplace(this.props.urlPasted.slice(30)));
     return (
-      <div>
+      <div className="action-scrollable">
         <ul class="list-group list-css list-group-flush">
           <hr className="m-0"></hr>
           <li
@@ -21,12 +21,8 @@ class TaskMenu extends Component {
           >
             Start creating a table about {decodeURIComponent(subject)}
           </li>
-          <li
-            className="list-group-item"
-          >
-            <span 
-              onClick={() => this.props.toggleTableSelection()}
-            >
+          <li className="list-group-item">
+            <span onClick={() => this.props.toggleTableSelection()}>
               Start with an existing table from page <FaList />
             </span>
 
@@ -55,23 +51,23 @@ class TaskMenu extends Component {
 
 export default TaskMenu;
 
-// This function changes the copied text "%E2%80%93" to "-" when we copy a URL from google. 
+// This function changes the copied text "%E2%80%93" to "-" when we copy a URL from google.
 
 function reverseReplace(str) {
   return str.replace(/%E2%80%93/, "–");
 }
 
-// This function renders this.props.tableData[i][j].data in a nicer way. 
+// This function renders this.props.tableData[i][j].data in a nicer way.
 // It changes"_" to " ", and removes everything after the first occurence of (
 
-  function niceRender(str) {
-    let resultStr = str;
-    let bracketIndex = str.indexOf("(");
-    // If ( is present in a string, we want to remove it
-    // We include the -1 because usually ( is preceeded by _
-    if (bracketIndex !== -1) {
-      resultStr = resultStr.slice(0, bracketIndex-1);
-    }
-    // now we turn all "_" into " "
-    return resultStr.replace(/_/g, " ");
+function niceRender(str) {
+  let resultStr = str;
+  let bracketIndex = str.indexOf("(");
+  // If ( is present in a string, we want to remove it
+  // We include the -1 because usually ( is preceeded by _
+  if (bracketIndex !== -1) {
+    resultStr = resultStr.slice(0, bracketIndex - 1);
   }
+  // now we turn all "_" into " "
+  return resultStr.replace(/_/g, " ");
+}
