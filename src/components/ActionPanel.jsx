@@ -824,7 +824,6 @@ class ActionPanel extends Component {
                               Expand relations below to look at other pages with
                               similar tables:
                               <br />
-                              <br />
                               {this.createPropertyArray()}
                             </Card>
                           </CardBody>

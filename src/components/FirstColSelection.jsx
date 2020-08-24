@@ -31,7 +31,7 @@ class FirstColSelection extends Component {
       <div className="fixed-populateEle">
         <b>Choose from attributes below</b> to determine the content for the
         first column
-        <br />
+        {/* <br /> */}
       </div>
     );
 
