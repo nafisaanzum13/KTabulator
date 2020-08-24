@@ -2750,6 +2750,12 @@ class MainBody extends Component {
         let keyColNeighbours = updatedNeighbours.keyColNeighbours;
         let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
 
+        // Lastly, we set up the information for the action panel
+        let tempObj = {};
+        tempObj["task"] = "showStartRecommend";
+        tempObj["colIndex"] = colIndex;
+        tempObj["recommendArray"] = this.createStartRecommend(keyColNeighbours);
+
         document.body.classList.remove('waiting');
 
         // Support for undo: 
@@ -2768,7 +2774,7 @@ class MainBody extends Component {
           keyColIndex: colIndex,
           keyColNeighbours: keyColNeighbours,
           firstDegNeighbours: firstDegNeighbours,
-          curActionInfo: {"task":"afterPopulateColumn"},
+          curActionInfo: tempObj,
           tabIndex: 0, // we want to set the currently active tab to be wrangling actions
           previewColIndex: -1,
           lastAction: lastAction,
