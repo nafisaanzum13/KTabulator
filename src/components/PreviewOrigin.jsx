@@ -95,7 +95,7 @@ class PreviewOrigin extends Component {
               <div>
                 <div className="row">
                   <div className="offset-md-4 col-md-7">
-                    {niceRender(previewInfoArray[i].value[j])}
+                    {"- " + niceRender(previewInfoArray[i].value[j])}
                   </div>
                 </div>
                 {brEle}

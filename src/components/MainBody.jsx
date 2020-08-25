@@ -312,7 +312,7 @@ class MainBody extends Component {
             curText += niceRender(tableHeader[i][j].label);
           }
         }
-        if (curText !== undefined && curText !== "") {
+        if (curText !== undefined) {
           copiedText = copiedText + curText + "\t";
         }
       }
@@ -324,7 +324,7 @@ class MainBody extends Component {
       for (let i = 0; i < rowNum; ++i) {
         for (let j = 0; j < colNum; ++j) {
           let curText = niceRender(tableData[i][j].data);
-          if (curText !== undefined && curText !== "") {
+          if (curText !== undefined) {
             copiedText = copiedText + curText + "\t";
           }
         }
@@ -572,14 +572,28 @@ class MainBody extends Component {
     })
   }
 
-  // This function handles manually changing cell in a table
-
+  // This function handles manually changing cell in a table.
+  // Other than manipulating the data, it does one check: 
+  // If this.state.tableHeader[j] is empty ([]), we set tableHeader[j] as [{"value":"Notes", "type":"Subject"}]
   cellChange(e, i, j) {
     e.preventDefault();
     let tableData = this.state.tableData.slice();
     tableData[i][j].data = e.target.value;
+
+    // Below is added on August 25th:
+    let tableHeader = _.cloneDeep(this.state.tableHeader);
+    if (tableHeader[j].length === 0) {
+      tableHeader[j] = [
+        {
+          "value":"Notes",
+          "label":"Notes",
+          "type":"subject",
+        }
+      ]
+    }
     this.setState({
       tableData: tableData,
+      tableHeader: tableHeader,
     });
   }
 
@@ -757,6 +771,7 @@ class MainBody extends Component {
         {
           "task":"showOtherColSelection",
           "colIndex":colIndex,
+          "previewColIndex":-1,
         }
 
       document.body.classList.remove('waiting');
@@ -1931,7 +1946,7 @@ class MainBody extends Component {
         // we first set the data for the cell using all values from curColumnArray (this is different from populateOtherColumn)
         let curData = "";
         for (let k = 0; k < curColumnArray.length; ++k) {
-          let dataToAdd = k > 0 ? ";" + curColumnArray[k] : curColumnArray[k];
+          let dataToAdd = k > 0 ? ";\n" + curColumnArray[k] : curColumnArray[k];
           curData+=dataToAdd;
           // console.log("Data to add is "+dataToAdd);
           // console.log("Current data is "+curData);
