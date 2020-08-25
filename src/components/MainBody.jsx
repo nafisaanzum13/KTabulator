@@ -805,6 +805,7 @@ class MainBody extends Component {
         {
           "task":"showOtherColSelection",
           "colIndex":colIndex,
+          "previewColIndex":-1,
         }
 
       window.scrollTo(0, 0);
