@@ -771,7 +771,6 @@ class MainBody extends Component {
         {
           "task":"showOtherColSelection",
           "colIndex":colIndex,
-          "previewColIndex":-1,
         }
 
       document.body.classList.remove('waiting');
@@ -780,6 +779,7 @@ class MainBody extends Component {
         otherColChecked:otherColChecked,
         otherCheckedIndex:otherCheckedIndex,
         curActionInfo:tempObj,
+        previewColIndex: -1,
       })
       })
     }
@@ -805,7 +805,6 @@ class MainBody extends Component {
         {
           "task":"showOtherColSelection",
           "colIndex":colIndex,
-          "previewColIndex":-1,
         }
 
       window.scrollTo(0, 0);
@@ -814,6 +813,7 @@ class MainBody extends Component {
         otherColChecked:otherColChecked,
         otherCheckedIndex:otherCheckedIndex,
         curActionInfo:tempObj,
+        previewColIndex: -1,
       })
     }
   }
