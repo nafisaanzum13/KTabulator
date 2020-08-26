@@ -94,11 +94,64 @@ class FirstColSelection extends Component {
     let returnEle = [];
     // returnEle.push(populateEle);
 
+    // Modified on August 26th: we want to add an input search bar that acts as a type-ahead
+    let typeEle = (
+      <div>
+        <div>
+          <p>
+            Search for attributes:
+            {"\u00A0"}
+            <input
+              value={this.props.firstColText}
+              onChange={(e) => this.props.firstColTextChange(e)}
+              placeholder={"e.g., president"}
+            />
+          </p>
+        </div>
+      </div>
+    )
+    returnEle.push(typeEle);
+
     // We loop over the firstColSelection array, and push on the needed radio checkbox and textual information
     for (let i = 0; i < firstColSelection.length; ++i) {
       if (firstColSelection[i].pValue === "category") {
-        returnEle.push(
-          <div>
+        // Addition condition added here:
+        // before pushing a neighbour on, we need to check either of the following two conditions meets
+        // 1) this.props.firstColText is empty ("")
+        // 2) niceRender(firstColSelection[i].oValue) includes this.props.firstColText
+        if (this.props.firstColText === ""
+            ||
+            niceRender(firstColSelection[i].oValue).toUpperCase().includes(this.props.firstColText.toUpperCase())) {
+          returnEle.push(
+            <div>
+              <div>
+                <p>
+                  <input
+                    type="checkbox"
+                    checked={firstColChecked[i]}
+                    onChange={(e) => this.props.toggleFirstNeighbour(e, i)}
+                  />
+                  {"\u00A0"}
+                  {"\u00A0"}
+                  {niceRender(firstColSelection[i].oValue)}
+                </p>
+              </div>
+            </div>
+          );
+        }
+      } 
+      else {
+        // Addition condition added here:
+        // before pushing a neighbour on, we need to check either of the following three conditions meets
+        // 1) this.props.firstColText is empty ("")
+        // 2) firstColSelection[i].pValue includes this.props.firstColText
+        // 2) niceRender(firstColSelection[i].oValue) includes this.props.firstColText
+        if (this.props.firstColText === ""
+            ||
+            firstColSelection[i].pValue.toUpperCase().includes(this.props.firstColText.toUpperCase())
+            ||
+            niceRender(firstColSelection[i].oValue).toUpperCase().includes(this.props.firstColText.toUpperCase())) {
+          returnEle.push(
             <div>
               <p>
                 <input
@@ -108,44 +161,27 @@ class FirstColSelection extends Component {
                 />
                 {"\u00A0"}
                 {"\u00A0"}
+                {firstColSelection[i].pValue}
+                {":"}
+                {"\u00A0"}
+                {"\u00A0"}
+                {"\u00A0"}
+                {"\u00A0"}
+                {"\u00A0"}
+                {"\u00A0"}
+                {"\u00A0"}
+                {"\u00A0"}
                 {niceRender(firstColSelection[i].oValue)}
               </p>
             </div>
-          </div>
-        );
-      } else {
-        returnEle.push(
-          // <div>
-          <div>
-            <p>
-              <input
-                type="checkbox"
-                checked={firstColChecked[i]}
-                onChange={(e) => this.props.toggleFirstNeighbour(e, i)}
-              />
-              {"\u00A0"}
-              {"\u00A0"}
-              {firstColSelection[i].pValue}
-              {":"}
-              {"\u00A0"}
-              {"\u00A0"}
-              {"\u00A0"}
-              {"\u00A0"}
-              {"\u00A0"}
-              {"\u00A0"}
-              {"\u00A0"}
-              {"\u00A0"}
-              {niceRender(firstColSelection[i].oValue)}
-            </p>
-          </div>
-          // </div>
-        );
+          );
+        }
       }
     }
     return (
       <div>
         {populateEle}
-        <div className="padding-top-5vh">{returnEle}</div>
+        <div className="padding-top-8vh">{returnEle}</div>
       </div>
     );
   }

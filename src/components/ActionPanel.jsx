@@ -428,8 +428,10 @@ class ActionPanel extends Component {
           <FirstColSelection
             firstColSelection={this.props.firstColSelection}
             firstColChecked={this.props.firstColChecked}
+            firstColText={this.props.firstColText}
             firstColFilled={this.props.firstColFilled}
             toggleFirstNeighbour={this.props.toggleFirstNeighbour}
+            firstColTextChange={this.props.firstColTextChange}
             tableHeader={this.props.tableHeader}
             keyCheckedIndex={this.props.keyCheckedIndex}
             populateKeyColumn={this.props.populateKeyColumn}
@@ -444,8 +446,10 @@ class ActionPanel extends Component {
           <OtherColSelection
             otherColSelection={this.props.otherColSelection}
             otherColChecked={this.props.otherColChecked}
+            otherColText={this.props.otherColText}
             otherCheckedIndex={this.props.otherCheckedIndex}
             toggleOtherNeighbour={this.props.toggleOtherNeighbour}
+            otherColTextChange={this.props.otherColTextChange}
             populateOtherColumn={this.props.populateOtherColumn}
             colIndex={actionInfo.colIndex}
           />

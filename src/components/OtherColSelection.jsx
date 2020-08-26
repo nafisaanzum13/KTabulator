@@ -77,26 +77,56 @@ class OtherColSelection extends Component {
     // We also want to make this div fixed
     returnEle.push(populateEle);
 
+    // Modified on August 26th: we want to add an input search bar that acts as a type-ahead
+    let typeEle = (
+      <div>
+        <div>
+          <p>
+            <br />
+          </p>
+        </div>
+        <div>
+          <p>
+            Search for attributes:
+            {"\u00A0"}
+            <input
+              value={this.props.otherColText}
+              onChange={(e) => this.props.otherColTextChange(e)}
+              placeholder={"e.g., spouse"}
+            />
+          </p>
+        </div>
+      </div>
+    )
+    returnEle.push(typeEle);
+
     // We loop through the otherColSelection array, and push on the needed radio checkbox
     for (let i = 0; i < otherColSelection.length; ++i) {
-      returnEle.push(
-        <div>
+      // Modified on August 26th: before pushing a neighbour on, we need to check either of the following two conditions meets
+      // 1) this.props.otherColText is empty ("")
+      // 2) otherColSelection[i].label includes this.props.otherColText
+      if (this.props.otherColText === "" 
+          || 
+          otherColSelection[i].label.toUpperCase().includes(this.props.otherColText.toUpperCase())) {
+        returnEle.push(
           <div>
-            <p>
-              <input
-                type="checkbox"
-                checked={otherColChecked[i]}
-                onChange={(e) =>
-                  this.props.toggleOtherNeighbour(e, i, this.props.colIndex)
-                }
-              />
-              {"\u00A0"}
-              {"\u00A0"}
-              {otherColSelection[i].label}
-            </p>
+            <div>
+              <p>
+                <input
+                  type="checkbox"
+                  checked={otherColChecked[i]}
+                  onChange={(e) =>
+                    this.props.toggleOtherNeighbour(e, i, this.props.colIndex)
+                  }
+                />
+                {"\u00A0"}
+                {"\u00A0"}
+                {otherColSelection[i].label}
+              </p>
+            </div>
           </div>
-        </div>
-      );
+        );
+      }
     }
     return returnEle;
   }

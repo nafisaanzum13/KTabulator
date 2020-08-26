@@ -75,6 +75,7 @@ class MainBody extends Component {
       firstColSelection: [],   // 1D array of objects storing information about the starting subject's neighbours
       firstColChecked: [],     // 1D array of booleans storing whether a neighbour of the starting subject is selected or not
       firstColFilled: false,   // boolean indicating whether the first column has been filled. 
+      firstColText: "",        // string storing the type-ahead text that users have typed in for first column's selection. Initially empty.
                                // Will be set to true and remain that way after calling populateKeyColumn, or handleStartTable
       keyCheckedIndex: -1,     // index storing the most recent index that has just been toggled for the first column. Initially -1.
       firstColHeaderInfo: [],  // 2D array of objects storing information needed to create the first column's header. (since both AND and OR need to be considered)
@@ -83,6 +84,7 @@ class MainBody extends Component {
       otherColSelection: [],    // 1D array of objects storing information about the search column's neighbours
       otherColChecked: [],      // 1D array of booleans storing whether a neighbour of the search column is selected or not
       otherCheckedIndex: -1,    // index storing the most recent index that has just been toggled for a non-first column. Initially -1.
+      otherColText: "",         // string storing the type-ahead text that users have typed in for other column's selection. Initially empty.
 
       // states below are useful for startTable
       originTableArray: [], // 1D array storing all tables found on pasted URL
@@ -135,6 +137,7 @@ class MainBody extends Component {
                                // It contains categories, subject, object first degree neighbours.
       previewInfoExpanded: [], // array of booleans storing whether each element from previewInfoArray is expanded or not.
                                // This can only be set to true for previewInfoArray elements that have value length longer than 1.
+
     };
 
     // functions below are useful during start up
@@ -205,9 +208,11 @@ class MainBody extends Component {
     this.handlePlusClick = this.handlePlusClick.bind(this);
     this.addToFirstCol = this.addToFirstCol.bind(this);
     this.confirmAddFirstCol = this.confirmAddFirstCol.bind(this);
+    this.firstColTextChange = this.firstColTextChange.bind(this);
 
     // functions below are for other column selection
     this.toggleOtherNeighbour = this.toggleOtherNeighbour.bind(this);
+    this.otherColTextChange = this.otherColTextChange.bind(this);
 
     // functions below are for cell preview and origin
     this.togglePreviewElement = this.togglePreviewElement.bind(this);
@@ -423,6 +428,7 @@ class MainBody extends Component {
           firstColChecked: firstColChecked,
           curActionInfo: tempObj,
           tabIndex: 0,
+          firstColText: "", // updated on August 26th
           lastAction: lastAction,
           prevState: prevState,
         });
@@ -450,6 +456,16 @@ class MainBody extends Component {
     this.setState({
       firstColChecked:firstColChecked,
       keyCheckedIndex:keyCheckedIndex,
+      // firstColText: "",
+    })
+  }
+
+  // This function handles users typing into the type aheader for first column's neighbour selections
+  firstColTextChange(e) {
+    e.preventDefault();
+    let firstColText = e.target.value;
+    this.setState({
+      firstColText: firstColText,
     })
   }
 
@@ -530,10 +546,22 @@ class MainBody extends Component {
       otherCheckedIndex: otherCheckedIndex,
       tableData: tableData,
       previewColIndex: previewColIndex,
+      // otherColText: "",
       lastAction: lastAction,
       prevState: prevState,
     })
   }
+
+  // This function handles user typing into the type-ahead for other column's neighbour selection
+
+  otherColTextChange(e) {
+    e.preventDefault();
+    let otherColText = e.target.value;
+    this.setState({
+      otherColText: otherColText,
+    })
+  }
+
 
   // This function is a simple function that creates an object and passes to Action Panel
   handlePlusClick() {
@@ -569,6 +597,7 @@ class MainBody extends Component {
       firstColChecked:firstColCheckedUpdated,
       keyCheckedIndex:keyCheckedIndexUpdated,
       curActionInfo:tempObj,
+      firstColText: "", // updated on August 26th
     })
   }
 
@@ -777,6 +806,7 @@ class MainBody extends Component {
       this.setState({
         otherColSelection:otherColSelection,
         otherColChecked:otherColChecked,
+        otherColText: "",  // Modified on August 26th: every time we click on this edit icon, we want to reset otherColText
         otherCheckedIndex:otherCheckedIndex,
         curActionInfo:tempObj,
         previewColIndex: -1,
@@ -811,6 +841,7 @@ class MainBody extends Component {
       this.setState({
         otherColSelection:otherColSelection,
         otherColChecked:otherColChecked,
+        otherColText: "",  // Modified on August 26th: every time we click on this edit icon, we want to reset otherColText
         otherCheckedIndex:otherCheckedIndex,
         curActionInfo:tempObj,
         previewColIndex: -1,
@@ -1154,6 +1185,7 @@ class MainBody extends Component {
             tableHeader: tableHeader,
             firstColFilled: true,
             firstColHeaderInfo: firstColHeaderInfo,
+            firstColText: "", // updated on August 26th
             lastAction: lastAction,
             prevState: prevState,
           });
@@ -1240,6 +1272,7 @@ class MainBody extends Component {
             firstColHeaderInfo: firstColHeaderInfo,
             curActionInfo: {"task":"afterPopulateColumn"},
             previewColIndex: -1,
+            firstColText: "", // updated on August 26th
             lastAction: lastAction,
             prevState: prevState,
           });
@@ -1484,6 +1517,7 @@ class MainBody extends Component {
         "tableData":this.state.tableData,
         "tableHeader":this.state.tableHeader,
         "previewColIndex":this.state.previewColIndex,
+        "otherColText": this.state.otherColText,
       };
 
     this.setState({
@@ -1491,6 +1525,7 @@ class MainBody extends Component {
       tableData: tableData,
       tableHeader: tableHeader,
       previewColIndex: -1,
+      otherColText: "",
       lastAction: lastAction,
       prevState: prevState,
     });
@@ -3947,6 +3982,7 @@ class MainBody extends Component {
         tableData: prevState.tableData,
         tableHeader: prevState.tableHeader,
         previewColIndex: prevState.previewColIndex,
+        otherColText: prevState.otherColText,
         lastAction: "",
       })
     }
@@ -4555,7 +4591,6 @@ class MainBody extends Component {
                 </div>
                 <div className="col-md-5 small-padding action-panel">
                   <ActionPanel
-                    
                     urlPasted={this.state.urlPasted}
                     usecaseSelected={this.state.usecaseSelected}
                     curActionInfo={this.state.curActionInfo}
@@ -4593,9 +4628,11 @@ class MainBody extends Component {
                     // Following states are for first column's header selection
                     firstColSelection={this.state.firstColSelection}
                     firstColChecked={this.state.firstColChecked}
+                    firstColText={this.state.firstColText}
                     firstColFilled={this.state.firstColFilled}
                     keyColIndex={this.state.keyColIndex}
                     toggleFirstNeighbour={this.toggleFirstNeighbour}
+                    firstColTextChange={this.firstColTextChange}
                     tableHeader={this.state.tableHeader}
                     keyCheckedIndex={this.state.keyCheckedIndex}
                     addToFirstCol={this.addToFirstCol}
@@ -4603,8 +4640,10 @@ class MainBody extends Component {
                     // Following states are for other column's header selection
                     otherColSelection={this.state.otherColSelection}
                     otherColChecked={this.state.otherColChecked}
+                    otherColText={this.state.otherColText}
                     otherCheckedIndex={this.state.otherCheckedIndex}
                     toggleOtherNeighbour={this.toggleOtherNeighbour}
+                    otherColTextChange={this.otherColTextChange}
                     // Following states are for column's processing methods
                     contextSortColumn={this.contextSortColumn}
                     contextDedupColumn={this.contextDedupColumn}
