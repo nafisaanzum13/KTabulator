@@ -1,18 +1,18 @@
 {
   "files": {
-    "main.css": "/KGWrangler/static/css/main.edb7c699.chunk.css",
-    "main.js": "/KGWrangler/static/js/main.b93435d0.chunk.js",
-    "main.js.map": "/KGWrangler/static/js/main.b93435d0.chunk.js.map",
+    "main.css": "/KGWrangler/static/css/main.ffbb39fc.chunk.css",
+    "main.js": "/KGWrangler/static/js/main.ff91070f.chunk.js",
+    "main.js.map": "/KGWrangler/static/js/main.ff91070f.chunk.js.map",
     "runtime-main.js": "/KGWrangler/static/js/runtime-main.8cd9a1b9.js",
     "runtime-main.js.map": "/KGWrangler/static/js/runtime-main.8cd9a1b9.js.map",
     "static/css/2.0cd81731.chunk.css": "/KGWrangler/static/css/2.0cd81731.chunk.css",
     "static/js/2.f9a883f7.chunk.js": "/KGWrangler/static/js/2.f9a883f7.chunk.js",
     "static/js/2.f9a883f7.chunk.js.map": "/KGWrangler/static/js/2.f9a883f7.chunk.js.map",
     "index.html": "/KGWrangler/index.html",
-    "precache-manifest.713795c6d247b226657fa165e7385db8.js": "/KGWrangler/precache-manifest.713795c6d247b226657fa165e7385db8.js",
+    "precache-manifest.9b42b695072fed55d7f54f05e5c67a55.js": "/KGWrangler/precache-manifest.9b42b695072fed55d7f54f05e5c67a55.js",
     "service-worker.js": "/KGWrangler/service-worker.js",
     "static/css/2.0cd81731.chunk.css.map": "/KGWrangler/static/css/2.0cd81731.chunk.css.map",
-    "static/css/main.edb7c699.chunk.css.map": "/KGWrangler/static/css/main.edb7c699.chunk.css.map",
+    "static/css/main.ffbb39fc.chunk.css.map": "/KGWrangler/static/css/main.ffbb39fc.chunk.css.map",
     "static/js/2.f9a883f7.chunk.js.LICENSE.txt": "/KGWrangler/static/js/2.f9a883f7.chunk.js.LICENSE.txt",
     "static/media/layout.css": "/KGWrangler/static/media/6.f29b5f23.woff2"
   },
@@ -20,7 +20,7 @@
     "static/js/runtime-main.8cd9a1b9.js",
     "static/css/2.0cd81731.chunk.css",
     "static/js/2.f9a883f7.chunk.js",
-    "static/css/main.edb7c699.chunk.css",
-    "static/js/main.b93435d0.chunk.js"
+    "static/css/main.ffbb39fc.chunk.css",
+    "static/js/main.ff91070f.chunk.js"
   ]
 }
