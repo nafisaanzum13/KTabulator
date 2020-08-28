@@ -92,7 +92,7 @@ class OtherColSelection extends Component {
             <input
               value={this.props.otherColText}
               onChange={(e) => this.props.otherColTextChange(e)}
-              placeholder={"e.g., spouse"}
+              placeholder={"Type here"}
             />
           </p>
         </div>

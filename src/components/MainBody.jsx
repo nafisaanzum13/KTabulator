@@ -456,7 +456,7 @@ class MainBody extends Component {
     this.setState({
       firstColChecked:firstColChecked,
       keyCheckedIndex:keyCheckedIndex,
-      // firstColText: "",
+      firstColText: "",
     })
   }
 
@@ -546,7 +546,7 @@ class MainBody extends Component {
       otherCheckedIndex: otherCheckedIndex,
       tableData: tableData,
       previewColIndex: previewColIndex,
-      // otherColText: "",
+      otherColText: "",
       lastAction: lastAction,
       prevState: prevState,
     })

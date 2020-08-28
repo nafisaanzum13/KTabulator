@@ -104,7 +104,7 @@ class FirstColSelection extends Component {
             <input
               value={this.props.firstColText}
               onChange={(e) => this.props.firstColTextChange(e)}
-              placeholder={"e.g., president"}
+              placeholder={"Type here"}
             />
           </p>
         </div>
