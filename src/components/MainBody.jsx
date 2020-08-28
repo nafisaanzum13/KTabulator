@@ -2889,9 +2889,9 @@ class MainBody extends Component {
 
     // Below is the first query we will make. In here we are using the tableCell as SUBJECT
 
-    // select ?p ?value
+    // select ?p ?o
     // where {
-    // dbr:Barack_Obama ?p ?value.
+    // dbr:Barack_Obama ?p ?o.
     // }
 
     let prefixURLOne = 
@@ -2899,18 +2899,18 @@ class MainBody extends Component {
     let suffixURLOne = 
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyOne = 
-      "select+%3Fp+%3Fvalue%0D%0Awhere+%7B%0D%0Adbr%3A" + 
+      "select+%3Fp+%3Fo%0D%0Awhere+%7B%0D%0Adbr%3A" + 
       regexReplace(this.state.tableData[rowIndex][colIndex].data) +
-      "+%3Fp+%3Fvalue.%0D%0A%7D&";
+      "+%3Fp+%3Fo.%0D%0A%7D&";
     let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
     let otherColPromiseSubject = fetchJSON(queryURLOne);
     promiseArray.push(otherColPromiseSubject);
 
     // Below is the second query we will make. In here we are using the tableCell as OBJECT.
 
-    // select ?p ?value
+    // select ?p ?o
     // where {
-    // ?value ?p dbr:Barack_Obama.
+    // ?o ?p dbr:Barack_Obama.
     // }
 
     let prefixURLTwo = 
@@ -2918,7 +2918,7 @@ class MainBody extends Component {
     let suffixURLTwo = 
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyTwo =
-      "select+%3Fp+%3Fvalue%0D%0Awhere+%7B%0D%0A%3Fvalue+%3Fp+dbr%3A" +
+      "select+%3Fp+%3Fo%0D%0Awhere+%7B%0D%0A%3Fo+%3Fp+dbr%3A" +
       regexReplace(this.state.tableData[rowIndex][colIndex].data) +
       ".%0D%0A%7D&";
     let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
@@ -2941,6 +2941,21 @@ class MainBody extends Component {
         );
       // console.log(subjectInfoArray);
       // console.log(objectInfoArray);
+
+      // Modified on August 28th: when we double click a cell in the first column, and the firs column is the current search column
+      // We want to update firstColSelection and firstColChecked as well
+      let firstColSelection = _.cloneDeep(this.state.firstColSelection);
+      let firstColChecked = _.cloneDeep(this.state.firstColChecked);
+
+      if (this.state.keyColIndex === 0 && colIndex === 0) {
+        // We first update firstColSelection
+        firstColSelection = updateFirstColSelection(values[0].results.bindings);
+        // We then update firstColChecked
+        firstColChecked = [];
+        for (let i = 0; i < firstColSelection.length; ++i) {
+          firstColChecked.push(false);
+        }
+      }
       
       // Here is where we make the modifications: instead of passing information to Action Panel, let's store them as states
       let previewInfoArray = subjectInfoArray.concat(objectInfoArray);
@@ -2953,26 +2968,6 @@ class MainBody extends Component {
 
       let tempObj = {};
       tempObj["task"] = "originPreviewPage";
-      // // previewInfoArray correctly contains the cell preview we want to display
-      // // Now we just need to show it in the ActionPanel
-      // let tempObj = {};
-      // tempObj["task"] = "originPreviewPage";
-      // tempObj["cellValue"] = this.state.tableData[rowIndex][colIndex].data;
-      // tempObj["preview"] = previewInfoArray;
-
-      // // Now, everything about cell preview has been completed. 
-      // // Let's move on to deal with open link.
-      // let iframeURL = "https://en.wikipedia.org/wiki/" + this.state.tableData[rowIndex][colIndex].data;
-
-      // // Lastly, let's deal with cell origin
-      // let cellSelected = this.state.tableData[rowIndex][colIndex];
-
-      // let originElement = [];
-      // for (let i = 0; i < cellSelected.origin.length; ++i) {
-      //   originElement.push(<p>{niceRender(cellSelected.origin[i])}</p>);
-      // }
-      // // We push this property to tempObj
-      // tempObj["origin"] = originElement;
 
       // Support for undo: 
       document.body.classList.remove('waiting');
@@ -2987,6 +2982,8 @@ class MainBody extends Component {
             "previewInfoExpanded": this.state.previewInfoExpanded,
             "selectedCell": this.state.selectedCell,
             "previewColIndex": this.state.previewColIndex,
+            "firstColSelection": this.state.firstColSelection,
+            "firstColChecked": this.state.firstColChecked,
           };
       
       this.setState({
@@ -2998,6 +2995,8 @@ class MainBody extends Component {
         previewInfoArray: previewInfoArray,
         previewInfoExpanded: previewInfoExpanded,
         selectedCell: selectedCell,
+        firstColSelection: firstColSelection, // updated on Aug 28
+        firstColChecked: firstColChecked, // updated on Aug 28
         lastAction: lastAction,
         prevState: prevState,
       });
@@ -4067,6 +4066,8 @@ class MainBody extends Component {
         previewInfoExpanded: prevState.previewInfoExpanded,
         selectedCell: prevState.selectedCell,
         previewColIndex: prevState.previewColIndex,
+        firstColSelection: prevState.firstColSelection,
+        firstColChecked: prevState.firstColChecked,
         lastAction: "",
       })
     }
@@ -5104,7 +5105,7 @@ function updatePreviewInfo(resultsBinding, type) {
     previewInfoArray.push(
       {
         "key": type === "subject" ? processedBinding[0].p.value.slice(28) : "is "+processedBinding[0].p.value.slice(28)+" of",
-        "value": [removePrefix(processedBinding[0].value.value)],
+        "value": [removePrefix(processedBinding[0].o.value)],
       }
     )
     let curIndex = 0;
@@ -5119,7 +5120,7 @@ function updatePreviewInfo(resultsBinding, type) {
       if (curNeighbour === prevNeighbour) {
         // Note, we dont want each element in previewInfoArray to contain too many elements (5), so we do a check here.
         if (previewInfoArray[curIndex].value.length < maxNeighbourCount) {
-          previewInfoArray[curIndex].value.push(removePrefix(processedBinding[i].value.value));
+          previewInfoArray[curIndex].value.push(removePrefix(processedBinding[i].o.value));
         }
       }
       // Else, we push a fresh element onto previewInforArray, and update curIndex
@@ -5127,7 +5128,7 @@ function updatePreviewInfo(resultsBinding, type) {
         previewInfoArray.push(
           {
             "key": type === "subject" ? processedBinding[i].p.value.slice(28) : "is "+processedBinding[i].p.value.slice(28)+" of",
-            "value":[removePrefix(processedBinding[i].value.value)],
+            "value":[removePrefix(processedBinding[i].o.value)],
           }
         )
         ++curIndex;
@@ -5147,11 +5148,11 @@ function updatePreviewInfo(resultsBinding, type) {
       categoryPreviewInfoArray.push(
         {
           "key": "Category",
-          "value": [categoryBinding[0].value.value.slice(37)]
+          "value": [categoryBinding[0].o.value.slice(37)]
         }
       );
       for (let i = 1; i < categoryBinding.length; ++i) {
-        categoryPreviewInfoArray[0].value.push(categoryBinding[i].value.value.slice(37));
+        categoryPreviewInfoArray[0].value.push(categoryBinding[i].o.value.slice(37));
       }
     }
   }
