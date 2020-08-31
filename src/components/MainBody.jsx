@@ -244,7 +244,14 @@ class MainBody extends Component {
         // We first parse the pasted URL and store the list of tables from the pasted URL
         let htmlText = values[0];
         let doc = new DOMParser().parseFromString(htmlText, "text/html");
-        let originTableArray = doc.getElementsByClassName("wikitable");
+        let wikiTableArray = doc.getElementsByClassName("wikitable");
+        let originTableArray = [];
+        for (let i = 0; i < wikiTableArray.length; ++i) {
+          // console.log(wikiTableArray[i].rows);
+          if (wikiTableArray[i].tagName === "TABLE" && wikiTableArray[i].rows !== undefined) {
+            originTableArray.push(wikiTableArray[i]);
+          }
+        }
         let tableOpenList = [];
         for (let i = 0; i < originTableArray.length; ++i) {
           tableOpenList.push(false);
@@ -2721,7 +2728,6 @@ class MainBody extends Component {
           "tableData": this.state.tableData,
           "keyColNeighbours": this.state.keyColNeighbours,
           "firstDegNeighbours": this.state.firstDegNeighbours,
-          "curActionInfo": this.state.curActionInfo,
           "tabIndex": this.state.tabIndex,
           "previewColIndex": this.state.previewColIndex,
         }
@@ -2730,7 +2736,6 @@ class MainBody extends Component {
         tableData: tableData,
         keyColNeighbours: keyColNeighbours,
         firstDegNeighbours: firstDegNeighbours,
-        curActionInfo: {"task":"afterPopulateColumn"},
         tabIndex: 0,
         previewColIndex: -1,
         lastAction: lastAction,
@@ -3128,7 +3133,7 @@ class MainBody extends Component {
     document.body.classList.add('waiting');
     
     // We need to let table panel display the selected table
-    // And we need to update the Action Panel to display the first degree properties of the origigitnal page
+    // And we need to update the Action Panel to display the first degree properties of the original page
     // We do a fetch request here (Sixth Query). It gets the property neighbours of the original page that are links, as well as dct:subject
     // Lastly, we need to set usecaseSelected to "startSubject"
 
@@ -3140,7 +3145,7 @@ class MainBody extends Component {
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyOne =
       "SELECT+%3Fp+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A" +
-      urlReplace(this.state.urlPasted.slice(30)) +
+      urlReplace(decodeURIComponent(this.state.urlPasted.slice(30))) +
       "+%3Fp+%3Fo.%0D%0A++++++BIND%28STR%28%3Fp%29+AS+%3FpString+%29.%0D%0A++++++FILTER%28isIRI%28%3Fo%29+%26%26+regex%28%3FpString%2C%22property%22%2C%22i%22%29+%26%26+%28%21regex%28%3FpString%2C%22text%22%2C%22i%22%29%29%29.%0D%0A%7D%0D%0A&";
     let queryURLOne = prefixURLOne + queryBodyOne + suffixURLOne;
     let queryOne = fetchJSON(queryURLOne);
@@ -3153,10 +3158,9 @@ class MainBody extends Component {
       "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
     let queryBodyTwo =
       "SELECT+%3Fo%0D%0AWHERE+%7B%0D%0A++++++dbr%3A" +
-      urlReplace(this.state.urlPasted.slice(30)) +
+      urlReplace(decodeURIComponent(this.state.urlPasted.slice(30))) +
       "+dct%3Asubject+%3Fo%0D%0A%7D&";
     let queryURLTwo = prefixURLTwo + queryBodyTwo + suffixURLTwo;
-    // console.log(queryURLTwo);
     let queryTwo = fetchJSON(queryURLTwo);
     queryPromise.push(queryTwo);
 
@@ -5417,7 +5421,8 @@ function findTableFromHTML(
   let wikiTablesFound = doc.getElementsByClassName("wikitable");
   let tablesFound = [];
   for (let i = 0; i < wikiTablesFound.length; ++i) {
-    if (wikiTablesFound[i].tagName !== "TH") {
+    // console.log(wikiTablesFound[i].tagName);
+    if (wikiTablesFound[i].tagName === "TABLE" && wikiTablesFound[i].rows !== undefined) {
       tablesFound.push(wikiTablesFound[i]);
     }
   }
@@ -5479,6 +5484,9 @@ function findTableFromTable(
   const matchCutOff = 0.999;
 
   // We first fetch the cleaned column names of the current table
+  console.log(pageName);
+  console.log(tableHTML);
+  console.log(tableHTML.rows);
   let curHeaderCells = tableHTML.rows[0].cells;
   let newCols = []; // stores the cleaned column names of the this table. Let's consider using this value for display as well.
   let remainCols = []; // stores an array of the indices of the columns of the current table that are not yet mapped
@@ -6024,6 +6032,7 @@ function setTableFromHTML(selecteTableHTML, urlOrigin) {
   // This is the part where we make the modification: use links instead of cell literals
 
   for (let i = 0; i < selectedTable.rows.length; ++i) {
+    // console.log(selectedTable.rows[i]);
     let tempRow = [];
     for (let j = 0; j < selectedTable.rows[i].cells.length; ++j) {
       let curCellText = HTMLCleanCell(selectedTable.rows[i].cells[j].innerText);
@@ -6116,6 +6125,8 @@ function setTableFromHTML(selecteTableHTML, urlOrigin) {
       colSpan: 1,
     });
   }
+
+  // console.log(tempTable);
   return tempTable; // tempTable is a 2D array of objects storing the table data. Object has two fields: data(string) and origin(string).
 }
 

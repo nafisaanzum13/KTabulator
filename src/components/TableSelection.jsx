@@ -25,6 +25,7 @@ class TableSelection extends Component {
       // This first part create the buttons with text: table index plus column names
       // It also removes some newline characters
       let buttonText = "Table " + i + ": ";
+      // console.log(originTableArray[i]);
       let headerCells = originTableArray[i].rows[0].cells;
       for (let j = 0; j < headerCells.length; ++j) {
         let headerData = removeNewLine(headerCells[j].innerText);
