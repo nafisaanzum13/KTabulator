@@ -5484,9 +5484,9 @@ function findTableFromTable(
   const matchCutOff = 0.999;
 
   // We first fetch the cleaned column names of the current table
-  console.log(pageName);
-  console.log(tableHTML);
-  console.log(tableHTML.rows);
+  // console.log(pageName);
+  // console.log(tableHTML);
+  // console.log(tableHTML.rows);
   let curHeaderCells = tableHTML.rows[0].cells;
   let newCols = []; // stores the cleaned column names of the this table. Let's consider using this value for display as well.
   let remainCols = []; // stores an array of the indices of the columns of the current table that are not yet mapped
