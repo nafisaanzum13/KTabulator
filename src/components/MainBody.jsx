@@ -3078,11 +3078,11 @@ class MainBody extends Component {
       )
     }
     // console.log("Table header is: ");
-    console.log(tableHeader);
+    // console.log(tableHeader);
 
     // Now, let's deal with tableData. Wee need to handle both data and origin.
     let tableData = [];
-    console.log(tableDataExplore);
+    // console.log(tableDataExplore);
     // This starts the loop for rows
     for (let i=1;i<tableDataExplore.length;++i) {
       let tempRow = [];
