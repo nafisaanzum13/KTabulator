@@ -3078,16 +3078,17 @@ class MainBody extends Component {
       )
     }
     // console.log("Table header is: ");
-    // console.log(tableHeader);
+    console.log(tableHeader);
 
     // Now, let's deal with tableData. Wee need to handle both data and origin.
     let tableData = [];
-    // console.log(tableDataExplore);
+    console.log(tableDataExplore);
     // This starts the loop for rows
     for (let i=1;i<tableDataExplore.length;++i) {
       let tempRow = [];
       // This starts the loop for columns
-      for (let j=0;j<tableDataExplore[i].length;++j) {
+      let minLength = Math.min(tableDataExplore[i].length, tableHeader.length);
+      for (let j=0;j<minLength;++j) {
         // First set the data
         let data = tableDataExplore[i][j].data;
         // Then set the origin
@@ -6152,7 +6153,8 @@ function setUnionData(tableDataExplore) {
   for (let i=1;i<tableDataExplore.length;++i) {
     let tempRow = [];
     // This starts the loop for columns
-    for (let j=0;j<tableDataExplore[i].length;++j) {
+    let minLength = Math.min(tableDataExplore[i].length, tableHeader.length);
+    for (let j=0;j<minLength;++j) {
       // First set the data
       let data = tableDataExplore[i][j].data;
       // Then set the origin
