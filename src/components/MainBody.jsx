@@ -108,7 +108,7 @@ class MainBody extends Component {
       //         4.2.5) title:         array of strings storing the column headers of the current table
       propertyNeighbours: [],
       semanticEnabled: "disabled", // boolean value indicating whether semantic mapping is enabled or not. Default to true
-      unionCutOff: 0.75, // number representing the union percentage a table must have to be considered unionable (>=)
+      unionCutOff: 1, // number representing the union percentage a table must have to be considered unionable (>=)
 
       // states below are for column filter
       showFilter: false,        // boolean storing whether we want to show column filter or not. Initially false.
@@ -286,47 +286,41 @@ class MainBody extends Component {
   copyTable() {
     const textArea = document.createElement("textarea"); // this line allows the use of select() function
     let copiedText = "";
-    // // We handle the case for startTable and startSubject differently
-
-    // // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
-    // if (this.state.usecaseSelected === "startTable") {
-    //   // This case handles the copy table for explore table. We fetch data directly from tableDataExplore
-    //   const rowNum = this.state.tableDataExplore.length;
-    //   const colNum = this.state.tableDataExplore[0].length;
-    //   for (let i = 0; i < rowNum; ++i) {
-    //     for (let j = 0; j < colNum - 1; ++j) {
-    //       copiedText =
-    //         copiedText + this.state.tableDataExplore[i][j].data + "\t";
-    //     }
-    //     copiedText =
-    //       copiedText + this.state.tableDataExplore[i][colNum - 1].data + "\n";
-    //   }
-    // }
 
     // This case handles the copy table for start subject
     if (this.state.usecaseSelected === "startSubject" || this.state.usecaseSelected === "startTable") {
       // We first push on the text for column headers (using the labels)
       let tableHeader = this.state.tableHeader;
       for (let i = 0; i < tableHeader.length; ++i) {
-        let curText = tableHeader[i].label;
-        // console.log(curText);
-        if (curText === undefined && tableHeader[i].length > 0) {
-          curText = "";
-          for (let j = 0; j < tableHeader[i].length; ++j) {
-            if (j > 0) {
-              if (i === 0) {
-                curText += " AND ";
+        // console.log(tableHeader[i]);
+        let curText = "";
+        // This first condition deals with first column's header text
+        if (i === 0) {
+          // First subcase: starting table
+          if (this.state.usecaseSelected === "startTable") {
+            curText = "OriginURL";
+          }
+          // Second subcase: starting entity
+          else {
+            for (let j = 0; j < tableHeader[i].length; ++j) {
+              if (j > 0) {
+                curText += " AND "; 
               }
-              else {
-                curText += " OR ";
-              }
+              curText += niceRender(tableHeader[i][j].oValue);
             }
-            curText += niceRender(tableHeader[i][j].label);
           }
         }
-        if (curText !== undefined) {
-          copiedText = copiedText + curText + "\t";
+        // This condition deals with other column's header text
+        else {
+          for (let j = 0; j < tableHeader[i].length; ++j) {
+            if (j > 0) {
+              curText += " OR ";
+            }
+            let textToAdd = tableHeader[i][j].type === "object" ? "is " + tableHeader[i][j].value + " of" : tableHeader[i][j].value;
+            curText += textToAdd;
+          }
         }
+        copiedText = copiedText + curText + "\t";
       }
       copiedText += "\n";
       // Now we need to fetch the rows that are not column headers
