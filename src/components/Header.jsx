@@ -11,7 +11,7 @@ class Header extends Component {
           <div className="col-md-8">
             <a href="index.html" class="logo">
               <b>
-                <span>KG</span>Wrangler
+                <span>K</span>Tabulator
               </b>
             </a>
           </div>
