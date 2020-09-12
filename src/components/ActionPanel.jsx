@@ -376,11 +376,11 @@ class ActionPanel extends Component {
         <div className="row">
           <div className="col-md-8">
             <h4 className="logo-left-color">
-              ACTIONS
+              Insert Data
               <span> </span>
-              <span className="logo-right-color xsmall">
+              {/* <span className="logo-right-color xsmall">
                 Select your starting action
-              </span>
+              </span> */}
             </h4>
           </div>
         </div>
@@ -390,11 +390,11 @@ class ActionPanel extends Component {
         <div className="row action-header">
           <div className="col-md-8">
             <h4 className="logo-left-color">
-              ACTIONS
+              Insert Data
               <span> </span>
-              <span className="logo-right-color xsmall">
+              {/* <span className="logo-right-color xsmall">
                 Select your next action
-              </span>
+              </span> */}
             </h4>
           </div>
         </div>
@@ -730,8 +730,8 @@ class ActionPanel extends Component {
             onSelect={(index) => this.props.handleTabSwitch(index)}
           >
             <TabList>
-              <Tab>Wrangling Actions</Tab>
-              <Tab>Table Actions</Tab>
+              <Tab>From DBpedia</Tab>
+              <Tab>From Wiki Tables</Tab>
             </TabList>
             <div className="action-scrollable">
               <TabPanel>{actionEle}</TabPanel>
@@ -804,8 +804,8 @@ class ActionPanel extends Component {
               className="height-inherit"
             >
               <TabList>
-                <Tab>Wrangling Actions</Tab>
-                <Tab>Table Actions</Tab>
+                <Tab>From DBpedia</Tab>
+                <Tab>From Wiki Tables</Tab>
               </TabList>
               <div className="action-scrollable">
                 <TabPanel>{actionEle}</TabPanel>
