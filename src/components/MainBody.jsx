@@ -138,6 +138,10 @@ class MainBody extends Component {
       previewInfoExpanded: [], // array of booleans storing whether each element from previewInfoArray is expanded or not.
                                // This can only be set to true for previewInfoArray elements that have value length longer than 1.
 
+      // states below are for customized table union
+      unionURL: "",            // user-pasted URL, so that they can union table with customized table. If "", nothing has ever been pasted yet.
+      unionTableArray: [],     // 1D array storing all tables found on union URL.
+      unionOpenList: [],       // 1D array of bools storing whether each table in unionTableArray has been toggled open or not.
     };
 
     // functions below are useful during start up
@@ -221,6 +225,10 @@ class MainBody extends Component {
     this.populateRecommendation = this.populateRecommendation.bind(this);
     this.createStartRecommend = this.createStartRecommend.bind(this);
     this.populateStartRecommend = this.populateStartRecommend.bind(this);
+
+    // functions below are for table union in startSubject case
+    this.handleUnionPaste = this.handleUnionPaste.bind(this);
+    this.toggleUnionTable = this.toggleUnionTable.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -342,7 +350,7 @@ class MainBody extends Component {
     textArea.select();
     document.execCommand("copy");
     document.body.removeChild(textArea);
-    alert("Table content has been pasted!");
+    alert("Table content has been exported!");
   }
 
   // This function handles the toggling of the WikiPage at bottom
@@ -4554,6 +4562,68 @@ class MainBody extends Component {
     })
   }
 
+  // This function handles the URL paste for table union. It should very similar to handleURLPaste
+  handleUnionPaste(e) {
+
+    document.body.classList.add('waiting');
+
+    // We first get the urlPasted
+    e.preventDefault();
+    let urlPasted = (e.clipboardData || window.clipboardData).getData("text");
+
+    // We first check if user has pasted a valid wikipedia page.
+    if (!urlPasted.includes("https://en.wikipedia.org/wiki/")) {
+      document.body.classList.remove('waiting');
+      alert("Please paste a valid Wikipedia link.");
+    }
+
+    // If yes, we need to fetch the tables from the pasted Wikipedia page
+    else {
+      let promiseArray = [];
+      promiseArray.push(fetchText(urlPasted));
+      allPromiseReady(promiseArray).then((values) => {
+        // We first parse the pasted URL and store the list of tables from the pasted URL
+        let htmlText = values[0];
+        let doc = new DOMParser().parseFromString(htmlText, "text/html");
+        let wikiTableArray = doc.getElementsByClassName("wikitable");
+        let unionTableArray = [];
+        for (let i = 0; i < wikiTableArray.length; ++i) {
+          if (wikiTableArray[i].tagName === "TABLE" && wikiTableArray[i].rows !== undefined) {
+            unionTableArray.push(wikiTableArray[i]);
+          }
+        }
+        let unionOpenList = [];
+        for (let i = 0; i < unionTableArray.length; ++i) {
+          unionOpenList.push(false);
+        }
+
+        document.body.classList.remove('waiting');
+
+        // Need to add support for undo later. Skip for now
+        this.setState({
+          unionURL: urlPasted,
+          unionTableArray: unionTableArray,
+          unionOpenList: unionOpenList,
+        })
+      })
+    }
+  }
+
+  // This function handles the toggle on/off for tables in unionTableArray
+  toggleUnionTable(e, index) {
+    let unionOpenList = this.state.unionOpenList.slice();
+    unionOpenList[index] = !unionOpenList[index];
+    // When we toggle on one table (to union), we want to close all other tables
+    for (let i = 0; i < unionOpenList.length; ++i) {
+      if (i !== index) {
+        unionOpenList[i] = false;
+      }
+    }
+    this.setState({
+      unionOpenList: unionOpenList,
+    })
+  }
+
   render() {
     let bodyEle;
     let bottomContentClass = " bottom-content";
@@ -4677,6 +4747,12 @@ class MainBody extends Component {
                     togglePreviewElement={this.togglePreviewElement}
                     // Following states are for showStartRecommend
                     keyColNeighbours={this.state.keyColNeighbours}
+                    // Following states are for customized table union
+                    unionURL={this.state.unionURL}
+                    handleUnionPaste={this.handleUnionPaste}
+                    unionTableArray={this.state.unionTableArray}
+                    unionOpenList={this.state.unionOpenList}
+                    toggleUnionTable={this.toggleUnionTable}
                   />
                 </div>
               </div>
@@ -6380,7 +6456,7 @@ function createNeighbourText(neighbourArray) {
 // 3) relation:     how the recommend attribute is related to the original attribute: string, or semantic
 
 function addRecommendNeighbours(processedNeighboursCopy) {
-  console.log(processedNeighboursCopy);
+  // console.log(processedNeighboursCopy);
   let processedNeighbours = _.cloneDeep(processedNeighboursCopy);
 
 

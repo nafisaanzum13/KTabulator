@@ -23,6 +23,7 @@ class ActionPanel extends Component {
     this.createTableArray = this.createTableArray.bind(this);
     this.createRecommendArray = this.createRecommendArray.bind(this);
     this.createStartRecommend = this.createStartRecommend.bind(this);
+    this.createCustomizedUnion = this.createCustomizedUnion.bind(this); // updated 9/13
   }
 
   createTableArray(firstIndex, secondIndex) {
@@ -357,6 +358,68 @@ class ActionPanel extends Component {
         {recommendEle}
       </div>
     );
+    return returnEle;
+  }
+
+  // The following function creates the HTML element for table union, in the startSubject case.
+  createCustomizedUnion() {
+
+    // First element to create: the title (text) element
+    let textEle;
+    if (this.props.unionURL === "") {
+      textEle = 
+        <div>
+          <p>
+            For customized table, please paste URL below to look for tables.
+          </p>
+        </div>
+    }
+    else {
+      textEle = 
+        <div>
+          <p>
+            The following tables are from page:{" "}
+            <b>
+              {decodeURIComponent(this.props.unionURL.slice(30))}
+            </b>
+          </p>
+        </div>
+    }
+
+    // Second element to create: input element to support the URL pasting.
+    let formEle = 
+      <div>
+        <div className="row text-center">
+          <div className="col-md-9 offset-md-1">
+            <input
+              placeholder="e.g., https://en.wikipedia.org/wiki/Canada"
+              onPaste={(e) => this.props.handleUnionPaste(e)}
+              className=" form-control"
+            ></input>
+          </div>
+        </div>
+        <br />
+      </div>
+    
+    // Third element to create: TableCreation component
+    let tableListEle = 
+      <div>
+        <TableSelection
+          originTableArray={this.props.unionTableArray}
+          tableOpenList={this.props.unionOpenList}
+          toggleTable={this.props.toggleUnionTable}
+          listType={"union"}
+          buttonFunction={(e) => console.log("Hello")} // Start from here tomorrow. Finish writing this button function. Then create the vid.
+        />
+      </div>
+
+    // Finally, we create the return element.
+    let returnEle = 
+      <div>
+        {textEle}
+        {formEle}
+        {tableListEle}
+      </div>
     return returnEle;
   }
 
@@ -723,6 +786,11 @@ class ActionPanel extends Component {
 
     if (this.props.usecaseSelected === "startSubject") {
       let curIndex = this.props.tabIndex;
+
+      // updated on 9/13: let's check with this.props.unionURL to decide what we want to show in the union table section
+
+
+
       wrapperEle = (
         <div className="height-inherit">
           <Tabs
@@ -749,8 +817,7 @@ class ActionPanel extends Component {
                       <Collapse isOpen={this.props.showUnionTables}>
                         <CardBody>
                           <Card>
-                            Currently, finding unionable tables for customized
-                            table is not supported.
+                            {this.createCustomizedUnion()}
                           </Card>
                         </CardBody>
                       </Collapse>
@@ -792,7 +859,8 @@ class ActionPanel extends Component {
           </Tabs>
         </div>
       );
-    } else if (this.props.usecaseSelected === "startTable") {
+    } 
+    else if (this.props.usecaseSelected === "startTable") {
       // If we have not selected a table, we show both tabs, as we are fully ready.
       if (this.props.selectedTableIndex !== -1) {
         let curIndex = this.props.tabIndex;

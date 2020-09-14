@@ -19,7 +19,7 @@ class Header extends Component {
             <div className="col-md-4">
               <button
                 className="btn btn-default"
-                title="copy table to csv"
+                title="export table"
                 onClick={() => this.props.copyTable()}
               >
                 <FaCopy className="logo-left-color" />

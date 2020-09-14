@@ -19,7 +19,9 @@ class TableSelection extends Component {
   }
 
   createButtonArray() {
+    // this.props.originTableArray is a list of tables passed into this component 
     const originTableArray = this.props.originTableArray;
+
     let buttonArray = [];
     for (let i = 0; i < originTableArray.length; ++i) {
       // This first part create the buttons with text: table index plus column names
@@ -48,8 +50,11 @@ class TableSelection extends Component {
         if (this.props.listType === "select") {
           buttonText = "Select";
         }
-        else {
+        else if (this.props.listType === "join"){
           buttonText = "Join"
+        }
+        else {
+          buttonText = "Union"
         }
         selectButton = 
           <button
