@@ -1148,6 +1148,14 @@ class MainBody extends Component {
         allPromiseReady(promiseArrayOne).then((valuesOne) => {
         allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
+          // console.log(valuesOne);
+          // console.log(valuesTwo);
+
+          // Modified on Sept 13th: whenever updateNeighbourInfo is called, updateUnionSelection should also be called
+          // updateUnionSelection should basically be a looped version for updateFirstColSelection
+          let selectionInfo = updateUnionSelection(valuesOne);
+          // console.log(selectionInfo);
+
           // We call updateNeighbourInfo here because we are changing the rows
           let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
           let keyColNeighbours = updatedNeighbours.keyColNeighbours;
@@ -1172,6 +1180,8 @@ class MainBody extends Component {
               "tableHeader":this.state.tableHeader,
               "firstColFilled":this.state.firstColFilled,
               "firstColHeaderInfo":this.state.firstColHeaderInfo,
+              "firstColSelection":this.state.firstColSelection, // updated on Sept 13th
+              "firstColChecked":this.state.firstColChecked, // updated on Sept 13th
             };
 
           document.body.classList.remove('waiting');
@@ -1180,7 +1190,6 @@ class MainBody extends Component {
             keyColIndex: colIndex,
             keyColNeighbours: keyColNeighbours,
             firstDegNeighbours: firstDegNeighbours,
-            // curActionInfo: {"task":"afterPopulateColumn"},
             curActionInfo: tempObj, // Changed on Aug 20th
             tableData: tableData,
             tableHeader: tableHeader,
@@ -1189,6 +1198,8 @@ class MainBody extends Component {
             firstColText: "", // updated on August 26th
             lastAction: lastAction,
             prevState: prevState,
+            firstColSelection: selectionInfo.firstColSelection,
+            firstColChecked: selectionInfo.firstColChecked,
           });
         })
         })
@@ -1244,6 +1255,8 @@ class MainBody extends Component {
         let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", 0);
         allPromiseReady(promiseArrayOne).then((valuesOne) => {
         allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+
+          let selectionInfo = updateUnionSelection(valuesOne); // Sept 13 update
   
           // We call updateNeighbourInfo here because we are changing the rows
           let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
@@ -1264,6 +1277,8 @@ class MainBody extends Component {
               "firstDegNeighbours": this.state.firstDegNeighbours,
               "firstColHeaderInfo": this.state.firstColHeaderInfo,
               "previewColIndex": this.state.previewColIndex,
+              "firstColSelection": this.state.firstColSelection, // updated on 9/13
+              "firstColChecked": this.state.firstColChecked, // updated on 9/13
             }
   
           this.setState({
@@ -1274,6 +1289,8 @@ class MainBody extends Component {
             curActionInfo: {"task":"afterPopulateColumn"},
             previewColIndex: -1,
             firstColText: "", // updated on August 26th
+            firstColSelection: selectionInfo.firstColSelection,
+            firstColChecked: selectionInfo.firstColChecked,
             lastAction: lastAction,
             prevState: prevState,
           });
@@ -1983,7 +2000,7 @@ class MainBody extends Component {
         // we first set the data for the cell using all values from curColumnArray (this is different from populateOtherColumn)
         let curData = "";
         for (let k = 0; k < curColumnArray.length; ++k) {
-          let dataToAdd = k > 0 ? ";\n" + curColumnArray[k] : curColumnArray[k];
+          let dataToAdd = k > 0 ? ";" + curColumnArray[k] : curColumnArray[k];
           curData+=dataToAdd;
           // console.log("Data to add is "+dataToAdd);
           // console.log("Current data is "+curData);
@@ -2941,20 +2958,21 @@ class MainBody extends Component {
       // console.log(subjectInfoArray);
       // console.log(objectInfoArray);
 
-      // Modified on August 28th: when we double click a cell in the first column, and the firs column is the current search column
-      // We want to update firstColSelection and firstColChecked as well
-      let firstColSelection = _.cloneDeep(this.state.firstColSelection);
-      let firstColChecked = _.cloneDeep(this.state.firstColChecked);
+      // // Modified on August 28th: when we double click a cell in the first column, and the first column is the current search column
+      // // We want to update firstColSelection and firstColChecked as well
+      // let firstColSelection = _.cloneDeep(this.state.firstColSelection);
+      // let firstColChecked = _.cloneDeep(this.state.firstColChecked);
 
-      if (this.state.keyColIndex === 0 && colIndex === 0) {
-        // We first update firstColSelection
-        firstColSelection = updateFirstColSelection(values[0].results.bindings);
-        // We then update firstColChecked
-        firstColChecked = [];
-        for (let i = 0; i < firstColSelection.length; ++i) {
-          firstColChecked.push(false);
-        }
-      }
+      // if (this.state.keyColIndex === 0 && colIndex === 0) {
+      //   // We first update firstColSelection
+      //   console.log(values[0].results.bindings);
+      //   firstColSelection = updateFirstColSelection(values[0].results.bindings);
+      //   // We then update firstColChecked
+      //   firstColChecked = [];
+      //   for (let i = 0; i < firstColSelection.length; ++i) {
+      //     firstColChecked.push(false);
+      //   }
+      // }
       
       // Here is where we make the modifications: instead of passing information to Action Panel, let's store them as states
       let previewInfoArray = subjectInfoArray.concat(objectInfoArray);
@@ -2981,8 +2999,8 @@ class MainBody extends Component {
             "previewInfoExpanded": this.state.previewInfoExpanded,
             "selectedCell": this.state.selectedCell,
             "previewColIndex": this.state.previewColIndex,
-            "firstColSelection": this.state.firstColSelection,
-            "firstColChecked": this.state.firstColChecked,
+            // "firstColSelection": this.state.firstColSelection,
+            // "firstColChecked": this.state.firstColChecked,
           };
       
       this.setState({
@@ -2994,8 +3012,8 @@ class MainBody extends Component {
         previewInfoArray: previewInfoArray,
         previewInfoExpanded: previewInfoExpanded,
         selectedCell: selectedCell,
-        firstColSelection: firstColSelection, // updated on Aug 28
-        firstColChecked: firstColChecked, // updated on Aug 28
+        // firstColSelection: firstColSelection, // updated on Aug 28
+        // firstColChecked: firstColChecked, // updated on Aug 28
         lastAction: lastAction,
         prevState: prevState,
       });
@@ -3901,8 +3919,8 @@ class MainBody extends Component {
     let lastAction = this.state.lastAction;
     // Then we fetch the previous state
     let prevState = this.state.prevState;
-    // console.log(lastAction);
-    // console.log(prevState);
+    console.log(lastAction);
+    console.log(prevState);
 
     // Note, since we are allowing one step undo only, we set lastAction to "" everytime we run this function
 
@@ -3968,6 +3986,8 @@ class MainBody extends Component {
         tableHeader: prevState.tableHeader,
         firstColFilled: prevState.firstColFilled,
         firstColHeaderInfo: prevState.firstColHeaderInfo,
+        firstColSelection: prevState.firstColSelection,
+        firstColChecked: prevState.firstColChecked,
         lastAction: "",
       })
     }
@@ -4065,8 +4085,8 @@ class MainBody extends Component {
         previewInfoExpanded: prevState.previewInfoExpanded,
         selectedCell: prevState.selectedCell,
         previewColIndex: prevState.previewColIndex,
-        firstColSelection: prevState.firstColSelection,
-        firstColChecked: prevState.firstColChecked,
+        // firstColSelection: prevState.firstColSelection,
+        // firstColChecked: prevState.firstColChecked,
         lastAction: "",
       })
     }
@@ -4141,6 +4161,8 @@ class MainBody extends Component {
         keyColNeighbours: prevState.keyColNeighbours,
         firstColHeaderInfo: prevState.firstColHeaderInfo,
         previewColIndex: prevState.previewColIndex,
+        firstColSelection: prevState.firstColSelection, // updated on 9/13
+        firstColChecked: prevState.firstColChecked,  // updated on 9/13
         lastAction: "",
       })
     }
@@ -6636,5 +6658,157 @@ function updateNeighbourInfo(valuesOne, valuesTwo) {
     "firstDegNeighbours":firstDegNeighbours,
     "keyColNeighbours":keyColNeighbours,
   }
+}
+
+// Added on Sept 13: 
+// The following is helper function to update the firstColSelection options to include all entities from first column
+// This function should just use something very similar to updateFirstColSelection in a loop. Then do some processing in the end.
+
+function updateUnionSelection(valuesOne) {
+
+  // initialize array to store the union of all firstColSelection
+  let unionSelection = [];
+
+  // the two following arrays store the dct neighbours and dbo/p neighbours respectively
+  let dctArray = [];
+  let dbopArray = [];
+
+  // We loop over the first degree neighbours for every entry in the first column
+  for (let i = 0; i < valuesOne.length; ++i) {
+
+    // We first filter out those in resultsBinding according to three criterias
+    // Note: the second criteria is a bit different from updateKeyColNeighbours and updatePreviewInfo
+
+    // 1) p.value.slice(28).length must > 1
+    // 2) p.value must include "ontology", "property", or "dc/terms/subject" (so it is one of dbo:XXXX, dbp:XXXX, or dct:subject)
+    // 3) p.value must not include certain strings (which likely correspond to meaningless attributes)
+
+    let resultsBinding = valuesOne[i].results.bindings;
+
+    let processedBinding = resultsBinding.filter(
+      a => a.p.value.slice(28).length > 1 
+          &&
+          (a.p.value.includes("ontology") 
+          || a.p.value.includes("property")
+          || a.p.value.includes("dc/terms/subject")
+          ) 
+          &&
+          !(a.p.value.includes("wikiPage") 
+          || a.p.value.includes("align") 
+          || a.p.value.includes("abstract") 
+          || a.p.value.includes("caption") 
+          || a.p.value.includes("image") 
+          || a.p.value.includes("width") 
+          || a.p.value.includes("thumbnail") 
+          || a.p.value.includes("blank")
+          || a.p.value.includes("fec")
+          || a.p.value.includes("viaf")
+          || a.p.value.includes("soundRecording")
+          || a.p.value.includes("votesmart")
+          || a.p.value.includes("wordnet")
+          || a.p.value.includes("float")
+          || a.p.value.includes("bbr")
+          || a.p.value === "http://dbpedia.org/property/alt"
+          || a.p.value === "http://dbpedia.org/property/by"
+          || a.p.value === "http://dbpedia.org/property/onlinebooks"
+          || a.p.value === "http://dbpedia.org/property/signature"
+          || a.p.value === "http://dbpedia.org/property/video"
+          || a.p.value === "http://dbpedia.org/property/logo"
+          || a.p.value === "http://dbpedia.org/property/shorts"
+          || a.p.value === "http://dbpedia.org/property/patternS"
+          || a.p.value === "http://dbpedia.org/property/patternB"
+          || a.p.value === "http://dbpedia.org/property/body"
+          || a.p.value === "http://dbpedia.org/property/hShorts"
+          || a.p.value === "http://dbpedia.org/property/hPatternS"
+          || a.p.value === "http://dbpedia.org/property/hPatternB"
+          || a.p.value === "http://dbpedia.org/property/hBody"
+          || a.p.value === "http://dbpedia.org/property/aShorts"
+          || a.p.value === "http://dbpedia.org/property/aPatternS"
+          || a.p.value === "http://dbpedia.org/property/aPatternB"
+          || a.p.value === "http://dbpedia.org/property/aBody"
+          || a.p.value === "http://dbpedia.org/property/3Shorts"
+          || a.p.value === "http://dbpedia.org/property/3PatternS"
+          || a.p.value === "http://dbpedia.org/property/3PatternB"
+          || a.p.value === "http://dbpedia.org/property/3Body"
+          || a.p.value === "http://dbpedia.org/property/nba"
+          || a.p.value === "http://dbpedia.org/ontology/termPeriod"
+          )
+    );
+    // Now we run an inner loop to loop over each processedBinding
+    for (let j = 0; j < processedBinding.length; ++j) {
+      if (processedBinding[j].p.value === "http://purl.org/dc/terms/subject") {
+        dctArray.push(processedBinding[j]);
+      }
+      else {
+        dbopArray.push(processedBinding[j]);
+      }
+    } 
+  }
+
+  // Now we deal with dctArray and dbopArray
+
+  // First is dctArray. We first dedup it based on o.value. Then sort by o.value.slice(37)
+  dctArray = _.uniqBy(dctArray, function(x) {return x.o.value});
+  dctArray.sort((a, b) => (a.o.value.slice(37) < b.o.value.slice(37) ? -1 : 1));
+
+  // Second is dbopArray. We first remove those entries with both p.value and o.value duplicated
+  dbopArray = _.uniqBy(dbopArray, function(x) {return x.p.value && x.o.value});
+  // Then we sort. Two sorting criterias: 
+  // 1) Those that are dbr (so without a datatype) shows up higher.
+  // 2) Then in alphabetical order
+  dbopArray.sort(function (a, b) {
+    if (a.o.datatype === undefined && b.o.datatype !== undefined) {
+      return -1;
+    }
+    else if (b.o.datatype === undefined && a.o.datatype !== undefined) {
+      return 1;
+    }
+    else {
+      return a.p.value.slice(28) < b.p.value.slice(28) ? -1 : 1;
+    }
+  });
+
+  // Now that both dctArray and dbopArray have the corret elements, we push them onto unionSelection array
+  // console.log(dctArray);
+  // console.log(dbopArray);
+  for (let i = 0; i < dctArray.length; ++i) {
+    unionSelection.push(
+      {
+        "pValue":"category",
+        "pDataset":"dct",
+        "oValue":dctArray[i].o.value.slice(37),
+        "oType":"",
+        "value":"category",
+        "label":dctArray[i].o.value.slice(37),
+      }
+    )
+  }
+  for (let i = 0; i < dbopArray.length; ++i) {
+    unionSelection.push(
+      {
+        "pValue":dbopArray[i].p.value.slice(28),
+        "pDataset":dbopArray[i].p.value.includes("property") ? "dbp" : "dbo",
+        "oValue":removePrefix(dbopArray[i].o.value),
+        "oType":dbopArray[i].o.datatype === undefined ? "" : dbopArray[i].o.datatype,
+        "value":dbopArray[i].p.value.slice(28),
+        "label":dbopArray[i].p.value.slice(28)+":"+removePrefix(dbopArray[i].o.value),
+      }
+    )
+  }
+  // console.log(unionSelection);
+
+  // Now we create unionChecked, which is an array of false, length === length of unionSelection
+  let unionChecked = [];
+  for (let i = 0; i < unionSelection.length; ++i) {
+    unionChecked.push(false);
+  }
+
+  // Now we create the return value
+  let selectionInfo = {
+    "firstColSelection":unionSelection,
+    "firstColChecked":unionChecked,
+  };
+
+  return selectionInfo;
 }
 

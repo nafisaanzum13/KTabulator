@@ -384,14 +384,15 @@ class TablePanel extends Component {
           else {
             cellColor = { backgroundColor: "White" };
           }
-          // console.log("Current data is "+this.props.tableData[i][j]);
+          // We include a small modification here to deal with the cell titles
+          let curTitle = niceRender(this.props.tableData[i][j].data).replace(/;/g, "\n");
           tempRow.push(
             <td style={cellColor}>
               <input
                 className="twenty-vw"
                 type="text"
                 value={niceRender(this.props.tableData[i][j].data)}
-                title={niceRender(this.props.tableData[i][j].data)}
+                title={curTitle}
                 onChange={(e) => this.props.onCellChange(e, i, j)}
                 onDoubleClick={(e) => this.props.originPreviewPage(e, i, j)}
               />

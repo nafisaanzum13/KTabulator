@@ -34,7 +34,7 @@ class FirstColSelection extends Component {
         {/* <br /> */}
       </div>
     );
-
+    
     // If selectedNeighbours is not empty, we have to create the populateText and populateEle
     if (keyCheckedIndex !== -1 && selectedNeighbours.length > 0) {
       let populateText =
