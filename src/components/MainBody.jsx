@@ -3012,8 +3012,8 @@ class MainBody extends Component {
         previewInfoArray: previewInfoArray,
         previewInfoExpanded: previewInfoExpanded,
         selectedCell: selectedCell,
-        // firstColSelection: firstColSelection, // updated on Aug 28
-        // firstColChecked: firstColChecked, // updated on Aug 28
+        // firstColSelection: firstColSelection, // updated on 9/13
+        // firstColChecked: firstColChecked, // updated on 9/13
         lastAction: lastAction,
         prevState: prevState,
       });
@@ -3919,8 +3919,8 @@ class MainBody extends Component {
     let lastAction = this.state.lastAction;
     // Then we fetch the previous state
     let prevState = this.state.prevState;
-    console.log(lastAction);
-    console.log(prevState);
+    // console.log(lastAction);
+    // console.log(prevState);
 
     // Note, since we are allowing one step undo only, we set lastAction to "" everytime we run this function
 
@@ -6380,8 +6380,9 @@ function createNeighbourText(neighbourArray) {
 // 3) relation:     how the recommend attribute is related to the original attribute: string, or semantic
 
 function addRecommendNeighbours(processedNeighboursCopy) {
-  // console.log(processedNeighbours);
+  console.log(processedNeighboursCopy);
   let processedNeighbours = _.cloneDeep(processedNeighboursCopy);
+
 
   // To do this, we need to a double loop over the processedNeighbours
   for (let i = 0; i < processedNeighbours.length; ++i) {
@@ -6392,7 +6393,7 @@ function addRecommendNeighbours(processedNeighboursCopy) {
     for (let j = 0; j < processedNeighbours.length; ++j) {
       // We only look at cases where i !== j
       if (i !== j) {
-        // We consider three types of matching
+        // We consider two types of matching
 
         // 1st type is String Similarity: if X is a substring of Y, or Y is a substring of X 
         let upperStrOne = processedNeighbours[i].value.toUpperCase();
@@ -6415,6 +6416,18 @@ function addRecommendNeighbours(processedNeighboursCopy) {
               "value": processedNeighbours[j].value,
               "type": processedNeighbours[j].type,
               "relation": "semantic"
+            }
+          )
+        }
+
+        // updated on 9/13: hardcode "starring" to be in "director"'s attribute recommendations
+        if ((processedNeighbours[i].value === "director" && processedNeighbours[i].type === "subject") &&
+            (processedNeighbours[j].value === "starring" && processedNeighbours[j].type === "subject")) {
+          recommendNeighbours.push(
+            {
+              "value": processedNeighbours[j].value,
+              "type": processedNeighbours[j].type,
+              "relation": "magic!",
             }
           )
         }
