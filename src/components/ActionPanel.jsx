@@ -409,7 +409,7 @@ class ActionPanel extends Component {
           tableOpenList={this.props.unionOpenList}
           toggleTable={this.props.toggleUnionTable}
           listType={"union"}
-          buttonFunction={(e) => console.log("Hello")} // Start from here tomorrow. Finish writing this button function. Then create the vid.
+          buttonFunction={this.props.showUnionAlign} 
         />
       </div>
 

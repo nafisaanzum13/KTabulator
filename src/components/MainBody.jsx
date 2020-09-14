@@ -229,6 +229,7 @@ class MainBody extends Component {
     // functions below are for table union in startSubject case
     this.handleUnionPaste = this.handleUnionPaste.bind(this);
     this.toggleUnionTable = this.toggleUnionTable.bind(this);
+    this.showUnionAlign = this.showUnionAlign.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -4624,6 +4625,12 @@ class MainBody extends Component {
     })
   }
 
+  // THe function handles user clicking the "union" button for a table from unionTableArray
+  // Start from here
+  showUnionAlign(e, index) {
+    console.log("Table to union has index " + index);
+  }
+
   render() {
     let bodyEle;
     let bottomContentClass = " bottom-content";
@@ -4753,6 +4760,7 @@ class MainBody extends Component {
                     unionTableArray={this.state.unionTableArray}
                     unionOpenList={this.state.unionOpenList}
                     toggleUnionTable={this.toggleUnionTable}
+                    showUnionAlign={this.showUnionAlign}
                   />
                 </div>
               </div>
