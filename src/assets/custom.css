@@ -132,6 +132,20 @@
   background-color: #fff;
 }
 
+/* The following class handles the stype for union modal */
+.union-modal {
+  margin-top: 15vh;
+  margin-left: 25vw;
+  height: 50vh;
+  width: 50vw;
+  background-color: #fff;
+}
+
+.modal-body {
+  height: 35vh;
+  overflow: auto;
+}
+
 /* The following class handles the divider style between cell preview and cell origin */
 .preview-origin-divider {
   border: 5px solid black;

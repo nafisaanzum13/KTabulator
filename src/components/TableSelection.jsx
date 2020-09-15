@@ -8,7 +8,7 @@
 // 5) buttonFunction:   function corresponding to the listType.
 
 import React, { Component } from "react";
-import { Collapse } from "reactstrap";
+import { Button, Collapse } from "reactstrap";
 import { FaTable } from "react-icons/fa";
 
 class TableSelection extends Component {
@@ -57,11 +57,11 @@ class TableSelection extends Component {
           buttonText = "Union"
         }
         selectButton = 
-          <button
+          <Button
             onClick={(e) => this.props.buttonFunction(e, i)}
           >
             {buttonText}
-          </button>
+          </Button>
       }
       buttonArray.push(
         <li

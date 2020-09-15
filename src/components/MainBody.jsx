@@ -6,6 +6,7 @@ import Footer from "../components/Footer";
 import SettingModal from "../components/SettingModal";
 import FilterModal from "../components/FilterModal";
 import JoinModal from "../components/JoinModal";
+import UnionModal from "../components/UnionModal";
 import LandingPage from "../components/LandingPage";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
@@ -130,6 +131,7 @@ class MainBody extends Component {
       previewColIndex: -1,     // number storing the index of the column that we want to show preview for. 
                                // When -1, we do not want to show any preview. This state needs to be passed to TablePanel
                                // It should only be set to non -1 when we have toggled some selections on, but haven't confirmed on selections yet. 
+      
       // states below are useful for cell preview and origin
       selectedCell: null,      // data in the format of tableData[i][j] (has both data and origin attribute). 
                                // (origin element can be determined from this)
@@ -142,6 +144,7 @@ class MainBody extends Component {
       unionURL: "",            // user-pasted URL, so that they can union table with customized table. If "", nothing has ever been pasted yet.
       unionTableArray: [],     // 1D array storing all tables found on union URL.
       unionOpenList: [],       // 1D array of bools storing whether each table in unionTableArray has been toggled open or not.
+      showUnionModal: false,   // boolean storing whether the union modal should be shown or not.
     };
 
     // functions below are useful during start up
@@ -230,6 +233,8 @@ class MainBody extends Component {
     this.handleUnionPaste = this.handleUnionPaste.bind(this);
     this.toggleUnionTable = this.toggleUnionTable.bind(this);
     this.showUnionAlign = this.showUnionAlign.bind(this);
+    this.cancelUnionAlign = this.cancelUnionAlign.bind(this);
+    this.hardcodeUnion = this.hardcodeUnion.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -4625,10 +4630,103 @@ class MainBody extends Component {
     })
   }
 
-  // THe function handles user clicking the "union" button for a table from unionTableArray
-  // Start from here
+  // The function handles user clicking the "union" button for a table from unionTableArray
+  // For now, it simply sets showUnionModal to true.
   showUnionAlign(e, index) {
-    console.log("Table to union has index " + index);
+    this.setState({
+      showUnionModal: true,
+    })
+  }
+
+  // The function handles cancel of union operation. For now, it just sets showUnionModal to false.
+  cancelUnionAlign() {
+    this.setState({
+      showUnionModal: false,
+    })
+  } 
+
+  // The following function is completely hardcoded: it performs the table union
+  hardcodeUnion(e) {
+    document.body.classList.add('waiting');
+
+    let dataToUnion = setTableFromHTML(this.state.unionTableArray[0],"");
+    // console.log(dataToUnion);
+
+    // Now we should have a for loop to loop over dataToUnion.length
+    // We also need to run a loop to queries to specifically fetch the dbo:starring attribute
+
+    // Let's first take a look of all the movies (all entries from col index 2). 
+    // Then we will ask the queries. Then, when we get our results back (the starring), 
+    // we construct the new table data row by row. One cell at a time.
+    // and concat the new table data with the existing table data.
+
+    let promiseArray = [];
+
+    for (let i = 0; i < dataToUnion.length; ++i) {
+      let cellValue = dataToUnion[i][2].data === "N/A" ? "NONEXISTINGSTRING" : regexReplace(dataToUnion[i][2].data);
+      let prefixURL = 
+        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+      let suffixURL = 
+        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
+      let queryBody =
+        "select+%3Fo%0D%0Awhere+%7B%0D%0Adbr%3A" + cellValue + "+dbo%3Astarring+%3Fo.%0D%0A%7D&";
+      let queryURL = prefixURL + queryBody + suffixURL;
+      let curPromise = fetchJSON(queryURL);
+      promiseArray.push(curPromise);
+    }
+
+    allPromiseReady(promiseArray).then((values) => {
+
+      // for (let i = 0; i < values.length; ++i) {
+      //   console.log(values[i].results.bindings);
+      // }
+
+      // We have gotten all the data we need. Let's now put them together
+
+      let otherTableData = [];
+
+      for (let i = 0; i < dataToUnion.length; ++i) {
+        let tempRow = [];
+        // We push on the movies, directors, notes (which will be blank), starring (using the query results), and country in order
+        // First movies
+        tempRow.push(dataToUnion[i][2]);
+        // Then directors
+        tempRow.push(dataToUnion[i][4]);
+        // Then notes. It will have blank data and origin
+        tempRow.push({
+          "data": "",
+          "origin": "",
+        })
+        // Then starring. We need to use query results.
+        if (values[i].results.bindings.length === 0) {
+          tempRow.push({
+            "data": "N/A",
+          })
+        }
+        else {
+          tempRow.push({
+            "data": removePrefix(values[i].results.bindings[0].o.value),
+            "origin":"",
+          })
+        }
+        // Lastly, country.
+        tempRow.push(dataToUnion[i][5]);
+
+        // After the row has been set, we push the row onto otherTableData
+        otherTableData.push(tempRow);
+      }
+      // console.log(otherTableData);
+
+      let tableData = _.cloneDeep(this.state.tableData);
+      tableData = tableData.concat(otherTableData);
+
+      document.body.classList.remove('waiting');
+
+      this.setState({
+        showUnionModal: false,
+        tableData: tableData,
+      })
+    })
   }
 
   render() {
@@ -4804,6 +4902,13 @@ class MainBody extends Component {
                   joinJoinIndex={this.state.joinJoinIndex}
                   selectJoinColumn={this.selectJoinColumn}
                   runJoin={this.runJoin}
+                />
+              </div>
+              <div>
+                <UnionModal
+                  showUnionModal={this.state.showUnionModal}
+                  cancelUnionAlign={this.cancelUnionAlign}
+                  hardcodeUnion={this.hardcodeUnion}
                 />
               </div>
             </div>

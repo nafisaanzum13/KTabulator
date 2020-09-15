@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import Modal from 'react-modal';
 import Select from "react-select";
+import { Button } from "reactstrap";
 
 class JoinModal extends Component {
   state = {};
@@ -51,10 +52,10 @@ class JoinModal extends Component {
             <br />
             <div className="row">
               <div className="col-md-1 offset-md-9">
-                <button onClick={(e) => this.props.runJoin(e)}>OK</button>
+                <Button onClick={(e) => this.props.runJoin(e)}>OK</Button>
               </div>
               <div className="col-md-2">
-                <button onClick={(e) => this.props.cancelJoin(e)}>Cancel</button>
+                <Button onClick={(e) => this.props.cancelJoin(e)}>Cancel</Button>
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import Modal from 'react-modal';
+import { Button } from "reactstrap";
 
 class FilterModal extends Component {
   state = {};
@@ -47,10 +48,10 @@ class FilterModal extends Component {
             <br />
             <div className="row">
               <div className="col-md-1 offset-md-9">
-                <button onClick={(e) => this.props.applyFilter(e)}>OK</button>
+                <Button onClick={(e) => this.props.applyFilter(e)}>OK</Button>
               </div>
               <div className="col-md-2">
-                <button onClick={(e) => this.props.cancelFilter(e)}>Cancel</button>
+                <Button onClick={(e) => this.props.cancelFilter(e)}>Cancel</Button>
               </div>
             </div>
           </div>
