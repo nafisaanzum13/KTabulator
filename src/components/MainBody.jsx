@@ -4704,8 +4704,15 @@ class MainBody extends Component {
           })
         }
         else {
+          let tempData = "";
+          for (let j = 0; j < values[i].results.bindings.length; ++j) {
+            if (j > 0) {
+              tempData+=";";
+            }
+            tempData+=removePrefix(values[i].results.bindings[j].o.value);
+          }
           tempRow.push({
-            "data": removePrefix(values[i].results.bindings[0].o.value),
+            "data": tempData,
             "origin":"",
           })
         }

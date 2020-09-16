@@ -24,15 +24,15 @@ class UnionModal extends Component {
             <br />
             <div className="modal-body">
               <div>
-                <Button onClick={(e) => this.props.hardcodeUnion(e)}>Align 1</Button>
+                <Button onClick={(e) => this.props.hardcodeUnion(e)}>Alignment 1</Button>
                 <p>First Column---English title; director---Director(s); country---Country</p>
               </div>
               <div>
-                <Button>Align 2</Button>
+                <Button>Alignment 2</Button>
                 <p>First Column---Original title; director---Director(s); country---Country</p>
               </div>
               <div>
-                <Button>Align 3</Button>
+                <Button>Alignment 3</Button>
                 <p>First Column---Year; director---Director(s); country---Country</p>
               </div>
             </div>
