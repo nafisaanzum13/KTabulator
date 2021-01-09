@@ -16,7 +16,7 @@ import _ from "lodash";
 const maxNeighbourCount = 10;
 const maxFetchCount = 30;
 const initialColNum = 4;
-const initialRowNum = 45;
+const initialRowNum = 15;
 
 class MainBody extends Component {
   constructor(props) {
@@ -117,6 +117,8 @@ class MainBody extends Component {
                                 // and when false, all dataAndChecked will be set to false.
       curFilterIndex: -1,       // number storing the index of the column on which we apply the filter. Initially -1 (no filter.)
       dataAndChecked: [],       // array of [data, checked] pairs storing which data are in the filter column, and whether we should keep them.
+      filterMin: null,          // number storing min value of filter. 
+      filterMax: null,          // number storing max value of filter.
     
       // states below are for table join
       showJoinModal: false,    // boolean storing whether the join option modal is show or not. Default to false.
@@ -203,6 +205,7 @@ class MainBody extends Component {
     this.toggleChecked = this.toggleChecked.bind(this);
     this.toggleAll = this.toggleAll.bind(this);
     this.applyFilter = this.applyFilter.bind(this);
+    this.handleRangeFilter = this.handleRangeFilter.bind(this);
 
     // functions below are for join feature
     this.handleJoinTable = this.handleJoinTable.bind(this);
@@ -413,6 +416,7 @@ class MainBody extends Component {
         for (let i = 0; i < firstColSelection.length; ++i) {
           firstColChecked.push(false);
         }
+
         // console.log(firstColSelection);
         // console.log(firstColChecked);
 
@@ -3505,7 +3509,6 @@ class MainBody extends Component {
   }
 
   // The following funcion unions the table that user has selected to the table in the TablePanel
-  // by changing tableDataExplore
 
   unionTable(firstIndex, secondIndex, otherTableHTML, colMapping) {
     document.body.classList.add('waiting');
@@ -3793,12 +3796,15 @@ class MainBody extends Component {
   }
 
   // This function handles cancelling the filter (so we close it).
+  // In here, we will clean every state related to filtering
 
   cancelFilter(e) {
     this.setState({
       dataAndChecked: [],
       showFilter: false,
       curFilterIndex: -1,
+      filterMin: null,
+      filterMax: null,
     })
   }
   
@@ -3834,6 +3840,7 @@ class MainBody extends Component {
   applyFilter(e) {
     // console.log(this.state.dataAndChecked);
     // console.log(this.state.curFilterIndex);
+    // console.log("Column to filter is "+this.state.curFilterIndex);
 
     // The following part are added for debugging purposes
     let allFalse = true;
@@ -3844,11 +3851,79 @@ class MainBody extends Component {
       }
     }
 
+    // console.log(this.state.filterMin);
+    // console.log(this.state.filterMax);
+
     // We do not want users to toggle every value off
     if (allFalse === true) {
       alert("Please do not remove every value from the table!");
     }
+    // In here we check if user has inputted some kidn of range filter values 
+    else if (this.state.filterMin !== null || this.state.filterMax !== null) {
+      // We first get the min and max values 
+      let filterMin;
+      let filterMax;
+      if (this.state.filterMin === null) {
+        filterMin = Number.NEGATIVE_INFINITY;
+        filterMax = Number(this.state.filterMax);
+      }
+      else if (this.state.filterMax === null) {
+        filterMin = Number(this.state.filterMin);
+        filterMax = Number.POSITIVE_INFINITY;
+      }
+      else {
+        filterMin = Number(this.state.filterMin);
+        filterMax = Number(this.state.filterMax);
+      }
+      // Now we begin the filtering
+      let tableData = _.cloneDeep(this.state.tableData);
+      for (let i=0;i<tableData.length;++i) {
+        let curNumData = Number(tableData[i][this.state.curFilterIndex].data);
+        if (isNaN(curNumData) || curNumData > filterMax || curNumData < filterMin) {
+          tableData.splice(i,1);
+          --i;
+        }
+      }
 
+      // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
+      // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
+      let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
+      let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+      allPromiseReady(promiseArrayOne).then((valuesOne) => {
+      allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+
+        // We call updateNeighbourInfo here because we are changing the rows
+        let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+        let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+        let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+        // Suppport for undo.
+        let lastAction = "applyFilter";
+        let prevState = 
+            {
+              "tableData":this.state.tableData,
+              "curActionInfo":this.state.curActionInfo,
+              "keyColNeighbours":this.state.keyColNeighbours,
+              "firstDegNeighbours":this.state.firstDegNeighbours,
+              "previewColIndex": this.state.previewColIndex,
+            };
+        
+        this.setState({
+          dataAndChecked: [],
+          showFilter: false,
+          curFilterIndex: -1,
+          filterMin: null,
+          filterMax: null,
+          tableData: tableData,
+          keyColNeighbours: keyColNeighbours,
+          firstDegNeighbours: firstDegNeighbours,
+          previewColIndex: -1,
+          lastAction: lastAction,
+          prevState: prevState,
+        })
+      })
+      })
+    }
     // This else clause contains the original function body
     else {
       let valuesToKeep = [];
@@ -3892,6 +3967,8 @@ class MainBody extends Component {
           dataAndChecked: [],
           showFilter: false,
           curFilterIndex: -1,
+          filterMin: null,
+          filterMax: null,
           tableData: tableData,
           keyColNeighbours: keyColNeighbours,
           firstDegNeighbours: firstDegNeighbours,
@@ -3922,6 +3999,20 @@ class MainBody extends Component {
     else {
       this.setState({
         tabIndex: index,
+      })
+    }
+  }
+
+  // This function handles user changing min/max values for range filters
+  handleRangeFilter(e, type) {
+    e.preventDefault();
+    if (type === "min") {
+      this.setState({
+        filterMin: e.target.value,
+      })
+    } else {
+      this.setState({
+        filterMax: e.target.value,
       })
     }
   }
@@ -4897,6 +4988,12 @@ class MainBody extends Component {
                   cancelFilter={this.cancelFilter}
                   toggleChecked={this.toggleChecked}
                   toggleAll={this.toggleAll}
+                  // Support for range filter
+                  tableData={this.state.tableData}
+                  curFilterIndex={this.state.curFilterIndex}
+                  filterMin={this.state.filterMin}
+                  filterMax={this.state.filterMax}
+                  handleRangeFilter={this.handleRangeFilter}
                 />
               </div>
               <div>
@@ -5552,6 +5649,7 @@ function updateFirstColSelection(resultsBinding) {
       )
     }
   }
+  // console.log(firstColSelection);
   return firstColSelection;
 }
 

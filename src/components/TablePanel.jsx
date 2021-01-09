@@ -227,13 +227,6 @@ class TablePanel extends Component {
                 >
                   <FaFilter />
                 </button>
-                {/* <button
-                  className="btn btn-default"
-                  title="Delete this column"
-                  // onClick={(e) => this.props.contextSetColumn(e, colIndex)}
-                >
-                  <FaMinus />
-                </button> */}
               </div>
           }
           else {

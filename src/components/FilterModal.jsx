@@ -22,6 +22,46 @@ class FilterModal extends Component {
     }
     // console.log(optionsEle);
 
+    // Support for range filter starts here:
+    // If we have detected that this is a numeric column, we need to display an additional element here
+    // We first loop through this column to determine if it's a numeric column or a string column
+    let rangeEle = null;
+
+    if (this.props.showFilter === true) {
+      let numericCol = true;
+      for (let i = 0; i < this.props.tableData.length; ++i) {
+        // We only care about entries that are not N/A
+        if (this.props.tableData[i][this.props.curFilterIndex].data !== "N/A") {
+          if (isNaN(Number(this.props.tableData[i][this.props.curFilterIndex].data))) {
+            numericCol = false;
+            break;
+          }
+        }
+      }
+      // console.log("a numeric column? "+numericCol);
+      
+      // If this is a numeric column, we need to allow users to input two fields:
+      // min and max
+      if (numericCol) {
+        rangeEle = 
+          <div>
+            <p>
+              <input
+                placeholder="min"
+                value={this.props.filterMin}
+                onChange={(e) => this.props.handleRangeFilter(e, "min")}
+              ></input>
+              to
+              <input
+                placeholder="max"
+                value={this.props.filterMax}
+                onChange={(e) => this.props.handleRangeFilter(e, "max")}
+              ></input>
+            </p>
+          </div>
+      }
+    }
+
     return (
       <div>
         <Modal 
@@ -43,6 +83,7 @@ class FilterModal extends Component {
                 Check/Uncheck all
               </div>
               <br />
+              {rangeEle}
               {optionsEle}
             </div>
             <br />
