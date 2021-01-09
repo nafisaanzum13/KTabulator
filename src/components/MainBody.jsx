@@ -16,7 +16,7 @@ import _ from "lodash";
 const maxNeighbourCount = 10;
 const maxFetchCount = 30;
 const initialColNum = 4;
-const initialRowNum = 15;
+const initialRowNum = 10;
 
 class MainBody extends Component {
   constructor(props) {
@@ -728,6 +728,8 @@ class MainBody extends Component {
   getOtherOptions(e, colIndex) {
 
     // console.log("Column index clicked is "+colIndex);
+
+    console.log(this.state.keyColNeighbours);
 
     // The first thing we need to do is to determine the content for otherColSelection
     let otherColSelection = [];
@@ -5154,6 +5156,8 @@ function removePrefix(str) {
 // It returns the updated keyColNeighbours
 function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
 
+  // console.log(resultsBinding);
+
   // we first filter out those in resultsBinding according to three criterias
 
   // 1) p.value.slice(28).length must > 1
@@ -5204,6 +5208,31 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
          || a.p.value === "http://dbpedia.org/ontology/termPeriod"
          )
   );
+
+  // We remove predicate in dbp that appear in both dbo and dbp: 
+  // ex: dbo:spouse and dbp:spouse
+  processedBinding = processedBinding.sort(function (a, b) {
+    if (a.p.value.slice(28) > b.p.value.slice(28)) {
+      return 1;
+    }
+    else if (a.p.value.slice(28) < b.p.value.slice(28)) {
+      return -1;
+    }
+    else {
+      if (a.p.value.includes("ontology") && b.p.value.includes("property")) {
+        return -1;
+      }
+      return 1;
+    }
+  })
+  
+  for (let i = 1; i < processedBinding.length; ++i) {
+    if (processedBinding[i].p.value.includes("property") && processedBinding[i-1].p.value.includes("ontology") &&
+        processedBinding[i].p.value.slice(28) === processedBinding[i-1].p.value.slice(28)) {
+      processedBinding.splice(i,1);
+      --i;
+    }
+  }
 
   // We then do some filtering based on subPropertyOf.
   // Because of our observation, we only want to keep entries whose subPropertyOf attribute is from the DUL dataset.
@@ -5542,6 +5571,31 @@ function updateFirstColSelection(resultsBinding) {
          || a.p.value === "http://dbpedia.org/ontology/termPeriod"
          )
   );
+
+  // We remove predicate in dbp that appear in both dbo and dbp: 
+  // ex: dbo:spouse and dbp:spouse
+  processedBinding = processedBinding.sort(function (a, b) {
+    if (a.p.value.slice(28) > b.p.value.slice(28)) {
+      return 1;
+    }
+    else if (a.p.value.slice(28) < b.p.value.slice(28)) {
+      return -1;
+    }
+    else {
+      if (a.p.value.includes("ontology") && b.p.value.includes("property")) {
+        return -1;
+      }
+      return 1;
+    }
+  })
+  
+  for (let i = 1; i < processedBinding.length; ++i) {
+    if (processedBinding[i].p.value.includes("property") && processedBinding[i-1].p.value.includes("ontology") &&
+        processedBinding[i].p.value.slice(28) === processedBinding[i-1].p.value.slice(28)) {
+      processedBinding.splice(i,1);
+      --i;
+    }
+  }
   
   // We then sort the processedBinding by some criterias.
 
@@ -6717,6 +6771,8 @@ function addRecommendNeighbours(processedNeighboursCopy) {
         // updated on 9/13: hardcode "starring" to be in "director"'s attribute recommendations
         if ((processedNeighbours[i].value === "director" && processedNeighbours[i].type === "subject") &&
             (processedNeighbours[j].value === "starring" && processedNeighbours[j].type === "subject")) {
+          console.log(processedNeighbours[i]);
+          console.log(processedNeighbours[j]);
           recommendNeighbours.push(
             {
               "value": processedNeighbours[j].value,
@@ -6938,6 +6994,7 @@ function updateNeighbourInfo(valuesOne, valuesTwo) {
     )
     subjectNeighbourArray.push(temp);
   }
+  console.log(subjectNeighbourArray);
   firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
   let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
   processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
@@ -7119,3 +7176,9 @@ function updateUnionSelection(valuesOne) {
   return selectionInfo;
 }
 
+// this following query is going to help with the recursive property recommendation
+
+// select ?superclass where{
+//   dbo:Person rdfs:subClassOf* ?superclass .
+//   dbo:Actor rdfs:subClassOf* ?superclass .
+// }
