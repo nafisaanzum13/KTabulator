@@ -16,7 +16,7 @@ import _ from "lodash";
 const maxNeighbourCount = 10;
 const maxFetchCount = 30;
 const initialColNum = 4;
-const initialRowNum = 10;
+const initialRowNum = 15;
 
 class MainBody extends Component {
   constructor(props) {

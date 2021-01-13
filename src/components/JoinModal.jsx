@@ -15,6 +15,9 @@ class JoinModal extends Component {
 
     // Note, the props originColOptions and joinColOptions are what we are going to pass to react select as options
 
+    // Support for join recommendation: in addition to letting users choose the join columns
+    // we also want to make three suggestions or the three most joinable pairs, using a value-based approach
+
     return (
       <div>
         <Modal 
