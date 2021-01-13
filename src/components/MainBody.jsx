@@ -128,6 +128,7 @@ class MainBody extends Component {
       joinColOptions: [],      // 1D array storing the selection options for the newly selected table.
       originJoinIndex: -1,     // number storing the index of the column of the original table that we are joining.
       joinJoinIndex: -1,       // number storing the index of the column of the newly selected table that we are joining.
+      joinPairRecord: [],    // 1D array (max len 3) storing the indices of recommended join column index and join scores
 
       // states below are for column preview
       previewColIndex: -1,     // number storing the index of the column that we want to show preview for. 
@@ -4423,19 +4424,29 @@ class MainBody extends Component {
     // console.log(joinTableData);
 
     // It seems like we have fetched the right values. 
-    // Now we use these to update states, so that jon modal can display the right content.
+    // Now we use these to update states, so that join modal can display the right content.
 
     // Bugfix here: if either tableHeader is empty, we want to show an alert message
     if (originTableHeader.length === 0 || joinTableHeader.length === 0) {
       alert("One of the join tables have no data. Join cannot be performed.");
     }
     else {
+      // Support for join suggestions starts here: 
+      // we compute the three most joinable column pairs based on column data
+      // console.log(this.state.tableData);
+      // console.log(joinTableData);
+
+      // We call the helper function computeJoinableColumn that takes in the table data and headers
+
+      let joinPairRecord = computeJoinableColumn(this.state.tableData, joinTableData, originTableHeader, joinTableHeader);
+
       this.setState({
         showJoinModal: true,
         joinTableIndex: i,
         joinTableData: joinTableData,
         originColOptions: originTableHeader,
         joinColOptions: joinTableHeader,
+        joinPairRecord: joinPairRecord,
       })
     }
   }
@@ -4469,14 +4480,24 @@ class MainBody extends Component {
   // Currently, the only join type supported is left join
 
   // Since join is equal to column addition, we need to update tableData, tableHeader, optionsMap, and selectedClassAnnotation
-  runJoin(e) {
+
+  // Note: it also supports users directly clicks on one of the join suggestions
+  runJoin(e, method, originIndex, joinIndex) {
     // First check all the info that we needed
     let joinTableData = this.state.joinTableData.slice();
-    let originJoinIndex = this.state.originJoinIndex;
-    let joinJoinIndex = this.state.joinJoinIndex;
+    let originJoinIndex = "";
+    let joinJoinIndex = "";
+    if (method === "custom") {
+      originJoinIndex = this.state.originJoinIndex;
+      joinJoinIndex = this.state.joinJoinIndex;
+    }
+    else {
+      originJoinIndex = originIndex;
+      joinJoinIndex = joinIndex;
+    }
     // console.log(joinTableData);
-    // console.log(originJoinIndex);
-    // console.log(joinJoinIndex);
+    // console.log("Column to join from original table is "+originJoinIndex);
+    // console.log("Column to join from new tabel is "+joinJoinIndex);
     
     // If the join table has n columns, then we are adding n-1 new columns to the table in table panel.
     // Since we only allow join of one column from each table.
@@ -5008,6 +5029,8 @@ class MainBody extends Component {
                   joinJoinIndex={this.state.joinJoinIndex}
                   selectJoinColumn={this.selectJoinColumn}
                   runJoin={this.runJoin}
+                  // support for suggested join
+                  joinPairRecord={this.state.joinPairRecord}
                 />
               </div>
               <div>
@@ -6994,7 +7017,7 @@ function updateNeighbourInfo(valuesOne, valuesTwo) {
     )
     subjectNeighbourArray.push(temp);
   }
-  console.log(subjectNeighbourArray);
+  // console.log(subjectNeighbourArray);
   firstDegNeighbours["subject"] = storeFirstDeg(subjectNeighbourArray);
   let processedSubjectNeighbours = processAllNeighbours(subjectNeighbourArray);
   processedSubjectNeighbours = addRecommendNeighbours(processedSubjectNeighbours);
@@ -7174,6 +7197,81 @@ function updateUnionSelection(valuesOne) {
   };
 
   return selectionInfo;
+}
+
+// Helper function to computer the three most joinable columns 
+// This function returns an array (max len 3) of objects with two attributes:
+// 1) indices: which two columns are we joining on
+// 2) joinScore: number storing the joinability score
+function computeJoinableColumn(originTableData, joinTableData, originTableHeader, joinTableHeader) {
+  // console.log(originTableData);
+  // console.log(joinTableData);
+  // console.log(originTableHeader);
+  // console.log(joinTableHeader);
+
+  // First thing to do is to get all the data in column format
+
+  // First we process originTableData
+  let originColumns = [];
+  let firstColIndex = originTableHeader[0].value === "OriginURL" ? 1 : 0;
+  for (let i = firstColIndex; i < originTableHeader.length; ++i) {
+    let curColData = [];
+    for (let j = 0; j < originTableData.length; ++j) {
+      curColData.push(originTableData[j][i].data);
+    }
+    originColumns.push(curColData);
+  }  
+  // console.log(originColumns);
+
+  // Then we process joinTableData. Note that the first column of joinTableData will be OriginURL for sure
+  let joinColumns = [];
+  for (let i = 1; i < joinTableHeader.length; ++i) {
+    let curColData = [];
+    // we start j index from 1 because joinTableData first row is the header
+    for (let j = 1; j < joinTableData.length; ++j) {
+      curColData.push(joinTableData[j][i].data);
+    }
+    joinColumns.push(curColData);
+  }
+  // console.log(joinColumns);
+
+  // Now we loop n^2 times, for each c_i in originColumns and c_j in joinColumns.
+  // for each pair, we will record its joinability score and the pair of indices
+  let allPairsRecord = [];
+  for (let i = 0; i < originColumns.length; ++i) {
+    for (let j = 0; j < joinColumns.length; ++j) {
+      let numFound = 0;
+      for (let k = 0; k < originColumns[i].length; ++k) {
+        let curVal = originColumns[i][k];
+        if (joinColumns[j].includes(curVal)) {
+          numFound++;
+        }
+      }
+      let indexAddOne = originTableHeader[0].value === "OriginURL" ? 1 : 0;
+      let joinScore = numFound/originColumns[i].length;
+      allPairsRecord.push(
+        {
+          "indices":[i+indexAddOne, j+1],
+          "joinScore":joinScore,
+        }
+      )
+    }
+  }
+
+  // We sort the allPairsRecord by joinScore, then take the top min(allPairsRecord.length, 3)
+  allPairsRecord.sort((a, b) =>
+    a.joinScore < b.joinScore ? 1 : -1
+  );
+
+  allPairsRecord = allPairsRecord.slice(0, Math.min(allPairsRecord.length, 3))
+
+  // We do an extra filtering step here to remove entries with joinScore of 0
+  allPairsRecord = allPairsRecord.filter(a => a.joinScore > 0);
+
+  // Take a look to see if allPairsRecord looks correct
+  // console.log(allPairsRecord);
+
+  return allPairsRecord;
 }
 
 // this following query is going to help with the recursive property recommendation
