@@ -1232,6 +1232,15 @@ class MainBody extends Component {
   // It should be similar to populateKeyColumn, with some differences
 
   confirmAddFirstCol(e, neighbourArray) {
+
+    // Support for autofill starts here
+    // Let's figure out what's currently in the table first.
+    // console.log(this.state.tableHeader);
+    let autoFillInfo = getAutofillInfo(this.state.tableData);
+    console.log(autoFillInfo);
+
+    // Start from here tomorrow
+
     // console.log(neighbourArray);
     let queryURL = keyQueryGen(neighbourArray);
 
@@ -1486,9 +1495,17 @@ class MainBody extends Component {
           curColumnArray = curColumnArray.concat(curNeighbourData);
         }
       }
+      console.log(neighbourArray);
       // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
       if (curColumnArray.length === 0) {
-        tableData[i][colIndex].data = "N/A";
+        // we set the data to N/A
+        let curData = "N/A";
+        tableData[i][colIndex].data = curData;
+        // Note that we still want to set origin to support autofill
+        let originToAdd = createNeighbourText(neighbourArray) + ":" + curData;
+        let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
+        keyOrigin.push(originToAdd);
+        tableData[i][colIndex].origin = keyOrigin;
       }
       // Otherwise, we have found at least one value.
       else {
@@ -1844,7 +1861,13 @@ class MainBody extends Component {
         let requiredLength = fillRecommendation === true ? curCol - colIndex : curCol - colIndex + 1;
         // If curColumnArray's length does not meet the required length, we simply set data to N/A
         if (curColumnArray.length < requiredLength) {
-          tableDataUpdated[i][curCol].data = "N/A";
+          let curData = "N/A";
+          tableDataUpdated[i][curCol].data = curData;
+          // Note that we still want to set origin to support autofill
+          let originToAdd = createNeighbourText(neighbourArray) + ":" + curData;
+          let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
+          keyOrigin.push(originToAdd);
+          tableData[i][colIndex].origin = keyOrigin;
         }
         else {
           // We first set the data of the cell
@@ -2014,7 +2037,13 @@ class MainBody extends Component {
       // console.log(curColumnArray);
       // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
       if (curColumnArray.length === 0) {
-        tableData[i][colIndex].data = "N/A";
+        let curData = "N/A"
+        tableData[i][colIndex].data = curData;
+        // we still need to set the origin for the cell
+        let originToAdd = createNeighbourText(neighbourArray) + ":" + curData;
+        let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
+        keyOrigin.push(originToAdd);
+        tableData[i][colIndex].origin = keyOrigin;
       }
       // Otherwise, we have found at least one value. And we want to set up the data and origin. 
       else {
@@ -2155,7 +2184,13 @@ class MainBody extends Component {
       }
       // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
       if (curColumnArray.length === 0) {
-        tableData[i][colIndex].data = "N/A";
+        let curData = "N/A";
+        tableData[i][colIndex].data = curData;
+        // we still need to set origin for the data to support auto-fill
+        let originToAdd = createNeighbourText(neighbourArray) + ":" + curData;
+        let keyOrigin = tableData[i][keyColIndex].origin.slice();
+        keyOrigin.push(originToAdd);
+        tableData[i][colIndex].origin = keyOrigin;
       }
       // Otherwise, we have found at least one value.
       else {
@@ -2356,7 +2391,13 @@ class MainBody extends Component {
       }
       // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
       if (curColumnArray.length === 0) {
-        tableData[i][colIndex].data = "N/A";
+        let curData = "N/A";
+        tableData[i][colIndex].data = curData;
+        // we still need to set origin so that we can support autofill
+        let originToAdd = createNeighbourText(neighbourArray) + ":" + curData;
+        let keyOrigin = tableData[i][keyColIndex].origin.slice();
+        keyOrigin.push(originToAdd);
+        tableData[i][colIndex].origin = keyOrigin;
       }
       // Otherwise, we have found at least one value.
       else {
@@ -5321,12 +5362,15 @@ function updateKeyColNeighbours(keyColNeighbours, resultsBinding, type) {
         let objRange = neighbourRange;
         // set subPropertyOf
         let objSubPropertyOf = neighbourSubPropertyOf;
+        // set dataset
+
 
         // Set object from all its attributes
         let tempObj = {
           "value":objValue, 
           "label":objLabel, 
           "type":objType, 
+          // "dataset":""
           "count":objCount, 
           "filledCount":1, 
           "data":objData,
@@ -6794,8 +6838,8 @@ function addRecommendNeighbours(processedNeighboursCopy) {
         // updated on 9/13: hardcode "starring" to be in "director"'s attribute recommendations
         if ((processedNeighbours[i].value === "director" && processedNeighbours[i].type === "subject") &&
             (processedNeighbours[j].value === "starring" && processedNeighbours[j].type === "subject")) {
-          console.log(processedNeighbours[i]);
-          console.log(processedNeighbours[j]);
+          // console.log(processedNeighbours[i]);
+          // console.log(processedNeighbours[j]);
           recommendNeighbours.push(
             {
               "value": processedNeighbours[j].value,
@@ -6888,6 +6932,8 @@ function blankToPlus(str) {
 // The following function generates queryURL needed for Virtuoso, using information from neighbourArray (or tableHeader[0])
 
 function keyQueryGen(neighbourArray) {
+
+  // console.log(neighbourArray);
 
   // Following boolean is for error detection
   let error = false;
@@ -7272,6 +7318,56 @@ function computeJoinableColumn(originTableData, joinTableData, originTableHeader
   // console.log(allPairsRecord);
 
   return allPairsRecord;
+}
+
+// Helper function that takes input: this.state.tableData
+// and outputs which second and third deg neighbours we need to fetch (the exact ones)
+function getAutofillInfo(tableData) {
+  // First take a look at the data passed in
+  // console.log(tableData);
+
+  // Since we have modified how origin is stored (now even N/A cells has origins)
+  // We look at the first row (first record) to get all the columns information
+  let firstRecord = tableData[0].slice();
+  let oneDegInfo = [];
+  let twoDegInfo = [];
+  let threeDegInfo = [];
+  let longHopWarning = false;
+  for (let i = 1; i < firstRecord.length; ++i) {
+    let curOrigin = firstRecord[i].origin;
+    // We only care about columns that are 1 to 3 hops away
+    if (curOrigin.length >= 2 && curOrigin.length <= 4) {
+      curOrigin = curOrigin.slice(1);
+      let curInfo = [];
+      for (let j = 0; j < curOrigin.length; ++j) {
+        curInfo.push(curOrigin[j].split(":")[0]);
+      }
+      if (curInfo.length === 1) {
+        oneDegInfo.push(curInfo);
+      }
+      else if (curInfo.length === 2) {
+        twoDegInfo.push(curInfo);
+      }
+      else if (curInfo.length === 3) {
+        threeDegInfo.push(curInfo);
+      }
+      else {
+        alert("Autofill information has caused an error!");
+      }
+    }
+    if (curOrigin.length > 4) {
+      longHopWarning = true;
+    }
+  }
+  // we store all these information in a single object with four properties 
+  let returnVal = {
+    "longHopWarning": longHopWarning,
+    "oneDegInfo": oneDegInfo,
+    "twoDegInfo": twoDegInfo,
+    "threeDegInfo": threeDegInfo,
+  }
+
+  return returnVal;
 }
 
 // this following query is going to help with the recursive property recommendation

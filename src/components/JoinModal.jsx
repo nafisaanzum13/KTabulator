@@ -11,8 +11,8 @@ class JoinModal extends Component {
     // Support for join recommendation: in addition to letting users choose the join columns
     // we also want to make three suggestions or the three most joinable pairs, using a value-based approach
 
-    console.log(this.props.originColOptions);
-    console.log(this.props.joinColOptions);
+    // console.log(this.props.originColOptions);
+    // console.log(this.props.joinColOptions);
 
     let joinPairEle = null;
     let joinPairArray = []
