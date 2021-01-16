@@ -1237,7 +1237,7 @@ class MainBody extends Component {
     // Let's figure out what's currently in the table first.
     // console.log(this.state.tableHeader);
     let autoFillInfo = getAutofillInfo(this.state.tableData);
-    console.log(autoFillInfo);
+    // console.log(autoFillInfo);
 
     // Start from here tomorrow
 
@@ -1270,11 +1270,15 @@ class MainBody extends Component {
               })
             }
             else {
+              // We do not have support for autofill at this step yet.
               tempRow.push({ data: "", origin: []});
             }
           }
           tableData.push(tempRow);
         }
+
+        // To support autofill, let's also store the starting index of the newly appended data
+        let fillStartIndex = this.state.tableData.length;
         // We concat this.state.tableData and tableData together, and dedup by first column's data
         tableData = _.cloneDeep(this.state.tableData).concat(tableData);
         tableData = _.uniqBy(tableData, function(x) {return x[0].data;});
@@ -1292,6 +1296,23 @@ class MainBody extends Component {
           let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
           let keyColNeighbours = updatedNeighbours.keyColNeighbours;
           let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+          // This is where we can start working on the auto-fill
+          // Let's first look at fillStartIndex, tableData, and autoFillInfo
+          console.log("New entries' starting index is "+fillStartIndex);
+          console.log(tableData);
+          console.log(autoFillInfo);
+          console.log(firstDegNeighbours);
+
+          // Stepone: Write a helper function to fill in the one-deg neighbours first
+          // This information should already exists in firstDegNeighbours
+          let columnInfo = autoFillInfo.columnInfo;
+          for (let i = 0; i < columnInfo.length; ++i) {
+            if (columnInfo[i].length === 1) {
+              let curColumn = i + 1;
+              autofillFirstDeg(tableData, columnInfo[i], curColumn, fillStartIndex, firstDegNeighbours);
+            }
+          }
 
           document.body.classList.remove('waiting');
 
@@ -7320,7 +7341,7 @@ function computeJoinableColumn(originTableData, joinTableData, originTableHeader
   return allPairsRecord;
 }
 
-// Helper function that takes input: this.state.tableData
+// Helper function that takes input: this.state.tableData and this.state.tableHeader
 // and outputs which second and third deg neighbours we need to fetch (the exact ones)
 function getAutofillInfo(tableData) {
   // First take a look at the data passed in
@@ -7332,6 +7353,7 @@ function getAutofillInfo(tableData) {
   let oneDegInfo = [];
   let twoDegInfo = [];
   let threeDegInfo = [];
+  let columnInfo = [];
   let longHopWarning = false;
   for (let i = 1; i < firstRecord.length; ++i) {
     let curOrigin = firstRecord[i].origin;
@@ -7340,7 +7362,10 @@ function getAutofillInfo(tableData) {
       curOrigin = curOrigin.slice(1);
       let curInfo = [];
       for (let j = 0; j < curOrigin.length; ++j) {
-        curInfo.push(curOrigin[j].split(":")[0]);
+        curInfo.push({
+          "value": curOrigin[j].split(":")[0],
+          "type": curOrigin[j].split(":")[0].substring(0, 3) === "is " ? "object" : "subject",  
+        });
       }
       if (curInfo.length === 1) {
         oneDegInfo.push(curInfo);
@@ -7354,20 +7379,37 @@ function getAutofillInfo(tableData) {
       else {
         alert("Autofill information has caused an error!");
       }
+      columnInfo.push(curInfo);
+    }
+    else {
+      columnInfo.push([]);
     }
     if (curOrigin.length > 4) {
       longHopWarning = true;
     }
   }
   // we store all these information in a single object with four properties 
+  
+  // Note that when longHopWarning is true, that means not all columns will be auto-populated
+  // in which case we should display a warning 
   let returnVal = {
     "longHopWarning": longHopWarning,
     "oneDegInfo": oneDegInfo,
     "twoDegInfo": twoDegInfo,
     "threeDegInfo": threeDegInfo,
+    "columnInfo": columnInfo,
   }
 
   return returnVal;
+}
+
+// Helper function to automatically fill all the first degree neighbours
+function autofillFirstDeg(tableData, columnInfo, curColumn, fillStartIndex, firstDegNeighbours) {
+  console.log(tableData);
+  console.log(columnInfo);
+  console.log(curColumn);
+  console.log(fillStartIndex);
+  console.log(firstDegNeighbours);
 }
 
 // this following query is going to help with the recursive property recommendation
