@@ -1239,8 +1239,6 @@ class MainBody extends Component {
     let autoFillInfo = getAutofillInfo(this.state.tableData);
     // console.log(autoFillInfo);
 
-    // Start from here tomorrow
-
     // console.log(neighbourArray);
     let queryURL = keyQueryGen(neighbourArray);
 
@@ -1304,9 +1302,17 @@ class MainBody extends Component {
           // console.log(autoFillInfo);
           // console.log(firstDegNeighbours);
 
+          // Step zero: let's write helper function to generate the query we needed 
+          // to fetch the 2nd and 3rd deg neighbours
+          let columnInfo = autoFillInfo.columnInfo;
+          let autoPromise = autofillFarPromise(tableData,
+                                                columnInfo,
+                                                fillStartIndex);
+          console.log(autoPromise);
+          // Start from here next time
+
           // Stepone: Write a helper function to fill in the one-deg neighbours first
           // This information should already exists in firstDegNeighbours
-          let columnInfo = autoFillInfo.columnInfo;
           for (let i = 0; i < columnInfo.length; ++i) {
             if (columnInfo[i].length === 1) {
               let curColumn = i + 1;
@@ -7368,9 +7374,12 @@ function getAutofillInfo(tableData) {
       curOrigin = curOrigin.slice(1);
       let curInfo = [];
       for (let j = 0; j < curOrigin.length; ++j) {
+        let curString = curOrigin[j].split(":")[0].split(" OR ")[0];
+        let curType = curString.substring(0, 3) === "is " ? "object" : "subject";
+        let curValue = curType === "object" ? curString.substring(3, curString.length - 3) : curString; 
         curInfo.push({
-          "value": curOrigin[j].split(":")[0].split(" OR ")[0],
-          "type": curOrigin[j].split(":")[0].split(" OR ")[0].substring(0, 3) === "is " ? "object" : "subject",  
+          "value": curValue,
+          "type": curType,  
         });
       }
       if (curInfo.length === 1) {
@@ -7469,8 +7478,109 @@ function autofillFirstDeg(tableDataPassed, columnInfo, colIndex, fillStartIndex,
   }
   // Now, we are done with updating tableData. Take a look.
   // console.log(tableData);
-
   return tableData;
+}
+
+// This is a helper function to generate the query we needed to fetch the 2nd and 3rd deg neighbours
+function autofillFarPromise(tableData, columnInfo, fillStartIndex) {
+  // console.log(tableData);
+  console.log(columnInfo);
+  // console.log(fillStartIndex);
+
+  // Our task is to generate an array of queries that looks like below
+  // based on all the inputs
+
+  // First of all, we construct the promiseArray
+  let promiseArray = [];
+
+  // select ?o1 ?o2
+  // where {
+  // OPTIONAL {dbr:Devullu dbo:director/dbo:birthPlace ?o1}.
+  // OPTIONAL {dbr:Devullu dbo:director/dbo:birthPlace/^dbo:restingPlace ?o2}.
+  // }
+  // limit 1
+
+  // Let's generate our query clause by clause
+
+  // We loop over tableData because we need to generate multiple queries (30 or 45)
+
+  for (let j = fillStartIndex; j < tableData.length; ++j) {
+    // First is the prefix clause, this remains the same
+    let prefixClause = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+
+    // Next is the select clause
+    // we need to determine how many objects (variables, or columns) we are fetching
+
+    // Ex: "select+%3Fo1+%3Fo2%0D%0A"
+    let numVar = 0;
+    for (let i = 0; i < columnInfo.length; ++i) {
+      if (columnInfo[i].length > 1) {
+        numVar++;
+      }
+    }
+    let selectClause = "select";
+    for (let i = 1; i <= numVar; ++i) {
+      selectClause = selectClause + "+%3Fo" + i;
+    }
+    selectClause+="%0D%0A";
+
+    // Next is the beginning of the where clause
+    let whereClause = "where+%7B%0D%0A";
+
+    // Next is an array of optional clauses.
+    // First we still need to set the o_i index, starting from 1.
+    // Ex: "OPTIONAL+%7Bdbr%3ADevullu+dbo%3Adirector%2Fdbo%3AbirthPlace%2F%5Edbo%3ArestingPlace+%3Fo2%7D.%0D%0A"
+    let optionClause = "";
+
+    let optionIndex = 1;
+    // We loop through all the columns(paths)
+    for (let i = 0; i < columnInfo.length; ++i) {
+      if (columnInfo[i].length > 1) {
+        let curClause = "OPTIONAL+%7Bdbr%3A";
+        // we can use 0 for the second index because the first column has to be the search column right now
+        let cellValue = regexReplace(tableData[j][0].data);
+        curClause = curClause + cellValue + "+";
+        // we now loop over all the predicates that form this query path 
+        for (let k = 0; k < columnInfo[i].length; ++k) {
+          // if this is not the start of the path, we need to append the symbol "/"
+          if (k > 0) {
+            curClause += "%2F";
+          }
+          // if this current predict has type "object", we need to append the symbol "^" to indicate inverse path
+          if (columnInfo[i][k].type === "object") {
+            curClause += "%5E";
+          }
+          curClause = curClause + "dbo%3A" + columnInfo[i][k].value;
+        }
+        // After forming the path, we append the string for variable name and newline
+        curClause = curClause + "+%3Fo" + optionIndex + "%7D.%0D%0A";
+
+        // Lastly, we update optionIndex, and append curClause to optionClause
+        optionIndex++;
+        optionClause+=curClause;
+      }
+    }
+
+    // Now we are done with optionClause, we move on to the last clause
+    let endingClause = "%7D%0D%0Alimit+1&format=application%2Fsparql-results%2Bjson&timeout=30000&signal_void=on&signal_unconnected=on";
+
+    // We now append all the clauses together
+    let returnClause = prefixClause + selectClause + whereClause + optionClause + endingClause;
+
+    // Code below is for testing
+    // if (j === fillStartIndex) {
+    //   console.log(prefixClause);
+    //   console.log(selectClause);
+    //   console.log(whereClause);
+    //   console.log(optionClause);
+    //   console.log(endingClause);
+      console.log(returnClause);
+    // }
+
+    // We push onto promiseArray
+    promiseArray.push(fetchJSON(returnClause));
+  }
+  return promiseArray;
 }
 
 // this following query is going to help with the recursive property recommendation
