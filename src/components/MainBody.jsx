@@ -1299,10 +1299,10 @@ class MainBody extends Component {
 
           // This is where we can start working on the auto-fill
           // Let's first look at fillStartIndex, tableData, and autoFillInfo
-          console.log("New entries' starting index is "+fillStartIndex);
-          console.log(tableData);
-          console.log(autoFillInfo);
-          console.log(firstDegNeighbours);
+          // console.log("New entries' starting index is "+fillStartIndex);
+          // console.log(tableData);
+          // console.log(autoFillInfo);
+          // console.log(firstDegNeighbours);
 
           // Stepone: Write a helper function to fill in the one-deg neighbours first
           // This information should already exists in firstDegNeighbours
@@ -1310,7 +1310,13 @@ class MainBody extends Component {
           for (let i = 0; i < columnInfo.length; ++i) {
             if (columnInfo[i].length === 1) {
               let curColumn = i + 1;
-              autofillFirstDeg(tableData, columnInfo[i], curColumn, fillStartIndex, firstDegNeighbours);
+              tableData = 
+                autofillFirstDeg(tableData, 
+                                 columnInfo[i], 
+                                 curColumn, 
+                                 fillStartIndex, 
+                                 firstDegNeighbours, 
+                                 this.state.keyColIndex);
             }
           }
 
@@ -1516,7 +1522,7 @@ class MainBody extends Component {
           curColumnArray = curColumnArray.concat(curNeighbourData);
         }
       }
-      console.log(neighbourArray);
+      // console.log(neighbourArray);
       // If curColumnArray is empty, that means this entry in searchColumn do not have any of the attributes from neighbourArray
       if (curColumnArray.length === 0) {
         // we set the data to N/A
@@ -7363,8 +7369,8 @@ function getAutofillInfo(tableData) {
       let curInfo = [];
       for (let j = 0; j < curOrigin.length; ++j) {
         curInfo.push({
-          "value": curOrigin[j].split(":")[0],
-          "type": curOrigin[j].split(":")[0].substring(0, 3) === "is " ? "object" : "subject",  
+          "value": curOrigin[j].split(":")[0].split(" OR ")[0],
+          "type": curOrigin[j].split(":")[0].split(" OR ")[0].substring(0, 3) === "is " ? "object" : "subject",  
         });
       }
       if (curInfo.length === 1) {
@@ -7404,12 +7410,67 @@ function getAutofillInfo(tableData) {
 }
 
 // Helper function to automatically fill all the first degree neighbours
-function autofillFirstDeg(tableData, columnInfo, curColumn, fillStartIndex, firstDegNeighbours) {
-  console.log(tableData);
-  console.log(columnInfo);
-  console.log(curColumn);
-  console.log(fillStartIndex);
-  console.log(firstDegNeighbours);
+// This function currently ignores the OR case.
+// It should look very similar to populateOtherColumn
+
+function autofillFirstDeg(tableDataPassed, columnInfo, colIndex, fillStartIndex, firstDegNeighboursPassed, keyColIndex) {
+  // console.log(tableData);
+  // console.log(columnInfo);
+  // console.log(colIndex);
+  // console.log(fillStartIndex);
+  // console.log(firstDegNeighbours);
+
+  let tableData = _.cloneDeep(tableDataPassed);
+  let firstDegNeighboursPassedCopy = _.cloneDeep(firstDegNeighboursPassed);
+
+  for (let i = fillStartIndex; i < tableData.length; ++i) {
+    // console.log(tableData[i]);
+    // curColumnArray is the dataArray for each entry (row) in search column
+    let curColumnArray = [];
+    // Since we are not worrying about OR case here. We only have one neighbour, which has a value and a type (subject or object)
+    let curNeighbour = columnInfo[0];
+    let firstDegNeighbours =
+      curNeighbour.type === "subject" ? firstDegNeighboursPassedCopy.subject : firstDegNeighboursPassedCopy.object;
+    // console.log(firstDegNeighbours);
+    let curNeighbourData = firstDegNeighbours[i][curNeighbour.value];
+    // console.log("Current neighbour data is "+curNeighbourData);
+    // If yes, we want to concat those values with curColumnArray
+    if (curNeighbourData !== undefined) {
+      curColumnArray = curColumnArray.concat(curNeighbourData);
+    }
+    // Take a look at curColumnArray
+    // console.log(curColumnArray);
+
+    // If curColumnArray is empty, that means this entry in searchColumn do not the attribute we are looking for
+    if (curColumnArray.length === 0) {
+      // we set the data to N/A
+      let curData = "N/A";
+      tableData[i][colIndex].data = curData;
+      // Note that we still want to set origin to support autofill
+      let curNeighbourText = curNeighbour.type === "object" ? "is " + curNeighbour.value + " of" : curNeighbour.value;
+      let originToAdd = curNeighbourText + ":" + curData;
+      let keyOrigin = tableData[i][keyColIndex].origin.slice();
+      keyOrigin.push(originToAdd);
+      tableData[i][colIndex].origin = keyOrigin;
+    }
+    // Otherwise, we have found at least one value.
+    else {
+      // we first set the data for the cell using curColumnArray[0]
+      let curData = curColumnArray[0]
+      tableData[i][colIndex].data = curData;
+      // we then set origin for the cell. Need to use neighbourArray to get the correct text for the origin
+      let curNeighbourText = curNeighbour.type === "object" ? "is " + curNeighbour.value + " of" : curNeighbour.value;
+      let originToAdd = curNeighbourText + ":" + curData;
+      let keyOrigin = tableData[i][keyColIndex].origin.slice();
+      keyOrigin.push(originToAdd);
+      tableData[i][colIndex].origin = keyOrigin;
+      // console.log(keyOrigin)
+    }
+  }
+  // Now, we are done with updating tableData. Take a look.
+  // console.log(tableData);
+
+  return tableData;
 }
 
 // this following query is going to help with the recursive property recommendation
