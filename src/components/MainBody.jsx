@@ -1285,8 +1285,14 @@ class MainBody extends Component {
         // Now, we move on to update firstDegNeighbours and keyColNeighbours
         let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", 0);
         let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", 0);
+
+        // In here we add support for auto-fill information:
+        // In here we make use of the autofillFarPromise helper function to get the 2nd and 3rd deg neighbours
+        let columnInfo = autoFillInfo.columnInfo;
+        let autoPromise = autofillFarPromise(tableData, columnInfo, fillStartIndex);
         allPromiseReady(promiseArrayOne).then((valuesOne) => {
         allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+        allPromiseReady(autoPromise).then((valuesAuto) => {
 
           let selectionInfo = updateUnionSelection(valuesOne); // Sept 13 update
   
@@ -1302,20 +1308,21 @@ class MainBody extends Component {
           // console.log(autoFillInfo);
           // console.log(firstDegNeighbours);
 
-          // Step zero: let's write helper function to generate the query we needed 
-          // to fetch the 2nd and 3rd deg neighbours
-          let columnInfo = autoFillInfo.columnInfo;
-          let autoPromise = autofillFarPromise(tableData,
-                                                columnInfo,
-                                                fillStartIndex);
-          console.log(autoPromise);
-          // Start from here next time
+          // console.log(valuesAuto);
+
+          // Now we call a helper function to process valuesAuto
+          // Specifically, we want to get an array of arrays of string, as data for the 2nd/3rd deg neighbour columns
+          let farArray = processFarDeg(columnInfo, valuesAuto);
+          // This farArray contains all the information we needed. We set a starting index
+          let farIndex = 0;
 
           // Stepone: Write a helper function to fill in the one-deg neighbours first
           // This information should already exists in firstDegNeighbours
           for (let i = 0; i < columnInfo.length; ++i) {
+            // We are currently dealing with curColumn_th column in the table
+            let curColumn = i + 1;
+            // If it is a one-deg neighbour, we call the autofillFirstDeg to update tableData
             if (columnInfo[i].length === 1) {
-              let curColumn = i + 1;
               tableData = 
                 autofillFirstDeg(tableData, 
                                  columnInfo[i], 
@@ -1324,9 +1331,25 @@ class MainBody extends Component {
                                  firstDegNeighbours, 
                                  this.state.keyColIndex);
             }
+            // It it is a 2nd/3rd deg neighbour, we call autofillFarDeg to update tableData
+            if (columnInfo[i].length === 2 || columnInfo[i].length === 3) {
+              tableData = 
+                autofillFarDeg(tableData,
+                               columnInfo[i],
+                               farArray[farIndex],
+                               curColumn,
+                               fillStartIndex);
+              // We also need to update farIndex
+              ++farIndex;
+            }
           }
 
           document.body.classList.remove('waiting');
+
+          // Lastly, we display a warning if autoFillInfo.longHopWarning is true
+          if (autoFillInfo.longHopWarning) {
+            alert("Neighbours more than 3 hops away is not autofilled.");
+          }
 
           let firstColHeaderInfo = _.cloneDeep(this.state.firstColHeaderInfo);
           firstColHeaderInfo.push(neighbourArray);
@@ -1357,6 +1380,7 @@ class MainBody extends Component {
             lastAction: lastAction,
             prevState: prevState,
           });
+        })
         })
         })
       })
@@ -7484,7 +7508,7 @@ function autofillFirstDeg(tableDataPassed, columnInfo, colIndex, fillStartIndex,
 // This is a helper function to generate the query we needed to fetch the 2nd and 3rd deg neighbours
 function autofillFarPromise(tableData, columnInfo, fillStartIndex) {
   // console.log(tableData);
-  console.log(columnInfo);
+  // console.log(columnInfo);
   // console.log(fillStartIndex);
 
   // Our task is to generate an array of queries that looks like below
@@ -7574,13 +7598,80 @@ function autofillFarPromise(tableData, columnInfo, fillStartIndex) {
     //   console.log(whereClause);
     //   console.log(optionClause);
     //   console.log(endingClause);
-      console.log(returnClause);
+      // console.log(returnClause);
     // }
 
     // We push onto promiseArray
     promiseArray.push(fetchJSON(returnClause));
   }
   return promiseArray;
+}
+
+// This function is a helper function to support 2nd/3rd deg autofill
+// Specifically, it return a 2D array of strings, as data for the 2nd/3rd deg neighbour columns
+// Input: 
+function processFarDeg(columnInfo, valuesAuto) {
+  // First let's determine how many variables there are 
+  let numVar = 0;
+  for (let i = 0; i < columnInfo.length; ++i) {
+    if (columnInfo[i].length === 2 || columnInfo[i].length === 3) {
+      numVar++;
+    }
+  }
+
+  let returnArray = [];
+  for (let i = 0; i < numVar; ++i) {
+    returnArray.push([]);
+  }
+
+  // Now let's loop over valuesAuto to fill our (2D) returnArray
+  for (let i = 0; i < valuesAuto.length; ++i) {
+    let curBinding = valuesAuto[i].results.bindings[0];
+    // console.log(curBinding);
+    for (let j = 0; j < numVar; ++j) {
+      let curIndex = j + 1;
+      let curVarName = "o" + curIndex;
+      if (curBinding[curVarName] === undefined) {
+        returnArray[j].push("");
+      }
+      else {
+        let valueToAdd = curBinding[curVarName].value.includes("dbpedia.org") ? curBinding[curVarName].value.slice(28) 
+                                                                              : curBinding[curVarName].value;
+        returnArray[j].push(valueToAdd);
+      }
+    }
+  }
+
+  // Lastly we return 
+  return returnArray;
+}
+
+// Helper function to automatically fill all the 2nd/3rd degree neighbours
+// This function currently ignores the OR case.
+function autofillFarDeg(tableDataPassed, columnInfo, valueArray, colIndex, fillStartIndex) {
+  // First create a deep copy of table data
+  let tableData = _.cloneDeep(tableDataPassed);
+
+  for (let i = fillStartIndex; i < tableData.length; ++i) {
+    // We first set data
+    let curData = valueArray[i - fillStartIndex] === "" ? "N/A" : valueArray[i - fillStartIndex];
+    tableData[i][colIndex].data = curData;
+    // We then set origin
+    let totalNeighbourText = "";
+    for (let j = 0; j < columnInfo.length; ++j) {
+      if (j > 0) {
+        totalNeighbourText+="/";
+      }
+      let curNeighbourText = columnInfo[j].type === "object" ? "is " + columnInfo[j].value + " of" : columnInfo[j].value;
+      totalNeighbourText+=curNeighbourText;
+    }
+    let originToAdd = totalNeighbourText + ":" + curData;
+    let keyOrigin = tableData[i][0].origin.slice();
+    keyOrigin.push(originToAdd);
+    tableData[i][colIndex].origin = keyOrigin;
+  }
+
+  return tableData;
 }
 
 // this following query is going to help with the recursive property recommendation
