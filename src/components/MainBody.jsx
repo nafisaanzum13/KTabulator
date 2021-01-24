@@ -15,8 +15,9 @@ import _ from "lodash";
 
 const maxNeighbourCount = 10;
 const maxFetchCount = 30;
-const initialColNum = 4;
-const initialRowNum = 15;
+const initialColNum = 4;   // initial number of columns
+const initialRowNum = 15;  // initial number of rows
+const numForTree = 3;      // how many entries(rows) we want to use to construct the semantic tree
 
 class MainBody extends Component {
   constructor(props) {
@@ -24,6 +25,9 @@ class MainBody extends Component {
     let tableData = [];
     let tableHeader = [];
     let optionsMap = [];
+    let semanticTree = [];
+    let typeRecord = [];
+    // The following double loop initializes tableData
     for (let i = 0; i < initialRowNum; ++i) {
       let tempRow = [];
       for (let j = 0; j < initialColNum; ++j) {
@@ -33,6 +37,11 @@ class MainBody extends Component {
         tempRow.push({ data: "", origin: [] });
       }
       tableData.push(tempRow);
+    }
+    // The following loop initializes semanticTree
+    for (let j = 0; j < initialColNum; ++j) {
+      semanticTree.push([]);
+      typeRecord.push([]);
     }
     for (let j = 0; j < initialColNum; ++j) {
       let emptyOptions = [];
@@ -148,6 +157,11 @@ class MainBody extends Component {
       unionTableArray: [],     // 1D array storing all tables found on union URL.
       unionOpenList: [],       // 1D array of bools storing whether each table in unionTableArray has been toggled open or not.
       showUnionModal: false,   // boolean storing whether the union modal should be shown or not.
+
+      // states below are for the semantic tree
+      semanticTree: semanticTree,   // array (length = num of columns) storing the semantic tree for each column in the table
+      typeRecord: typeRecord,       // array (length = num of columns) storing the rdf:type for (3 entities from) each column in the table
+                                    // Each element has two fields: data, type.
     };
 
     // functions below are useful during start up
@@ -730,7 +744,7 @@ class MainBody extends Component {
 
     // console.log("Column index clicked is "+colIndex);
 
-    console.log(this.state.keyColNeighbours);
+    // console.log(this.state.keyColNeighbours);
 
     // The first thing we need to do is to determine the content for otherColSelection
     let otherColSelection = [];
@@ -936,86 +950,6 @@ class MainBody extends Component {
         })
       }
     }
-
-
-
-    // // console.log("Check table header here");
-    // // console.log(this.state.tableHeader);
-    // //  We first create a copy of the existing table headers
-    // let tableHeader = this.state.tableHeader.slice();
-
-    // // This part deals with the selection of key column header
-    // if (colIndex === this.state.keyColIndex) {
-    //   // We create a copy of the selected option
-    //   if (e !== null) {
-    //     let selectedOptions = e.slice();
-    //     // console.log(selectedOptions);
-    //     tableHeader[colIndex] = selectedOptions;
-    //     let tempObj = {};
-    //     tempObj["task"] = "populateKeyColumn";
-    //     tempObj["colIndex"] = colIndex;
-    //     tempObj["neighbourArray"] = [];
-    //     // Modification here: instead of simplying passing the value, we want to pass the selectedOptions as a whole
-    //     // Because we need its "dataset" attribute
-    //     for (let i = 0; i < selectedOptions.length; ++i) {
-    //       tempObj.neighbourArray.push(selectedOptions[i]);
-    //     }
-    //     // console.log(tempObj);
-    //     this.setState({
-    //       tableHeader: tableHeader,
-    //       curActionInfo: tempObj,
-    //     });
-    //   }
-    // }
-    // // This part deals with the selection of non key column header
-    // else {
-    //   // The first few lines fix some pass by reference problems
-    //   let evalue = e.value;
-    //   let elabel = e.label;
-    //   // let ecount = e.count;
-    //   tableHeader[colIndex] = { value: evalue, label: elabel };
-    //   // We want to change the label of non-key column headers with respect to the label of key column
-    //   // We first create the label text for the key column
-    //   let keyColLabel = "";
-    //   if (this.state.keyColIndex === 0) {
-    //     for (let i = 0; i < tableHeader[this.state.keyColIndex].length; ++i) {
-    //       if (i > 0) {
-    //         keyColLabel += "&";
-    //       }
-    //       keyColLabel += tableHeader[this.state.keyColIndex][i].label;
-    //     }
-    //   } else {
-    //     keyColLabel = tableHeader[this.state.keyColIndex].label;
-    //   }
-    //   // Bugfix for Go Table Creation: if at this stage, keyColLable is still "", that means we came from the tabel union task first.
-    //   // In this case, tableHeader[keyColIndex] is an object, not an array. 
-    //   // So we just set keyColLabel as tableHeader[this.state.keyColIndex].label
-    //   if (keyColLabel === "") {
-    //     keyColLabel = tableHeader[this.state.keyColIndex].label;
-    //   }
-    //   // We then append the current column's label to it
-    //   // console.log(keyColLabel);
-    //   tableHeader[colIndex].label =
-    //     tableHeader[colIndex].label + "--" + keyColLabel;
-    //   // After we have selected the column header, not only do we want to fill in the name of the column, we also want to
-    //   // ask in ActionPanel whether user wants to populate the column based on the chosen column name
-    //   let tempObj = {};
-    //   tempObj["task"] = "populateOtherColumn";
-    //   tempObj["colIndex"] = colIndex;
-    //   tempObj["neighbour"] = e.value;
-    //   tempObj["type"] = e.type;
-
-    //   // If type is subject, let's check if this neighbour also has a "range" (rdfs:range)
-    //   if (e.type === "subject" && e.range !== undefined) {
-    //     tempObj["range"] = e.range;
-    //   }
-    //   // console.log(tempObj);
-
-    //   this.setState({
-    //     tableHeader: tableHeader,
-    //     curActionInfo: tempObj,
-    //   });
-    // }
   }
 
   // This function is a helper function for populateKeyColumn. It is similar to getOtherColPromise.
@@ -1110,8 +1044,8 @@ class MainBody extends Component {
   // It also fetches the neighbours of the key column (based on the first cell in the table)
   // as well as setting the origins of cells in the key column
 
-  // Note: we need to do some modification here. Instead of having a fixed number of entries in the key column,
-  // Let's make it more flexible. (but also pose a limit, so we don't get way too many entries)
+  // Instead of having a fixed number of entries in the key column,
+  // We have made it more flexible. (but also pose a limit, so we don't get way too many entries)
 
   populateKeyColumn(e, colIndex, neighbourArray) {
     // Let's first take a look at parameters passed in
@@ -1166,11 +1100,22 @@ class MainBody extends Component {
         // To do this, we need to use this tableData to ask more queries (number of queires is equal to tableData.length)
         let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", colIndex);
         let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", colIndex);
+
+        // Now we construct the semantic tree for the first column
+        // We first randomly get a number of (Math.min(tableData.length, numForTree)) samples from tableData
+        let sampleRows = _.sampleSize(tableData, Math.min(tableData.length, numForTree));
+        let promiseArrayThree = getRDFType(sampleRows, 0);
+
         allPromiseReady(promiseArrayOne).then((valuesOne) => {
         allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+        allPromiseReady(promiseArrayThree).then((valuesThree) => {
+          // console.log(typeRecord);
 
           // console.log(valuesOne);
           // console.log(valuesTwo);
+          // console.log(valuesThree);
+
+          // Support for semantic tree: we write a helper function here to 
 
           // Modified on Sept 13th: whenever updateNeighbourInfo is called, updateUnionSelection should also be called
           // updateUnionSelection should basically be a looped version for updateFirstColSelection
@@ -1181,6 +1126,12 @@ class MainBody extends Component {
           let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
           let keyColNeighbours = updatedNeighbours.keyColNeighbours;
           let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+          // In here we call another helper function to store the ontology rdf:type of the sampleRows
+          // to support semantic tree
+          let curColumnRecord = buildTypeRecord(sampleRows, 0, valuesThree)
+          let typeRecord = _.cloneDeep(this.state.typeRecord);
+          typeRecord[0] = curColumnRecord;
 
           // Lastly, we set up the information for the action panel
           let tempObj = {};
@@ -1203,6 +1154,7 @@ class MainBody extends Component {
               "firstColHeaderInfo":this.state.firstColHeaderInfo,
               "firstColSelection":this.state.firstColSelection, // updated on Sept 13th
               "firstColChecked":this.state.firstColChecked, // updated on Sept 13th
+              "typeRecord":this.state.typeRecord,
             };
 
           document.body.classList.remove('waiting');
@@ -1221,7 +1173,9 @@ class MainBody extends Component {
             prevState: prevState,
             firstColSelection: selectionInfo.firstColSelection,
             firstColChecked: selectionInfo.firstColChecked,
+            typeRecord: typeRecord,
           });
+        })
         })
         })
       });
@@ -1527,6 +1481,9 @@ class MainBody extends Component {
   // //   }
   // //   console.log(keyArray);
   populateOtherColumn(e, colIndex, neighbourArray) {
+
+    // Start from here
+    console.log(this.state.typeRecord);
 
     // console.log(colIndex);
     // console.log(neighbourArray);
@@ -7673,6 +7630,79 @@ function autofillFarDeg(tableDataPassed, columnInfo, valueArray, colIndex, fillS
 
   return tableData;
 }
+
+// Helper function for getting the rdf:types for the sample rows from the colIndex's column
+function getRDFType(sampleData, colIndex) {
+  // console.log(sampleData);
+  // console.log(colIndex);
+
+  // First set up the array that contains the actual data
+  let dataArray = [];
+  for (let i = 0; i < sampleData.length; ++i) {
+    dataArray.push(sampleData[i][colIndex].data);
+  }
+  // console.log(dataArray);
+
+  // Now we construct a promise array to ask the queries
+  // The sparql query that we will ask looks like the following:
+
+  // select ?type
+  // where {
+  // dbr:Barack_Obama rdf:type ?type.
+  // }
+
+  let promiseArray = [];
+  let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+  let suffixURL = "format=application%2Fsparql-results%2Bjson&timeout=30000&signal_void=on&signal_unconnected=on";
+
+  for (let i = 0; i < dataArray.length; ++i) {
+    let cellValue = dataArray[i] === "N/A" ? "NONEXISTINGSTRING" : regexReplace(dataArray[i]);
+    let queryBody = "select+%3Ftype%0D%0Awhere+%7B%0D%0Adbr%3A" + cellValue + "+rdf%3Atype+%3Ftype.%0D%0A%7D%0D%0A&";
+    let queryURL = prefixURL + queryBody + suffixURL;
+    promiseArray.push(fetchJSON(queryURL));
+  }
+
+  return promiseArray;
+}
+
+// Helper function
+function buildTypeRecord(sampleData, colIndex, values) {
+  // First set up the array that contains the actual data
+  let dataArray = [];
+  for (let i = 0; i < sampleData.length; ++i) {
+    dataArray.push(sampleData[i][colIndex].data);
+  }
+
+  // Now we set up the array that contains the types
+  let typeArray = [];
+  for (let i = 0; i < values.length; ++i) {
+    let curBinding = values[i].results.bindings;
+    let curTypeArray = [];
+    curBinding = curBinding.filter(
+      a => a.type.value.includes("dbpedia.org/ontology")
+    );
+    for (let j = 0; j < curBinding.length; ++j) {
+      curTypeArray.push(curBinding[j].type.value.slice(28))
+    }
+    typeArray.push(curTypeArray);
+  }
+
+  // Now we create a data structure, called typeRecord
+  let typeRecord = [];
+  for (let i = 0; i < dataArray.length; ++i) {
+    typeRecord.push(
+      {
+        "data": dataArray[i],
+        "type": typeArray[i],
+      }
+    )
+  }
+
+  return typeRecord;
+}
+
+
+
 
 // this following query is going to help with the recursive property recommendation
 

@@ -311,7 +311,7 @@ class ActionPanel extends Component {
 
   // This function creates the starting recommendations, when actionInfo.task is showStartRecommend
   createStartRecommend() {
-    console.log(this.props.curActionInfo);
+    // console.log(this.props.curActionInfo);
     let recommendEle = [];
     let recommendArray = this.props.curActionInfo.recommendArray;
     for (let i = 0; i < recommendArray.length; ++i) {
