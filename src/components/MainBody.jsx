@@ -232,7 +232,7 @@ class MainBody extends Component {
     this.toggleFirstNeighbour = this.toggleFirstNeighbour.bind(this);
     this.handlePlusClick = this.handlePlusClick.bind(this);
     this.addToFirstCol = this.addToFirstCol.bind(this);
-    this.confirmAddFirstCol = this.confirmAddFirstCol.bind(this);
+    this.confirmAddFirstCol = this.confirmAddFirstCol.bind(this); 
     this.firstColTextChange = this.firstColTextChange.bind(this);
 
     // functions below are for other column selection
@@ -1191,7 +1191,7 @@ class MainBody extends Component {
     // Let's figure out what's currently in the table first.
     // console.log(this.state.tableHeader);
     let autoFillInfo = getAutofillInfo(this.state.tableData);
-    // console.log(autoFillInfo);
+    console.log(autoFillInfo);
 
     // console.log(neighbourArray);
     let queryURL = keyQueryGen(neighbourArray);
@@ -1247,6 +1247,8 @@ class MainBody extends Component {
         allPromiseReady(promiseArrayOne).then((valuesOne) => {
         allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
         allPromiseReady(autoPromise).then((valuesAuto) => {
+
+          // console.log(valuesAuto)
 
           let selectionInfo = updateUnionSelection(valuesOne); // Sept 13 update
   
@@ -1578,6 +1580,17 @@ class MainBody extends Component {
       tempObj["task"] = "afterPopulateColumn";
     }
 
+    // Now we construct the semantic tree for the this column
+    // We first randomly get a number of (Math.min(tableData.length, numForTree)) samples from tableData
+    let sampleRows = _.sampleSize(tableData, Math.min(tableData.length, numForTree));
+    let promiseArray = getRDFType(sampleRows, colIndex);
+    allPromiseReady(promiseArray).then((values) => {
+    // In here we call another helper function to store the ontology rdf:type of the sampleRows
+    // to support semantic tree
+    let curColumnRecord = buildTypeRecord(sampleRows, colIndex, values)
+    let typeRecord = _.cloneDeep(this.state.typeRecord);
+    typeRecord[colIndex] = curColumnRecord;
+
     // Support for undo: 
     // Let's save the previous state in an object
     let lastAction = "populateOtherColumn";
@@ -1588,6 +1601,7 @@ class MainBody extends Component {
         "tableHeader":this.state.tableHeader,
         "previewColIndex":this.state.previewColIndex,
         "otherColText": this.state.otherColText,
+        "typeRecord": this.state.typeRecord,
       };
 
     this.setState({
@@ -1598,7 +1612,9 @@ class MainBody extends Component {
       otherColText: "",
       lastAction: lastAction,
       prevState: prevState,
+      typeRecord: typeRecord,
     });
+    })
 
 
     // let tableData = _.cloneDeep(this.state.tableData);
@@ -2551,13 +2567,24 @@ class MainBody extends Component {
 
     // we now take care of selectedClassAnnotation
     let selectedClassAnnotation = [];
-    for (let j = 0; j < colIndex; ++j) {
+    for (let j = 0; j < colIndex + 1; ++j) {
       selectedClassAnnotation.push(this.state.selectedClassAnnotation[j]);
     }
     selectedClassAnnotation.push([]);
-    for (let k = colIndex; k < colNum-1; ++k) {
+    for (let k = colIndex + 1; k < colNum; ++k) {
       selectedClassAnnotation.push(this.state.selectedClassAnnotation[k]);
     }
+
+    // we now take care of typeRecord
+    let typeRecord = [];
+    for (let j = 0; j < colIndex + 1; ++j) {
+      typeRecord.push(this.state.typeRecord[j]);
+    }
+    typeRecord.push([]);
+    for (let k = colIndex + 1; k < colNum; ++k) {
+      typeRecord.push(this.state.typeRecord[k]);
+    }
+    // console.log(typeRecord);
 
     // If colIndex is less than keyColIndex, we need to increase keyColIndex by 1
     let keyColIndex = this.state.keyColIndex;
@@ -2579,6 +2606,7 @@ class MainBody extends Component {
           "selectedClassAnnotation": this.state.selectedClassAnnotation,
           "tabIndex": this.state.tabIndex,
           "previewColIndex": this.state.previewColIndex,
+          "typeRecord": this.state.typeRecord,
         };
 
     this.setState({
@@ -2591,6 +2619,7 @@ class MainBody extends Component {
       previewColIndex: -1, // we want to set the preview column index to -1
       lastAction: lastAction,
       prevState: prevState,
+      typeRecord: typeRecord,
     });
   }
   
@@ -7514,7 +7543,7 @@ function autofillFarPromise(tableData, columnInfo, fillStartIndex) {
     let optionClause = "";
 
     let optionIndex = 1;
-    // We loop through all the columns(paths)
+    // We loop through all the columns (paths)
     for (let i = 0; i < columnInfo.length; ++i) {
       if (columnInfo[i].length > 1) {
         let curClause = "OPTIONAL+%7Bdbr%3A";
@@ -7548,6 +7577,8 @@ function autofillFarPromise(tableData, columnInfo, fillStartIndex) {
     // We now append all the clauses together
     let returnClause = prefixClause + selectClause + whereClause + optionClause + endingClause;
 
+    // console.log(returnClause);
+
     // Code below is for testing
     // if (j === fillStartIndex) {
     //   console.log(prefixClause);
@@ -7559,7 +7590,9 @@ function autofillFarPromise(tableData, columnInfo, fillStartIndex) {
     // }
 
     // We push onto promiseArray
-    promiseArray.push(fetchJSON(returnClause));
+    if (optionClause !== "") {
+      promiseArray.push(fetchJSON(returnClause));
+    }
   }
   return promiseArray;
 }
