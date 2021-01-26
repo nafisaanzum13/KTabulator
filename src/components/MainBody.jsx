@@ -1484,8 +1484,10 @@ class MainBody extends Component {
   // //   console.log(keyArray);
   populateOtherColumn(e, colIndex, neighbourArray) {
 
+    document.body.classList.add('waiting');
+
     // Start from here
-    console.log(this.state.typeRecord);
+    // console.log(this.state.typeRecord);
 
     // console.log(colIndex);
     // console.log(neighbourArray);
@@ -1590,6 +1592,8 @@ class MainBody extends Component {
     let curColumnRecord = buildTypeRecord(sampleRows, colIndex, values)
     let typeRecord = _.cloneDeep(this.state.typeRecord);
     typeRecord[colIndex] = curColumnRecord;
+
+    document.body.classList.remove('waiting');
 
     // Support for undo: 
     // Let's save the previous state in an object
@@ -2344,6 +2348,8 @@ class MainBody extends Component {
     // console.log(neighbourArray);
     // console.log(this.state.curActionInfo);
 
+    document.body.classList.add('waiting');
+
     // First thing we need to do should be the same as contextAddColumn
     const rowNum = this.state.tableData.length;
     const colNum = this.state.tableData[0].length;
@@ -2501,13 +2507,35 @@ class MainBody extends Component {
       tempObj["task"] = "afterPopulateColumn";
     }
 
+    // Support for updating typeRecord. To do this, we have to first get the typeRecord for the column just added.
+    // We first randomly get a number of (Math.min(tableData.length, numForTree)) samples from tableData
+    let sampleRows = _.sampleSize(tableData, Math.min(tableData.length, numForTree));
+    let promiseArray = getRDFType(sampleRows, colIndex);
+    allPromiseReady(promiseArray).then((values) => {
+    // In here we call another helper function to store the ontology rdf:type of the sampleRows
+    // to support semantic tree
+    let curColumnRecord = buildTypeRecord(sampleRows, colIndex, values)
+    // we now add the curColumnRecord to typeRecord
+    let typeRecord = [];
+    for (let j = 0; j < colIndex; ++j) {
+      typeRecord.push(this.state.typeRecord[j]);
+    }
+    typeRecord.push(curColumnRecord);
+    for (let k = colIndex; k < colNum; ++k) {
+      typeRecord.push(this.state.typeRecord[k]);
+    }
+
     // console.log(tableData);
     // console.log(tableHeader);
     // console.log(selectedClassAnnotation);
     // console.log(keyColIndex);
     // console.log(tempObj);
+    // console.log(typeRecord);
 
     // Lastly, we add support for undo, and set the states
+
+    document.body.classList.remove('waiting');
+
     let lastAction = "populateStartRecommend";
     let prevState =
       {
@@ -2518,6 +2546,7 @@ class MainBody extends Component {
         "selectedClassAnnotation": this.state.selectedClassAnnotation,
         "tabIndex": this.state.tabIndex,
         "previewColIndex": this.state.previewColIndex,
+        "typeRecord": this.state.typeRecord,
       } 
 
     this.setState({
@@ -2530,6 +2559,8 @@ class MainBody extends Component {
       previewColIndex: -1,
       prevState: prevState,
       lastAction: lastAction,
+      typeRecord: typeRecord,
+    })
     })
   }
 
@@ -2641,22 +2672,26 @@ class MainBody extends Component {
 
     // Else, we can proceed to deletion.
     else {
-      // We handle tableData, tableHeader, optionsMap, and selectedClassAnnotation's deletion
+      // We handle tableData, tableHeader, optionsMap, selectedClassAnnotation, and typeRecord's deletion
       let tableData = _.cloneDeep(this.state.tableData);
       let tableHeader = this.state.tableHeader.slice();
       let optionsMap = this.state.optionsMap.slice();
       let selectedClassAnnotation = this.state.selectedClassAnnotation.slice();
+      let typeRecord = _.cloneDeep(this.state.typeRecord);
 
       // tableData
       for (let i = 0; i < tableData.length; ++i) {
         tableData[i].splice(colIndex, 1);
       }
-      // tableHeader, optionsMap, and selectedClassAnnotation
+      // tableHeader, optionsMap, selectedClassAnnotation, and typeRecord
       tableHeader.splice(colIndex, 1);
       optionsMap.splice(colIndex, 1);
       if (colIndex > 0) {
         selectedClassAnnotation.splice(colIndex-1, 1);
       }
+      typeRecord.splice(colIndex, 1);
+      // console.log(typeRecord);
+
       // If colIndex is less than keyColIndex, we need to decrease keyColIndex by 1, if keyColIndex > 0
       let keyColIndex = this.state.keyColIndex;
       if (colIndex < keyColIndex) {
@@ -2683,12 +2718,14 @@ class MainBody extends Component {
             "previewColIndex": this.state.previewColIndex,
             "propertyNeighbours": this.state.propertyNeighbours,
             "curActionInfo": this.state.curActionInfo,
+            "typeRecord": this.state.typeRecord,
           };
 
       this.setState({
         tableData: tableData,
         tableHeader: tableHeader,
         selectedClassAnnotation: selectedClassAnnotation,
+        typeRecord: typeRecord,
         keyColIndex: keyColIndex,
         previewColIndex: -1, // we want to set the preview column index to -1
         propertyNeighbours: propertyNeighbours,
