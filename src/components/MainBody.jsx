@@ -2137,6 +2137,7 @@ class MainBody extends Component {
   }
 
   // The following function populates one recommendation neighbour
+  // This function should be very similar to populateStartRecommend
   populateRecommendation(e, colIndex, neighbourArray) {
     // console.log(colIndex);
     // console.log(neighbourArray);
@@ -2304,6 +2305,26 @@ class MainBody extends Component {
     // console.log(keyColIndex);
     // console.log(tempObj);
 
+    // Support for updating typeRecord. To do this, we have to first get the typeRecord for the column just added.
+    // We first randomly get a number of (Math.min(tableData.length, numForTree)) samples from tableData
+    let sampleRows = _.sampleSize(tableData, Math.min(tableData.length, numForTree));
+    let promiseArray = getRDFType(sampleRows, colIndex);
+    allPromiseReady(promiseArray).then((values) => {
+    // In here we call another helper function to store the ontology rdf:type of the sampleRows
+    // to support semantic tree
+    let curColumnRecord = buildTypeRecord(sampleRows, colIndex, values)
+    // we now add the curColumnRecord to typeRecord
+    let typeRecord = [];
+    for (let j = 0; j < colIndex; ++j) {
+      typeRecord.push(this.state.typeRecord[j]);
+    }
+    typeRecord.push(curColumnRecord);
+    for (let k = colIndex; k < colNum; ++k) {
+      typeRecord.push(this.state.typeRecord[k]);
+    }
+
+    // console.log(typeRecord);
+
     // Lastly, we add support for undo, and set the states
     let lastAction = "populateRecommendation";
     let prevState =
@@ -2315,6 +2336,7 @@ class MainBody extends Component {
         "selectedClassAnnotation": this.state.selectedClassAnnotation,
         "tabIndex": this.state.tabIndex,
         "previewColIndex": this.state.previewColIndex,
+        "typeRecord": this.state.typeRecord,
       } 
 
     this.setState({
@@ -2327,6 +2349,8 @@ class MainBody extends Component {
       previewColIndex: -1,
       prevState: prevState,
       lastAction: lastAction,
+      typeRecord: typeRecord,
+    })
     })
   }
 
