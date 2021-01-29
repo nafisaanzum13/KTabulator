@@ -2142,6 +2142,8 @@ class MainBody extends Component {
     // console.log(colIndex);
     // console.log(neighbourArray);
 
+    document.body.classList.add('waiting');
+
     // First thing we need to do should be the same as contextAddColumn
     const rowNum = this.state.tableData.length;
     const colNum = this.state.tableData[0].length;
@@ -2324,6 +2326,8 @@ class MainBody extends Component {
     }
 
     // console.log(typeRecord);
+
+    document.body.classList.remove('waiting');
 
     // Lastly, we add support for undo, and set the states
     let lastAction = "populateRecommendation";
@@ -3354,7 +3358,7 @@ class MainBody extends Component {
       // console.log(queryResults[1].results.bindings);
       // console.log(queryResults[2]);
       let selectedClassAnnotation = queryResults[2];
-      console.log(selectedClassAnnotation);
+      // console.log(selectedClassAnnotation);
 
       // First we fetch the property neighbours
       // Let's also do some prefetching at this stage: let's remove the propertyNeighbours with too many siblings (150)
@@ -3454,6 +3458,21 @@ class MainBody extends Component {
         allPromiseReady(statePromise).then((values) => {
           let stateInfo = values[0];
           // console.log(stateInfo);
+          
+          // Now we add support for the semantic trees
+          // First take a look at tableData
+          // console.log(stateInfo.tableData);
+
+          // We sample rows from the table. Note that we need a semantic tree for every column
+          // Except the first (since the first column is OriginURL)
+          let sampleRows = _.sampleSize(stateInfo.tableData, Math.min(stateInfo.tableData.length, numForTree));
+          let promiseArray = getRDFType(sampleRows, -1, "startingTable");
+
+          allPromiseReady(promiseArray).then((values) => {
+
+          // In here we call another helper function to store the ontology rdf:type of the sampleRows
+          // to support semantic tree
+          let typeRecord = buildTypeRecord(sampleRows, -1, values, "startingTable");
 
           // Lastly, we set up the information for the action panel
           let tempObj = {};
@@ -3496,6 +3515,7 @@ class MainBody extends Component {
             tabIndex: 1,
             lastAction: lastAction,
             prevState: prevState,
+          });
           });
         })
       });
@@ -7726,16 +7746,9 @@ function autofillFarDeg(tableDataPassed, columnInfo, valueArray, colIndex, fillS
 }
 
 // Helper function for getting the rdf:types for the sample rows from the colIndex's column
-function getRDFType(sampleData, colIndex) {
+function getRDFType(sampleData, colIndex, startingType) {
   // console.log(sampleData);
   // console.log(colIndex);
-
-  // First set up the array that contains the actual data
-  let dataArray = [];
-  for (let i = 0; i < sampleData.length; ++i) {
-    dataArray.push(sampleData[i][colIndex].data);
-  }
-  // console.log(dataArray);
 
   // Now we construct a promise array to ask the queries
   // The sparql query that we will ask looks like the following:
@@ -7749,50 +7762,101 @@ function getRDFType(sampleData, colIndex) {
   let prefixURL = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
   let suffixURL = "format=application%2Fsparql-results%2Bjson&timeout=30000&signal_void=on&signal_unconnected=on";
 
-  for (let i = 0; i < dataArray.length; ++i) {
-    let cellValue = dataArray[i] === "N/A" ? "NONEXISTINGSTRING" : regexReplace(dataArray[i]);
-    let queryBody = "select+%3Ftype%0D%0Awhere+%7B%0D%0Adbr%3A" + cellValue + "+rdf%3Atype+%3Ftype.%0D%0A%7D%0D%0A&";
-    let queryURL = prefixURL + queryBody + suffixURL;
-    promiseArray.push(fetchJSON(queryURL));
+  // In the case that colIndex !== -1, we are only getting the types for one column
+
+  if (colIndex !== -1) {
+
+    // First set up the array that contains the actual data
+    let dataArray = [];
+    for (let i = 0; i < sampleData.length; ++i) {
+      dataArray.push(sampleData[i][colIndex].data);
+    }
+    // console.log(dataArray);
+
+    for (let i = 0; i < dataArray.length; ++i) {
+      let cellValue = dataArray[i] === "N/A" ? "NONEXISTINGSTRING" : regexReplace(dataArray[i]);
+      let queryBody = "select+%3Ftype%0D%0Awhere+%7B%0D%0Adbr%3A" + cellValue + "+rdf%3Atype+%3Ftype.%0D%0A%7D%0D%0A&";
+      let queryURL = prefixURL + queryBody + suffixURL;
+      promiseArray.push(fetchJSON(queryURL));
+    }
+  }
+  // Else, we need to get the types for sampleData[0].length - 1 columns
+  else {
+
+    let startingIndex = startingType === "startingTable" ? 1: 0;
+    // First set up the array that contains the actual data
+    let dataArray = [];
+    for (let j = startingIndex; j < sampleData[0].length; ++j) {
+      for (let i = 0; i < sampleData.length; ++i) {
+        dataArray.push(sampleData[i][j].data);
+      }
+    }
+    // console.log(dataArray);
+
+    for (let i = 0; i < dataArray.length; ++i) {
+      let cellValue = dataArray[i] === "N/A" ? "NONEXISTINGSTRING" : regexReplace(dataArray[i]);
+      let queryBody = "select+%3Ftype%0D%0Awhere+%7B%0D%0Adbr%3A" + cellValue + "+rdf%3Atype+%3Ftype.%0D%0A%7D%0D%0A&";
+      let queryURL = prefixURL + queryBody + suffixURL;
+      promiseArray.push(fetchJSON(queryURL));
+    }
   }
 
   return promiseArray;
 }
 
-// Helper function
-function buildTypeRecord(sampleData, colIndex, values) {
-  // First set up the array that contains the actual data
-  let dataArray = [];
-  for (let i = 0; i < sampleData.length; ++i) {
-    dataArray.push(sampleData[i][colIndex].data);
-  }
-
-  // Now we set up the array that contains the types
-  let typeArray = [];
-  for (let i = 0; i < values.length; ++i) {
-    let curBinding = values[i].results.bindings;
-    let curTypeArray = [];
-    curBinding = curBinding.filter(
-      a => a.type.value.includes("dbpedia.org/ontology")
-    );
-    for (let j = 0; j < curBinding.length; ++j) {
-      curTypeArray.push(curBinding[j].type.value.slice(28))
+// Helper function to build the semantic tree for one column or a full table (when colIndex === -1)
+function buildTypeRecord(sampleData, colIndex, values, startingType) {
+  
+  // Case one: when colIndex is not -1, we are processing info for a single column
+  if (colIndex !== -1) {
+    // First set up the array that contains the actual data
+    let dataArray = [];
+    for (let i = 0; i < sampleData.length; ++i) {
+      dataArray.push(sampleData[i][colIndex].data);
     }
-    typeArray.push(curTypeArray);
-  }
 
-  // Now we create a data structure, called typeRecord
-  let typeRecord = [];
-  for (let i = 0; i < dataArray.length; ++i) {
-    typeRecord.push(
-      {
-        "data": dataArray[i],
-        "type": typeArray[i],
+    // Now we set up the array that contains the types
+    let typeArray = [];
+    for (let i = 0; i < values.length; ++i) {
+      let curBinding = values[i].results.bindings;
+      let curTypeArray = [];
+      curBinding = curBinding.filter(
+        a => a.type.value.includes("dbpedia.org/ontology")
+      );
+      for (let j = 0; j < curBinding.length; ++j) {
+        curTypeArray.push(curBinding[j].type.value.slice(28))
       }
-    )
-  }
+      typeArray.push(curTypeArray);
+    }
 
-  return typeRecord;
+    // Now we create a data structure, called typeRecord
+    let typeRecord = [];
+    for (let i = 0; i < dataArray.length; ++i) {
+      typeRecord.push(
+        {
+          "data": dataArray[i],
+          "type": typeArray[i],
+        }
+      )
+    }
+    return typeRecord;
+  }
+  // Case 2: when colIndex is -1, we have to build the type record for a full table
+  else {
+    let startingIndex = startingType === "startingTable" ? 1 : 0;
+    // first we set up the dataArray for each column
+    let tableDataArray = [];
+    for (let j = startingIndex; j < sampleData[0].length; ++j) {
+      let dataArray = [];
+      for (let i = 0; i < sampleData.length; ++i) {
+        dataArray.push(sampleData[i][j].data);
+      }
+      tableDataArray.push(dataArray);
+    }
+    // console.log(tableDataArray);
+
+    // Now we set up the array that contains the tyeps
+  }
 }
 
 
