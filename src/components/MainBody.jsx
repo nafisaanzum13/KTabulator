@@ -3473,6 +3473,7 @@ class MainBody extends Component {
           // In here we call another helper function to store the ontology rdf:type of the sampleRows
           // to support semantic tree
           let typeRecord = buildTypeRecord(sampleRows, -1, values, "startingTable");
+          // console.log(typeRecord);
 
           // Lastly, we set up the information for the action panel
           let tempObj = {};
@@ -3497,6 +3498,7 @@ class MainBody extends Component {
                 "tableHeader": this.state.tableHeader,
                 "usecaseSelected": this.state.usecaseSelected,
                 "tabIndex": this.state.tabIndex,
+                "typeRecord": this.state.typeRecord,
               };
 
           this.setState({
@@ -3515,6 +3517,7 @@ class MainBody extends Component {
             tabIndex: 1,
             lastAction: lastAction,
             prevState: prevState,
+            typeRecord: typeRecord,
           });
           });
         })
@@ -7856,6 +7859,40 @@ function buildTypeRecord(sampleData, colIndex, values, startingType) {
     // console.log(tableDataArray);
 
     // Now we set up the array that contains the tyeps
+    let tableTypeArray = [];
+    let curCounter = 0;
+    for (let j = startingIndex; j < sampleData[0].length; ++j) {
+      let typeArray = [];
+      for (let i = 0; i < sampleData.length; ++i) {
+        let curBinding = values[curCounter*sampleData.length + i].results.bindings;
+        let curTypeArray = [];
+        curBinding = curBinding.filter(
+          a => a.type.value.includes("dbpedia.org/ontology")
+        );
+        for (let k = 0; k < curBinding.length; ++k) {
+          curTypeArray.push(curBinding[k].type.value.slice(28))
+        }
+        typeArray.push(curTypeArray);
+      }
+      ++curCounter;
+      tableTypeArray.push(typeArray);
+    }
+    // console.log(tableTypeArray);
+
+    // In the last step, we put tableDataArray and tableTypeArray together
+    let tableTypeRecord = [];
+    for (let i = 0; i < tableDataArray.length; ++i) {
+      let curTypeRecord = [];
+      for (let j = 0; j < tableDataArray[i].length; ++j) {
+        curTypeRecord.push({
+          "data": tableDataArray[i][j],
+          "type": tableTypeArray[i][j],
+        })
+      }
+      tableTypeRecord.push(curTypeRecord);
+    }
+
+    return tableTypeRecord;
   }
 }
 
