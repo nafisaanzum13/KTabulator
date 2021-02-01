@@ -3466,13 +3466,13 @@ class MainBody extends Component {
           // We sample rows from the table. Note that we need a semantic tree for every column
           // Except the first (since the first column is OriginURL)
           let sampleRows = _.sampleSize(stateInfo.tableData, Math.min(stateInfo.tableData.length, numForTree));
-          let promiseArray = getRDFType(sampleRows, -1, "startingTable");
+          let promiseArray = getRDFType(sampleRows, -1, "startTable");
 
           allPromiseReady(promiseArray).then((values) => {
 
           // In here we call another helper function to store the ontology rdf:type of the sampleRows
           // to support semantic tree
-          let typeRecord = buildTypeRecord(sampleRows, -1, values, "startingTable");
+          let typeRecord = buildTypeRecord(sampleRows, -1, values, this.state.usecaseSelected);
           // console.log(typeRecord);
 
           // Lastly, we set up the information for the action panel
@@ -4060,6 +4060,18 @@ class MainBody extends Component {
       // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
       let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
       let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+
+      // Now we add support for the semantic trees
+      // First take a look at tableData
+      // console.log(tableData);
+
+      // We sample rows from the table. Note that we need a semantic tree for every column
+      // Except the first (since the first column is OriginURL)
+      let sampleRows = _.sampleSize(tableData, Math.min(tableData.length, numForTree));
+      let promiseArray = getRDFType(sampleRows, -1, this.state.usecaseSelected);
+
+      allPromiseReady(promiseArray).then((values) => {
+      
       allPromiseReady(promiseArrayOne).then((valuesOne) => {
       allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
@@ -4067,6 +4079,11 @@ class MainBody extends Component {
         let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
         let keyColNeighbours = updatedNeighbours.keyColNeighbours;
         let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+        // In here we call another helper function to store the ontology rdf:type of the sampleRows
+        // to support semantic tree
+        let typeRecord = buildTypeRecord(sampleRows, -1, values, this.state.usecaseSelected);
+        // console.log(typeRecord);
 
         // Suppport for undo.
         let lastAction = "applyFilter";
@@ -4077,6 +4094,7 @@ class MainBody extends Component {
               "keyColNeighbours":this.state.keyColNeighbours,
               "firstDegNeighbours":this.state.firstDegNeighbours,
               "previewColIndex": this.state.previewColIndex,
+              "typeRecord": this.state.typeRecord,
             };
         
         this.setState({
@@ -4091,11 +4109,13 @@ class MainBody extends Component {
           previewColIndex: -1,
           lastAction: lastAction,
           prevState: prevState,
+          typeRecord: typeRecord,
         })
       })
       })
+      })
     }
-    // This else clause contains the original function body
+    // This else clause contains the original function body (filter by checking boxes)
     else {
       let valuesToKeep = [];
       for (let i=0;i<this.state.dataAndChecked.length;++i) {
@@ -4115,6 +4135,17 @@ class MainBody extends Component {
       // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
       let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
       let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+
+      // Now we add support for the semantic trees
+      // First take a look at tableData
+      // console.log(tableData);
+
+      // We sample rows from the table. Note that we need a semantic tree for every column
+      // Except the first (since the first column is OriginURL)
+      let sampleRows = _.sampleSize(tableData, Math.min(tableData.length, numForTree));
+      let promiseArray = getRDFType(sampleRows, -1, this.state.usecaseSelected);
+
+      allPromiseReady(promiseArray).then((values) => {
       allPromiseReady(promiseArrayOne).then((valuesOne) => {
       allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
@@ -4122,6 +4153,11 @@ class MainBody extends Component {
         let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
         let keyColNeighbours = updatedNeighbours.keyColNeighbours;
         let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+        // In here we call another helper function to store the ontology rdf:type of the sampleRows
+        // to support semantic tree
+        let typeRecord = buildTypeRecord(sampleRows, -1, values, this.state.usecaseSelected);
+        // console.log(typeRecord);
 
         // Suppport for undo.
         let lastAction = "applyFilter";
@@ -4132,6 +4168,7 @@ class MainBody extends Component {
               "keyColNeighbours":this.state.keyColNeighbours,
               "firstDegNeighbours":this.state.firstDegNeighbours,
               "previewColIndex": this.state.previewColIndex,
+              "typeRecord": this.state.typeRecord,
             };
         
         this.setState({
@@ -4146,7 +4183,9 @@ class MainBody extends Component {
           previewColIndex: -1,
           lastAction: lastAction,
           prevState: prevState,
+          typeRecord: typeRecord,
         })
+      })
       })
       })
     }
@@ -7786,7 +7825,7 @@ function getRDFType(sampleData, colIndex, startingType) {
   // Else, we need to get the types for sampleData[0].length - 1 columns
   else {
 
-    let startingIndex = startingType === "startingTable" ? 1: 0;
+    let startingIndex = startingType === "startTable" ? 1: 0;
     // First set up the array that contains the actual data
     let dataArray = [];
     for (let j = startingIndex; j < sampleData[0].length; ++j) {
@@ -7846,7 +7885,7 @@ function buildTypeRecord(sampleData, colIndex, values, startingType) {
   }
   // Case 2: when colIndex is -1, we have to build the type record for a full table
   else {
-    let startingIndex = startingType === "startingTable" ? 1 : 0;
+    let startingIndex = startingType === "startTable" ? 1 : 0;
     // first we set up the dataArray for each column
     let tableDataArray = [];
     for (let j = startingIndex; j < sampleData[0].length; ++j) {
@@ -7883,11 +7922,13 @@ function buildTypeRecord(sampleData, colIndex, values, startingType) {
     let tableTypeRecord = [];
     for (let i = 0; i < tableDataArray.length; ++i) {
       let curTypeRecord = [];
-      for (let j = 0; j < tableDataArray[i].length; ++j) {
-        curTypeRecord.push({
-          "data": tableDataArray[i][j],
-          "type": tableTypeArray[i][j],
-        })
+      if (tableDataArray[i].length > 0 && tableDataArray[i][0] !== "") {
+        for (let j = 0; j < tableDataArray[i].length; ++j) {
+          curTypeRecord.push({
+            "data": tableDataArray[i][j],
+            "type": tableTypeArray[i][j],
+          })
+        }
       }
       tableTypeRecord.push(curTypeRecord);
     }
