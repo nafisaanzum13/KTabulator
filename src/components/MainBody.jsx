@@ -3472,7 +3472,7 @@ class MainBody extends Component {
 
           // In here we call another helper function to store the ontology rdf:type of the sampleRows
           // to support semantic tree
-          let typeRecord = buildTypeRecord(sampleRows, -1, values, this.state.usecaseSelected);
+          let typeRecord = buildTypeRecord(sampleRows, -1, values, "startTable");
           // console.log(typeRecord);
 
           // Lastly, we set up the information for the action panel
@@ -4796,7 +4796,7 @@ class MainBody extends Component {
     // Now we can finally start the join operator
     for (let i = 0; i < tableData.length; ++i) {
       let curJoinEntry = tableData[i][originJoinIndex].data;
-      console.log("Current entry to join is "+curJoinEntry);
+      // console.log("Current entry to join is "+curJoinEntry);
       let curEntryFound = false;
       // We start the index from 1 because the first column in joinTableData is the header
       for (let j = 0; j < joinTableDataUpdated.length; ++j) {
@@ -4839,9 +4839,19 @@ class MainBody extends Component {
     // Now, we have correctly got everything we needed: tableDataUpdated, tableHeaderUpdated, optionsMapUpdated, selectedClassAnnotationUpdated
     // Let's add some support for undo, and do not forget to close the joinModal
 
-    // Bugfix: since this function potentially changes the number of rows too, we need to update firstDegNeighbours and keyColNeighbours
     let promiseArrayOne = this.getNeighbourPromise(tableDataUpdated, "subject", this.state.keyColIndex);
     let promiseArrayTwo = this.getNeighbourPromise(tableDataUpdated, "object", this.state.keyColIndex);
+
+    // Now we add support for the semantic trees
+    // First take a look at tableDataUpdated
+    // console.log(tableDataUpdated);
+
+    // We sample rows from the table. Note that we need a semantic tree for every column
+    // Except the first (since the first column is OriginURL)
+    let sampleRows = _.sampleSize(tableDataUpdated, Math.min(tableDataUpdated.length, numForTree));
+    let promiseArray = getRDFType(sampleRows, -1, this.state.usecaseSelected);
+
+    allPromiseReady(promiseArray).then((values) => {
     allPromiseReady(promiseArrayOne).then((valuesOne) => {
     allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
 
@@ -4849,6 +4859,11 @@ class MainBody extends Component {
       let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
       let keyColNeighbours = updatedNeighbours.keyColNeighbours;
       let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+      // In here we call another helper function to store the ontology rdf:type of the sampleRows
+      // to support semantic tree
+      let typeRecord = buildTypeRecord(sampleRows, -1, values, this.state.usecaseSelected);
+      // console.log(typeRecord);
 
       // Support for undo: 
       let lastAction = "runJoin";
@@ -4861,20 +4876,23 @@ class MainBody extends Component {
           "firstDegNeighbours":this.state.firstDegNeighbours,
           "selectedClassAnnotation":this.state.selectedClassAnnotation,
           "previewColIndex": this.state.previewColIndex,
+          "typeRecord": this.state.typeRecord,
         };
 
       this.setState({
-        curActionInfo:{"task":"afterPopulateColumn"},
-        tableData:tableDataUpdated,
-        tableHeader:tableHeaderUpdated,
-        keyColNeighbours:keyColNeighbours,
-        firstDegNeighbours:firstDegNeighbours,
-        selectedClassAnnotation:selectedClassAnnotationUpdated,
+        curActionInfo: {"task":"afterPopulateColumn"},
+        tableData: tableDataUpdated,
+        tableHeader: tableHeaderUpdated,
+        keyColNeighbours: keyColNeighbours,
+        firstDegNeighbours: firstDegNeighbours,
+        selectedClassAnnotation: selectedClassAnnotationUpdated,
         showJoinModal: false,
         previewColIndex: -1,
-        lastAction:lastAction,
-        prevState:prevState,
+        lastAction: lastAction,
+        prevState: prevState,
+        typeRecord: typeRecord,
       })
+    })
     })
     })
     })
