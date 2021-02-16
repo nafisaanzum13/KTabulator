@@ -3687,6 +3687,14 @@ class MainBody extends Component {
     let tableData = _.cloneDeep(this.state.tableData);
     // console.log(tableData);
 
+    // Starting here, let's build the semantic tree from type record.
+    // Let's write a helper function to get the type lineage for each column in the table
+    let tablePromise = [tableTreePromise(this.state.typeRecord)];
+    // console.log(tablePromise);
+    allPromiseReady(tablePromise).then((treeValues) => {
+    buildTableTree(treeValues[0], this.state.typeRecord);
+    // console.log(treeValues);
+
     // Then we get the clean data and set the origin for the other table.
     // We do so by calling setTableFromHTML, and setUnionData.
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
@@ -3737,6 +3745,7 @@ class MainBody extends Component {
         lastAction: lastAction,
         prevState: prevState,
       })
+    })
     })
     })
   }
@@ -7955,7 +7964,100 @@ function buildTypeRecord(sampleData, colIndex, values, startingType) {
   }
 }
 
+// This is a helper function that builds the semantic tree for a table
+// based on the typeRecord passed in
+function tableTreePromise(typeRecord) {
+  // console.log(typeRecord);
 
+  let tablePromise = [];
+  
+  // Since we perform the same operations for each column, we call another helper columnTreePromise
+  for (let i = 0; i < typeRecord.length; ++i) {
+    let curColumnPromise = columnTreePromise(typeRecord[i]);
+    tablePromise.push(curColumnPromise);
+  }
+
+  return allPromiseReady(tablePromise).then((values) => {
+    return Promise.resolve(values);
+  })
+}
+
+// This is a helper function for tableTreePromise
+function columnTreePromise(columnRecord) {
+  // console.log(columnRecord);
+
+  let promiseArray = [];
+
+  // For each entry in columnRecord, we need to make a query that looks like the following:
+
+  // SELECT ?type0 ?type1 ?type2 ?type3
+  // WHERE { 
+  // {dbo:Person rdfs:subClassOf+ ?type0}
+  // UNION
+  // {dbo:Agent rdfs:subClassOf+ ?type1}
+  // UNION
+  // {dbo:Athlete rdfs:subClassOf+ ?type2}
+  // UNION
+  // {dbo:SoccerPlayer rdfs:subClassOf+ ?type3}
+  // }
+
+  for (let i = 0; i < columnRecord.length; ++i) {
+    let curColumnType = columnRecord[i].type;
+    // If this current entry has rdf:type, we need to ask the query
+    if (curColumnType.length > 0) {
+      // We start generating the query
+
+      // First is the prefix clause, this remains the same
+      let prefixClause = "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
+
+      // Second is the select clause
+      let selectClause = "SELECT";
+      for (let j = 0; j < curColumnType.length; ++j) {
+        selectClause = selectClause + "+%3Ftype" + j;
+      }
+      selectClause += "%0D%0A";
+
+      // Third is the whereClause
+      let whereClause = "WHERE+%7B+%0D%0A";
+
+      // Then it's the query body
+      let bodyClause = "";
+      for (let j = 0; j < curColumnType.length; ++j) {
+        if (j > 0) {
+          bodyClause += "UNION%0D%0A"
+        }
+        bodyClause = bodyClause + "%7Bdbo%3A" + curColumnType[j] + "+rdfs%3AsubClassOf%2B+%3Ftype" + j + "%7D%0D%0A"
+      }
+      bodyClause += "%7D";
+      
+      // Lastly is the ending clause
+      let endingClause = "&format=application%2Fsparql-results%2Bjson&timeout=30000&signal_void=on&signal_unconnected=on";
+
+      // Take a look at the clauses we have generated
+      // console.log(prefixClause);
+      // console.log(selectClause);
+      // console.log(whereClause);
+      // console.log(bodyClause);
+      // console.log(endingClause);
+
+      // We now append all the clauses together
+      let returnClause = prefixClause + selectClause + whereClause + bodyClause + endingClause;
+      promiseArray.push(fetchJSON(returnClause));
+    }
+  }
+  // return promiseArray;
+  return allPromiseReady(promiseArray).then((values) => {
+    return Promise.resolve(values);
+  })
+}
+
+// This helper function builds the semantic tree for each column in the table
+// based on the type lineage and typeRecord
+
+function buildTableTree(treeValues, typeRecord) {
+  console.log(treeValues);
+  console.log(typeRecord);
+}
 
 
 // this following query is going to help with the recursive property recommendation
