@@ -3689,6 +3689,7 @@ class MainBody extends Component {
 
     // Starting here, let's build the semantic tree from type record.
     // Let's write a helper function to get the type lineage for each column in the table
+    // Note that we have to put tableTreePromise in an array here so that allPromiseReady can work
     let tablePromise = [tableTreePromise(this.state.typeRecord)];
     // console.log(tablePromise);
     allPromiseReady(tablePromise).then((treeValues) => {
@@ -8055,8 +8056,13 @@ function columnTreePromise(columnRecord) {
 // based on the type lineage and typeRecord
 
 function buildTableTree(treeValues, typeRecord) {
-  console.log(treeValues);
-  console.log(typeRecord);
+  // console.log(treeValues);
+  // console.log(typeRecord);
+
+  // Each entry in treeValues contains info for a column
+
+  // If it's empty, there's no type for this column.
+  // Otherwise for each column, we find the longest typeX, where X is a number
 }
 
 
