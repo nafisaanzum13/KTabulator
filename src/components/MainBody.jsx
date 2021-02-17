@@ -3693,7 +3693,7 @@ class MainBody extends Component {
     let tablePromise = [tableTreePromise(this.state.typeRecord)];
     // console.log(tablePromise);
     allPromiseReady(tablePromise).then((treeValues) => {
-    buildTableTree(treeValues[0], this.state.typeRecord);
+    let tableTree = buildTableTree(treeValues[0], this.state.typeRecord);
     // console.log(treeValues);
 
     // Then we get the clean data and set the origin for the other table.
@@ -5312,7 +5312,12 @@ function fetchJSON(url) {
 // This function takes in a queryURL and returns its Text format
 function fetchText(url) {
   let urlCORS = "https://mysterious-ridge-15861.herokuapp.com/"+url;
-  return fetch(urlCORS).then((response) => response.text());
+  return fetch(urlCORS)
+         .then((response) => response.text())
+         .catch(function (error) {
+           document.body.classList.remove("waiting");
+           return 1;
+         });
 }
 
 // This function ensures that all promises in promiseArray are ready
@@ -8059,10 +8064,96 @@ function buildTableTree(treeValues, typeRecord) {
   // console.log(treeValues);
   // console.log(typeRecord);
 
+  let semTree = [];
+
   // Each entry in treeValues contains info for a column
 
   // If it's empty, there's no type for this column.
   // Otherwise for each column, we find the longest typeX, where X is a number
+  for (let i = 0; i < typeRecord.length; ++i) {
+    semTree.push(buildColumnTree(treeValues[i], typeRecord[i]));
+  }
+  return semTree;
+}
+
+// Helper function for buildTableTree
+function buildColumnTree(values, columnType) {
+  // Let's first process values
+  let columnTree = [];
+  // console.log(values);
+  // console.log(columnType);
+
+  // Note, we need to make a copy of columnType, and remove those entries with empty "type" arary
+  // This will make our columnType's length to be consistent with values
+  let columnTypeCopy = _.cloneDeep(columnType);
+  for (let i = 0; i < columnTypeCopy.length; ++i) {
+    if (columnTypeCopy[i].type.length === 0) {
+      columnTypeCopy.splice(i, 1);
+      --i;
+    }
+  }
+
+  for (let i = 0; i < values.length; ++i) {
+    // Below we construct the level tree for the current CELL 
+    // We use a map to track which typeX is the lowest child (farthest descendent from owl:Thing)
+    let countMap = {};
+    // We store the most frequent typeX: these are the longest child (which can be more than 1)
+    let highestCount = 0;
+    let curBinding = values[i].results.bindings;
+    for (let j = 0; j < curBinding.length; ++j) {
+      let curType = Object.keys(curBinding[j])[0];
+      countMap[curType] = (countMap[curType] || 0) + 1;
+      if (countMap[curType] > highestCount) {
+        highestCount = countMap[curType];
+      }
+    }
+    // console.log(countMap);
+
+    // Now we store the typeX's with the highest key counts
+    let highestTypes = [];
+    for (let j = 0; j < Object.keys(countMap).length; ++j) {
+      let curType = Object.keys(countMap)[j];
+      if (countMap[curType] === highestCount) {
+        highestTypes.push(curType);
+      }
+    }
+    // console.log(highestTypes);
+
+    // Now that we have built the countMap, we can build our tree from them
+    let tempTree = [];
+    for (let j = 0; j < Object.keys(countMap).length; ++j) {
+      let curType = Object.keys(countMap)[j];
+      let curTypeTree = [];
+      for (let k = 0; k < curBinding.length; ++k) {
+        if (curBinding[k][curType] !== undefined) {
+          if (curBinding[k][curType].value !== "http://www.w3.org/2002/07/owl#Thing") {
+            curTypeTree.push(curBinding[k][curType].value.slice(28));
+          }
+        }
+      }
+      if (curTypeTree.length > 0) {
+        tempTree.push({
+          "type": curType,
+          "tree": curTypeTree,
+        });
+      }
+    }
+
+    // We now combine information from 
+    // 1) highestTypes (an array of the lowest children),
+    // 2) tempTree (info about all lineaage)
+    // 3) columnTypeCopy[i].type
+    // To create the column tree
+
+    // We first sort tempTree by each object's "tree" field's length
+    // The shorter, the higher up it is on the tree
+    tempTree.sort((a, b) =>
+      a.tree.length > b.tree.length ? 1 : -1
+    );
+    console.log(tempTree);
+
+    // We now fetch the lowest children using highestTypes and columnTypeCopy[i].type
+  }
 }
 
 
