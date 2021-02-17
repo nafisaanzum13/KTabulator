@@ -8080,6 +8080,7 @@ function buildTableTree(treeValues, typeRecord) {
 function buildColumnTree(values, columnType) {
   // Let's first process values
   let columnTree = [];
+  let fullColumnTree = [];
   // console.log(values);
   // console.log(columnType);
 
@@ -8150,10 +8151,50 @@ function buildColumnTree(values, columnType) {
     tempTree.sort((a, b) =>
       a.tree.length > b.tree.length ? 1 : -1
     );
-    console.log(tempTree);
+    // console.log(tempTree);
 
     // We now fetch the lowest children using highestTypes and columnTypeCopy[i].type
+    for (let j = 0; j < highestTypes.length; ++j) {
+      let curHighType = Number(highestTypes[j].substring(4));
+      highestTypes[j] = columnTypeCopy[i].type[curHighType];
+    }
+    // console.log(highestTypes);
+
+    // We build the tree in top-down manner
+    let cellTree = [];
+    let typeUsed = [];
+    for (let j = 0; j < tempTree.length; ++j) {
+      let curLevel = [];
+      for (let k = 0; k < tempTree[j].tree.length; ++k) {
+        let curType = tempTree[j].tree[k];
+        if (!typeUsed.includes(curType)) {
+          typeUsed.push(curType);
+          curLevel.push(curType);
+        }
+      }
+      cellTree.push(curLevel);
+    }
+    cellTree.push(highestTypes);
+    // Take a look at cellTree
+    // console.log(cellTree);
+    columnTree.push(cellTree);
   }
+
+  // Finally we construct the fullColumnTree. Its difference from columnTree is that it contains info about cells w/o types
+  let counter = 0;
+  for (let i = 0; i < columnType.length; ++i) {
+    if (columnType[i].type.length === 0) {
+      fullColumnTree.push([]);
+    }
+    else {
+      fullColumnTree.push(columnTree[counter]);
+      ++counter;
+    }
+  }
+  // console.log(fullColumnTree);
+
+  // Now that fullColumnTree looks correct. Let's merge each cellTree in a columnTree together.
+  // and store the fraction information
 }
 
 
