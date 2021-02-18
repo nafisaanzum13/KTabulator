@@ -3694,7 +3694,7 @@ class MainBody extends Component {
     // console.log(tablePromise);
     allPromiseReady(tablePromise).then((treeValues) => {
     let tableTree = buildTableTree(treeValues[0], this.state.typeRecord);
-    // console.log(treeValues);
+    console.log(tableTree);
 
     // Then we get the clean data and set the origin for the other table.
     // We do so by calling setTableFromHTML, and setUnionData.
@@ -3703,9 +3703,13 @@ class MainBody extends Component {
     otherTableData = setUnionData(otherTableData);
     // console.log(otherTableData);
 
-    // console.log(colMapping);
+    // Note that we also need to build a semantic tree for the table being unioned
+    // To do that, we first get its typeRecord
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
+
+    // console.log(colMapping);
+
     let tempMapping = colMapping.slice();
     tableData = tableConcat(
       tableData,
@@ -8073,6 +8077,7 @@ function buildTableTree(treeValues, typeRecord) {
   for (let i = 0; i < typeRecord.length; ++i) {
     semTree.push(buildColumnTree(treeValues[i], typeRecord[i]));
   }
+  // console.log(semTree);
   return semTree;
 }
 
@@ -8195,6 +8200,43 @@ function buildColumnTree(values, columnType) {
 
   // Now that fullColumnTree looks correct. Let's merge each cellTree in a columnTree together.
   // and store the fraction information
+
+  // Note that combinedTree should be a 2D array
+  // Each outer array (corresponding to each level) stores an array of objects with properties type and frac
+
+  // We first get the depth of the tree, from the deepest cell tree
+  let combinedTree = [];
+  let maxDepth = 0;
+
+  for (let i = 0; i < fullColumnTree.length; ++i) {
+    if (fullColumnTree[i].length > maxDepth) {
+      maxDepth = fullColumnTree[i].length;
+    }
+  }
+
+  for (let i = 0; i < maxDepth; ++i) {
+    let curLevel = {};
+    for (let j = 0; j < fullColumnTree.length; ++j) {
+      if (fullColumnTree[j].length > i) {
+        for (let k = 0; k < fullColumnTree[j][i].length; ++k) {
+          let curType = fullColumnTree[j][i][k];
+          curLevel[curType] = (curLevel[curType] || 0) + 1;
+        }
+      }
+    }
+    combinedTree.push(curLevel);
+  }
+
+  // Now the tree contains counts instead of fraction, let's convert it to fraction
+  let totalCount = columnType.length;
+  for (let i = 0; i < combinedTree.length; ++i) {
+    let curLevelMap = combinedTree[i];
+    for (let j = 0; j < Object.keys(curLevelMap).length; ++j) {
+      let curType = Object.keys(curLevelMap)[j];
+      curLevelMap[curType] /= totalCount;
+    }
+  }
+  return combinedTree;
 }
 
 
