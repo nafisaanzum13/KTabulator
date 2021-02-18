@@ -3694,7 +3694,7 @@ class MainBody extends Component {
     // console.log(tablePromise);
     allPromiseReady(tablePromise).then((treeValues) => {
     let tableTree = buildTableTree(treeValues[0], this.state.typeRecord);
-    console.log(tableTree);
+    // console.log(tableTree);
 
     // Then we get the clean data and set the origin for the other table.
     // We do so by calling setTableFromHTML, and setUnionData.
@@ -3705,6 +3705,25 @@ class MainBody extends Component {
 
     // Note that we also need to build a semantic tree for the table being unioned
     // To do that, we first get its typeRecord
+
+    // We sample rows from the otherTableData. 
+    // Note that we skip the first column in otherTableData (since the first column is OriginURL)
+    let sampleRows = _.sampleSize(otherTableData, Math.min(otherTableData.length, numForTree));
+    let promiseArray = getRDFType(sampleRows, -1, "startTable");
+    allPromiseReady(promiseArray).then((values) => {
+    // We call helper function to store the ontology rdf:type of the sampleRows to support semantic tree
+    let otherTypeRecord = buildTypeRecord(sampleRows, -1, values, "startTable");
+    // Now we build the semantic tree for the other table from otherTypeRecord
+    let otherTablePromise = [tableTreePromise(otherTypeRecord)];
+    // console.log(tablePromise);
+    allPromiseReady(otherTablePromise).then((otherTreeValues) => {
+    let otherTableTree = buildTableTree(otherTreeValues[0], otherTypeRecord);
+
+    // We now take a look at both tableTree and otherTableTree
+    console.log(tableTree);
+    console.log(otherTableTree);
+
+    // Start here
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
 
@@ -3750,6 +3769,8 @@ class MainBody extends Component {
         lastAction: lastAction,
         prevState: prevState,
       })
+    })
+    })
     })
     })
     })
