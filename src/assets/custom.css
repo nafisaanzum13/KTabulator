@@ -118,6 +118,14 @@
   background-color: #fff;
 }
 
+.share-table-modal {
+  margin-top: 20vh;
+  margin-left: 40vw;
+  height: 20vh;
+  width: 20vw;
+  background-color: #fff;
+}
+
 .checkbox-list {
   height: 35vh;
   overflow: auto;

@@ -11,6 +11,7 @@ import LandingPage from "../components/LandingPage";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
 import PagePanel from "../components/PagePanel";
+import ShareTable from "../components/ShareTable";
 import _ from "lodash";
 
 const maxNeighbourCount = 10;
@@ -64,6 +65,7 @@ class MainBody extends Component {
       showUnionTables: false,  // boolean storing whether all the unionable pages and tables is shown. Default to false.
       showJoinTables: false,   // boolean storing whether the page storing joinable tables is shown. Default to false.
 
+      showShareTable: false, // boolean storing whether shareTable Modal is visible or not
       // states below are useful for startSubject
       keyColIndex: 0,   // number storing the index of the search column. initially the key column is the first column
       // 1D array of objects with four properties storing the table headers. This array is used to create the column headers in table panel
@@ -213,6 +215,8 @@ class MainBody extends Component {
     this.closeModal = this.closeModal.bind(this);
     this.toggleTableSelection = this.toggleTableSelection.bind(this);
     this.toggleUnionJoin = this.toggleUnionJoin.bind(this);
+    this.showShareTable = this.showShareTable.bind(this);
+    this.hideShareTable = this.hideShareTable.bind(this);
 
     // functions below are for column filter
     this.openFilter = this.openFilter.bind(this);
@@ -4573,6 +4577,15 @@ class MainBody extends Component {
     })
   }
 
+  // These two functions deal with opening and closing of share table modal
+  showShareTable() {
+    this.setState({showShareTable: true})
+  }
+
+  hideShareTable() {
+    this.setState({showShareTable: false})
+  }
+
   // The following function toggles this.state.showTableSelection.
 
   toggleTableSelection() {
@@ -5135,6 +5148,7 @@ class MainBody extends Component {
               copyTable={this.copyTable}
               undoPreviousStep={this.undoPreviousStep}
               openModal = {this.openModal}
+              showShareTable = {this.showShareTable}
             />
           </div> 
           <div className="mainbody">
@@ -5260,6 +5274,13 @@ class MainBody extends Component {
                   toggleSemantic={this.toggleSemantic}
                   unionCutOff={this.state.unionCutOff}
                   unionCutOffChange={this.unionCutOffChange}
+                />
+              </div>
+              <div>
+                <ShareTable
+                  show={this.state.showShareTable}
+                  close={this.hideShareTable}
+                  getTableData={() => {return this.state.tableData}}
                 />
               </div>
               <div>

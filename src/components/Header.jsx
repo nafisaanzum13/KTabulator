@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { FaCopy, FaUndo } from "react-icons/fa";
+import { FaCopy, FaUndo, FaShare } from "react-icons/fa";
 import { FiSettings } from "react-icons/fi";
 
 class Header extends Component {
@@ -16,7 +16,7 @@ class Header extends Component {
             </a>
           </div>
           <div className="offset-md-2 col-md-2 row">
-            <div className="col-md-4">
+            <div className="col-md-3">
               <button
                 className="btn btn-default"
                 title="export table"
@@ -25,7 +25,7 @@ class Header extends Component {
                 <FaCopy className="logo-left-color" />
               </button>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <button
                 className="btn btn-default"
                 title="Union Table Settings"
@@ -36,13 +36,22 @@ class Header extends Component {
                 />
               </button>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <button
                 className="btn btn-default"
                 title="undo previous action"
                 onClick={() => this.props.undoPreviousStep()}
               >
                 <FaUndo className="color-wrangler" />
+              </button>
+            </div>
+            <div className="col-md-3">
+              <button
+                className="btn btn-default"
+                title="share table"
+                onClick={() => this.props.showShareTable()}
+              >
+                <FaShare className="color-wrangler" />
               </button>
             </div>
           </div>
