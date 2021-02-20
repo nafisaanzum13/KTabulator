@@ -3725,6 +3725,8 @@ class MainBody extends Component {
 
     // Start here
 
+    // We first union by row names, then union by semTree
+
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
 
     // console.log(colMapping);
@@ -5135,6 +5137,7 @@ class MainBody extends Component {
               copyTable={this.copyTable}
               undoPreviousStep={this.undoPreviousStep}
               openModal = {this.openModal}
+              fullState = {this.state}
             />
           </div> 
           <div className="mainbody">

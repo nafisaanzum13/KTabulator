@@ -46,6 +46,12 @@
   color: #ff715b;
 }
 
+.json-link {
+  margin-top: 0.8rem;
+  margin-left: 0.5rem;
+  color: #1ea896;
+}
+
 .list-css {
   cursor: pointer;
 }

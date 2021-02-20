@@ -1,10 +1,11 @@
 import React, { Component } from "react";
-import { FaCopy, FaUndo } from "react-icons/fa";
+import { FaCopy, FaUndo, FaDownload } from "react-icons/fa";
 import { FiSettings } from "react-icons/fi";
 
 class Header extends Component {
   state = {};
   render() {
+    // console.log(this.props.fullState);
     return (
       <>
         <div className="row header-body">
@@ -16,7 +17,17 @@ class Header extends Component {
             </a>
           </div>
           <div className="offset-md-2 col-md-2 row">
-            <div className="col-md-4">
+            <div className="col-md-3">
+              <a
+                href={`data:text/json;charset=utf-8,
+                      ${encodeURIComponent(JSON.stringify(this.props.fullState))}`}
+                title="download table"
+                download="shareTable.json"
+              >
+                <FaDownload className="json-link"/>
+              </a>
+            </div>
+            <div className="col-md-3">
               <button
                 className="btn btn-default"
                 title="export table"
@@ -25,7 +36,7 @@ class Header extends Component {
                 <FaCopy className="logo-left-color" />
               </button>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <button
                 className="btn btn-default"
                 title="Union Table Settings"
@@ -36,7 +47,7 @@ class Header extends Component {
                 />
               </button>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <button
                 className="btn btn-default"
                 title="undo previous action"
