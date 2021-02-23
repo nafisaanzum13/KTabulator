@@ -253,6 +253,9 @@ class MainBody extends Component {
     this.showUnionAlign = this.showUnionAlign.bind(this);
     this.cancelUnionAlign = this.cancelUnionAlign.bind(this);
     this.hardcodeUnion = this.hardcodeUnion.bind(this);
+
+    // functions below are for file uploading/sharing
+    this.handleFileChange = this.handleFileChange.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -5112,6 +5115,21 @@ class MainBody extends Component {
     })
   }
 
+  // The following function handles users uploading a json table downloaded from website
+  handleFileChange(e) {
+    console.log("File just uploaded");
+    let uploadedFile = e.target.files[0];
+    let reader = new FileReader();
+    reader.readAsText(uploadedFile);
+    console.log("Reading file is done");
+    reader.onload = async(e) => {
+      let result = e.target.result;
+      let content = await JSON.parse(result);
+      // In here we have parsed the file read in
+      console.log(content);
+    }
+  }
+
   render() {
     let bodyEle;
     let bottomContentClass = " bottom-content";
@@ -5125,6 +5143,7 @@ class MainBody extends Component {
       bodyEle = 
         <LandingPage 
           handleURLPaste={this.handleURLPaste} 
+          handleFileChange={this.handleFileChange}
         />;
     }
     // Else, we show the three panels: TablePanel, ActionPanel, and PagePanel
