@@ -85,8 +85,8 @@ class MainBody extends Component {
       firstColSelection: [],   // 1D array of objects storing information about the starting subject's neighbours
       firstColChecked: [],     // 1D array of booleans storing whether a neighbour of the starting subject is selected or not
       firstColFilled: false,   // boolean indicating whether the first column has been filled. 
-      firstColText: "",        // string storing the type-ahead text that users have typed in for first column's selection. Initially empty.
                                // Will be set to true and remain that way after calling populateKeyColumn, or handleStartTable
+      firstColText: "",        // string storing the type-ahead text that users have typed in for first column's selection. Initially empty.
       keyCheckedIndex: -1,     // index storing the most recent index that has just been toggled for the first column. Initially -1.
       firstColHeaderInfo: [],  // 2D array of objects storing information needed to create the first column's header. (since both AND and OR need to be considered)
 
@@ -287,6 +287,7 @@ class MainBody extends Component {
             originTableArray.push(wikiTableArray[i]);
           }
         }
+        console.log(originTableArray);
         let tableOpenList = [];
         for (let i = 0; i < originTableArray.length; ++i) {
           tableOpenList.push(false);
@@ -5127,6 +5128,97 @@ class MainBody extends Component {
       let content = await JSON.parse(result);
       // In here we have parsed the file read in
       console.log(content);
+
+      // Note that originTableArray cannot be copied into the JSON file, we need to fetch it again here
+      let promiseArray = [];
+      promiseArray.push(fetchText(content.urlPasted));
+      allPromiseReady(promiseArray).then((values) => {
+      // We first parse the pasted URL and store the list of tables from the pasted URL
+      let htmlText = values[0];
+      let doc = new DOMParser().parseFromString(htmlText, "text/html");
+      let wikiTableArray = doc.getElementsByClassName("wikitable");
+      let originTableArray = [];
+      for (let i = 0; i < wikiTableArray.length; ++i) {
+        // console.log(wikiTableArray[i].rows);
+        if (wikiTableArray[i].tagName === "TABLE" && wikiTableArray[i].rows !== undefined) {
+          originTableArray.push(wikiTableArray[i]);
+        }
+      }
+      originTableArray = content.usecaseSelected === "startTable" ? originTableArray : content.originTableArray;
+
+      // Let's set state based on content
+      this.setState({
+        urlPasted: content.urlPasted,
+        tablePasted: content.tablePasted,
+        usecaseSelected: content.usecaseSelected,
+        pageHidden: content.pageHidden,
+        iframeURL: content.iframeURL,
+        curActionInfo: content.curActionInfo,
+        lastAction: content.lastAction,
+        prevState: content.prevState,
+        showSetting: false,
+        showTableSelection: content.showTableSelection,
+        tabIndex: content.tabIndex,
+        showUnionTables: content.showUnionTables,
+        showJoinTables: content.showJoinTables,
+
+        keyColIndex: content.keyColIndex,
+        tableHeader: content.tableHeader,
+        tableData: content.tableData,
+        optionsMap: content.optionsMap,
+        keyColNeighbours: content.keyColNeighbours,
+        firstDegNeighbours: content.firstDegNeighbours,
+        firstColSelection: content.firstColSelection,
+        firstColChecked: content.firstColChecked,
+        firstColFilled: content.firstColFilled,
+        firstColText: content.firstColIndex,
+        keyCheckedIndex: content.keyCheckedIndex,
+        firstColHeaderInfo: content.firstColHeaderInfo,
+        otherColSelection: content.otherColSelection,
+        otherColChecked: content.otherColChecked,
+        otherCheckedIndex: content.otherCheckedIndex,
+        otherColText: content.otherColText,
+
+        originTableArray: originTableArray,
+        tableOpenList: content.tableOpenList,
+        selectedTableIndex: content.selectedTableIndex,
+        selectedClassAnnotation: content.selectedClassAnnotation,
+        tableDataExplore: content.tableDataExplore,
+        propertyNeighbours: content.propertyNeighbours,
+        semanticEnabled: content.semanticEnabled,
+        unionCutOff: content.unionCutOff,
+
+        showFilter: false,
+        checkAll: true,
+        curFilterIndex: -1,
+        dataAndChecked: [],
+        filterMin: null,
+        filterMax: null,
+
+        showJoinModal: false,
+        joinTableIndex: -1,
+        joinTableData: [],
+        originColOptions: [],
+        joinColOptions: [],
+        originJoinIndex: -1,
+        joinJoinIndex: -1,
+        joinPairRecord: [],
+
+        previewColIndex: content.previewColIndex,
+
+        selectedCell: content.selectedCell,
+        previewInfoArray: content.previewInfoArray,
+        previewInfoExpanded: content.previewInfoExpanded,
+
+        unionURL: content.unionURL,
+        unionTableArray: content.unionTableArray,
+        unionOpenList: content.unionOpenList,
+        showUnionModal: false,
+
+        semanticTree: content.semanticTree,
+        typeRecord: content.typeRecord,
+      })
+    })
     }
   }
 
