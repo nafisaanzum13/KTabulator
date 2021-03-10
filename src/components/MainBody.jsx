@@ -118,7 +118,7 @@ class MainBody extends Component {
       //         4.2.5) title:         array of strings storing the column headers of the current table
       propertyNeighbours: [],
       semanticEnabled: "disabled", // boolean value indicating whether semantic mapping is enabled or not. Default to true
-      unionCutOff: 1, // number representing the union percentage a table must have to be considered unionable (>=)
+      unionCutOff: 0.75, // number representing the union percentage a table must have to be considered unionable (>=)
 
       // states below are for column filter
       showFilter: false,        // boolean storing whether we want to show column filter or not. Initially false.
@@ -3724,12 +3724,35 @@ class MainBody extends Component {
     let otherTableTree = buildTableTree(otherTreeValues[0], otherTypeRecord);
 
     // We now take a look at both tableTree and otherTableTree
-    console.log(tableTree);
-    console.log(otherTableTree);
+    // console.log(tableTree);
+    // console.log(otherTableTree);
 
     // Start here
 
     // We first union by row names, then union by semTree
+    
+    // Step One: get the column names of the table in the table panel, using this.state.tableHeader.
+    let originCols = [];
+    let tableHeader = _.cloneDeep(this.state.tableHeader);
+
+    for (let j = 0; j < this.state.tableHeader.length; ++j) {
+      let curValue = ""
+      for (let k = 0; k < tableHeader[j].length; ++k) {
+        curValue+=tableHeader[j][k].value;
+      }
+      originCols.push(curValue);
+    }
+    console.log(originCols);
+
+    // Step Two: get the column names of the othe table, based on otherTableHTML
+    let newCols = ["OriginURL"];
+    let curHeaderCells = otherTableHTML.rows[0].cells;
+  
+    for (let j = 0; j < curHeaderCells.length; ++j) {
+      let headerName = HTMLCleanCell(curHeaderCells[j].innerText);
+      newCols.push(headerName);
+    }
+    console.log(newCols);
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
 
