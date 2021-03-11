@@ -1490,7 +1490,6 @@ class MainBody extends Component {
 
     document.body.classList.add('waiting');
 
-    // Start from here
     // console.log(this.state.typeRecord);
 
     // console.log(colIndex);
@@ -3728,6 +3727,7 @@ class MainBody extends Component {
     // console.log(otherTableTree);
 
     // Start here
+    let newMapping = [];
 
     // We first union by row names, then union by semTree
     
@@ -3741,8 +3741,9 @@ class MainBody extends Component {
         curValue+=tableHeader[j][k].value;
       }
       originCols.push(curValue);
+      newMapping.push(-1);
     }
-    console.log(originCols);
+    // console.log(originCols);
 
     // Step Two: get the column names of the othe table, based on otherTableHTML
     let newCols = ["OriginURL"];
@@ -3752,17 +3753,38 @@ class MainBody extends Component {
       let headerName = HTMLCleanCell(curHeaderCells[j].innerText);
       newCols.push(headerName);
     }
-    console.log(newCols);
+    // console.log(newCols);
+
+    // Step three: check which names are matched already
+    for (let j = 0; j < newMapping.length; ++j) {
+      let curIndex = newCols.indexOf(originCols[j]);
+      if (curIndex !== -1) {
+        // This means the new table also contains column j from the selected table
+        // Thus we have found a mapping. We updated colMapping.
+        newMapping[j] = curIndex;
+      }
+    }
+
+    // Step four: for those columns in original table whose names cannot be matched, look into semantic tree
+    for (let j = 0; j < newMapping.length; ++j) {
+      if (newMapping[j] === -1) {
+        let semMatchingIndex = findSemanticUnion(j, tableTree, otherTableTree);
+        if (semMatchingIndex !== -1) {
+          newMapping[j] = semMatchingIndex;
+        }
+      }
+    }
+    console.log(newMapping);
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
 
     // console.log(colMapping);
 
-    let tempMapping = colMapping.slice();
+    let tempMapping_replace = colMapping.slice();
     tableData = tableConcat(
       tableData,
       otherTableData,
-      tempMapping
+      tempMapping_replace
     );
 
     // console.log(tableData);
@@ -8395,6 +8417,14 @@ function buildColumnTree(values, columnType) {
     }
   }
   return combinedTree;
+}
+
+// Helper function for finding a matching column based on semantic mapping
+function findSemanticUnion(j, tableTree, otherTableTree) {
+  console.log(j);
+  console.log(tableTree);
+  console.log(otherTableTree);
+  return -1;
 }
 
 
