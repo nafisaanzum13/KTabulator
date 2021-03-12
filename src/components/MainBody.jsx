@@ -118,7 +118,7 @@ class MainBody extends Component {
       //         4.2.5) title:         array of strings storing the column headers of the current table
       propertyNeighbours: [],
       semanticEnabled: "disabled", // boolean value indicating whether semantic mapping is enabled or not. Default to true
-      unionCutOff: 0.75, // number representing the union percentage a table must have to be considered unionable (>=)
+      unionCutOff: 0.5, // number representing the union percentage a table must have to be considered unionable (>=)
 
       // states below are for column filter
       showFilter: false,        // boolean storing whether we want to show column filter or not. Initially false.
@@ -1524,6 +1524,10 @@ class MainBody extends Component {
         tableData[i][colIndex].data = curData;
         // Note that we still want to set origin to support autofill
         let originToAdd = createNeighbourText(neighbourArray) + ":" + curData;
+        console.log("Current data point is: ");
+        console.log(i);
+        console.log(this.state.keyColIndex);
+        console.log(tableData[i][this.state.keyColIndex]);
         let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
         keyOrigin.push(originToAdd);
         tableData[i][colIndex].origin = keyOrigin;
@@ -1595,6 +1599,7 @@ class MainBody extends Component {
     let curColumnRecord = buildTypeRecord(sampleRows, colIndex, values)
     let typeRecord = _.cloneDeep(this.state.typeRecord);
     typeRecord[colIndex] = curColumnRecord;
+    // console.log(typeRecord);
 
     document.body.classList.remove('waiting');
 
@@ -3693,6 +3698,7 @@ class MainBody extends Component {
     // Starting here, let's build the semantic tree from type record.
     // Let's write a helper function to get the type lineage for each column in the table
     // Note that we have to put tableTreePromise in an array here so that allPromiseReady can work
+    // console.log(this.state.typeRecord);
     let tablePromise = [tableTreePromise(this.state.typeRecord)];
     // console.log(tablePromise);
     allPromiseReady(tablePromise).then((treeValues) => {
@@ -3704,7 +3710,7 @@ class MainBody extends Component {
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML, otherTableOrigin);
     otherTableData = setUnionData(otherTableData);
-    // console.log(otherTableData);
+    console.log(otherTableData);
 
     // Note that we also need to build a semantic tree for the table being unioned
     // To do that, we first get its typeRecord
@@ -3736,7 +3742,7 @@ class MainBody extends Component {
     let tableHeader = _.cloneDeep(this.state.tableHeader);
 
     for (let j = 0; j < this.state.tableHeader.length; ++j) {
-      let curValue = ""
+      let curValue = "";
       for (let k = 0; k < tableHeader[j].length; ++k) {
         curValue+=tableHeader[j][k].value;
       }
@@ -3784,10 +3790,12 @@ class MainBody extends Component {
     tableData = tableConcat(
       tableData,
       otherTableData,
-      tempMapping_replace
+      otherTableOrigin,
+      tempMapping_replace,
     );
 
-    // console.log(tableData);
+    console.log(otherTableData);
+    console.log(tableData);
 
     // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
     // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
@@ -6161,7 +6169,7 @@ function updateFirstColSelection(resultsBinding) {
 // This function takes in the clean data for the first table, clean data for the second table, and colMapping between these two tables
 // And returns the unioned clean data for the first table
 
-function tableConcat(tableData, otherTableData, tempMapping) {
+function tableConcat(tableData, otherTableData, otherTableOrigin, tempMapping) {
   // We want to correctly modify tableDataExplore, based on colMapping.
   // If colMapping is null for some column, we want to set the data as "N/A"
   // console.log(tableDataExplore);
@@ -6183,7 +6191,10 @@ function tableConcat(tableData, otherTableData, tempMapping) {
       if (colInNew !== "null") {
         tempRow.push(otherTableData[i][colInNew]);
       } else {
-        tempRow.push({ data: "N/A" });
+        tempRow.push({ 
+          data: "N/A",
+          origin: [otherTableOrigin],
+        });
       }
     }
     dataToAdd.push(tempRow);
@@ -8150,6 +8161,19 @@ function buildTypeRecord(sampleData, colIndex, values, startingType) {
       tableTypeRecord.push(curTypeRecord);
     }
 
+    // To keep everything consistent, let's push on something empty in the startTable case as well
+    let originURLTypeRecord = [];
+    for (let i = 0; i < sampleData.length; ++ i) {
+      originURLTypeRecord.push({
+        "data": "originURL",
+        "type": [],
+      })
+    }
+
+    if (startingType === "startTable") {
+      tableTypeRecord.splice(0, 0, originURLTypeRecord);
+    }
+
     return tableTypeRecord;
   }
 }
@@ -8420,11 +8444,57 @@ function buildColumnTree(values, columnType) {
 }
 
 // Helper function for finding a matching column based on semantic mapping
-function findSemanticUnion(j, tableTree, otherTableTree) {
-  console.log(j);
-  console.log(tableTree);
-  console.log(otherTableTree);
-  return -1;
+function findSemanticUnion(originColIndex, tableTree, otherTableTree) {
+  // console.log(originColIndex);
+  // console.log(tableTree);
+  // console.log(otherTableTree);
+  // First case, the column looking for a matching does not have semantic info
+  if (tableTree[originColIndex].length === 0) {
+    return -1;
+  }
+  // Else we loop over all columns in otherTableTree
+  else {
+    let otherColIndex = -1;
+    let otherColScore = 0;
+    for (let i = 0; i < otherTableTree.length; ++i) {
+      let curColScore = calcColumnScore(tableTree[originColIndex], otherTableTree[i]);
+      if (curColScore > otherColScore) {
+        otherColScore = curColScore;
+        otherColIndex = i;
+      }
+    }
+    return otherColIndex;
+  }
+}
+
+// Helper function to calculate the similarity score between two semantic trees. Used in findSemanticUnion.
+function calcColumnScore(treeOne, treeTwo) {
+  // console.log(treeOne);
+  // console.log(treeTwo);
+  if (treeTwo.length === 0) {
+    return 0;
+  }
+  else {
+    let returnScore = 0;
+    // We loop over each level
+    for (let i = 0; i < treeOne.length; ++i) {
+      let originTypes = Object.keys(treeOne[i]);
+      if (treeTwo.length > i) {
+        for (let j = 0; j < originTypes.length; ++j) {
+          let curOriginType = originTypes[j];
+          // console.log("Current type is "+curOriginType);
+          // If we go into the following clause, that means the type exists in the ith level of both
+          // treeOne and treeTwo
+          if (treeTwo[i][curOriginType] !== undefined) {
+            let scoreToAdd = Math.min(treeOne[i][curOriginType], treeTwo[i][curOriginType]);
+            // console.log("Score to add is "+scoreToAdd);
+            returnScore += scoreToAdd * (2 ^ i);
+          }
+        }
+      }
+    }
+    return returnScore;
+  }
 }
 
 
