@@ -1195,7 +1195,7 @@ class MainBody extends Component {
     // Let's figure out what's currently in the table first.
     // console.log(this.state.tableHeader);
     let autoFillInfo = getAutofillInfo(this.state.tableData);
-    console.log(autoFillInfo);
+    // console.log(autoFillInfo);
 
     // console.log(neighbourArray);
     let queryURL = keyQueryGen(neighbourArray);
@@ -1245,7 +1245,7 @@ class MainBody extends Component {
         let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", 0);
 
         // In here we add support for auto-fill information:
-        // In here we make use of the autofillFarPromise helper function to get the 2nd and 3rd deg neighbours
+        // We make use of the autofillFarPromise helper function to get the 2nd and 3rd deg neighbours
         let columnInfo = autoFillInfo.columnInfo;
         let autoPromise = autofillFarPromise(tableData, columnInfo, fillStartIndex);
         allPromiseReady(promiseArrayOne).then((valuesOne) => {
@@ -1276,7 +1276,7 @@ class MainBody extends Component {
           // This farArray contains all the information we needed. We set a starting index
           let farIndex = 0;
 
-          // Stepone: Write a helper function to fill in the one-deg neighbours first
+          // Stepone: Call helper function autofillFirstDeg to fill in the one-deg neighbours first
           // This information should already exists in firstDegNeighbours
           for (let i = 0; i < columnInfo.length; ++i) {
             // We are currently dealing with curColumn_th column in the table
@@ -3283,7 +3283,8 @@ class MainBody extends Component {
         let data = tableDataExplore[i][j].data;
         // Then set the origin
         let origin = [];
-        let originText = tableDataExplore[i][j].origin+": "+tableHeader[j][0].value+": "+tableDataExplore[i][j].data;
+        // let originText = tableDataExplore[i][j].origin+": "+tableHeader[j][0].value+": "+tableDataExplore[i][j].data;
+        let originText = tableHeader[j][0].value+": "+tableDataExplore[i][j].data;
         origin.push(originText);
         tempRow.push({"data":data,"origin":origin});
       }
@@ -3691,9 +3692,13 @@ class MainBody extends Component {
 
   unionTable(firstIndex, secondIndex, otherTableHTML, colMapping) {
     document.body.classList.add('waiting');
+
     // First we create a copy of the current tableData
     let tableData = _.cloneDeep(this.state.tableData);
     // console.log(tableData);
+
+    // Let's also get the length of tableData, which will be used in autofilling
+    let fillStartIndex = tableData.length;
 
     // Starting here, let's build the semantic tree from type record.
     // Let's write a helper function to get the type lineage for each column in the table
@@ -3780,7 +3785,7 @@ class MainBody extends Component {
         }
       }
     }
-    console.log(newMapping);
+    // console.log(newMapping);
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
     let newMappingCopy = newMapping.slice();
@@ -3792,26 +3797,63 @@ class MainBody extends Component {
       otherTableOrigin,
       newMappingCopy
     )
-    console.log(otherTableData);
-    console.log(tableData);
+    // console.log(otherTableData);
+    // console.log(tableData);
 
     // Step five: for those columns in original table whose names are still not matched, look into column autofill
     // In here we have to make use of what we have done previously with autofill
 
-    let autoFillInfo = getAutofillInfo(tableData);
+    // Note that one change we have to make is passing in originCols, since in startTable case we don't know reference column
+    let autoFillInfo = getAutofillInfo(tableData, originCols);
     console.log(autoFillInfo);
+    // console.log(fillStartIndex);
 
     // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
     // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
     let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
     let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+    // In here we add support for auto-fill information:
+    // We make use of the autofillFarPromise helper function to get the 2nd and 3rd deg neighbours
+    let columnInfo = autoFillInfo.columnInfo;
+    // console.log(columnInfo);
+    let autoPromise = autofillFarPromise(tableData, columnInfo, fillStartIndex);
     allPromiseReady(promiseArrayOne).then((valuesOne) => {
     allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+    allPromiseReady(autoPromise).then((valuesAuto) => {
 
       // We call updateNeighbourInfo here because we are changing the rows
       let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
       let keyColNeighbours = updatedNeighbours.keyColNeighbours;
       let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+      // Step one: Call helper function autofillFirstDeg to fill in the one-deg neighbours first
+      // This information should already exists in firstDegNeighbours
+      // for (let i = 0; i < columnInfo.length; ++i) {
+      //   // We are currently dealing with curColumn_th column in the table
+      //   let curColumn = i + 1;
+      //   // If it is a one-deg neighbour, we call the autofillFirstDeg to update tableData
+      //   if (columnInfo[i].length === 1) {
+      //     tableData = 
+      //       autofillFirstDeg(tableData, 
+      //                        columnInfo[i], 
+      //                        curColumn, 
+      //                        fillStartIndex, 
+      //                        firstDegNeighbours, 
+      //                        this.state.keyColIndex);
+      //   }
+      //   // It it is a 2nd/3rd deg neighbour, we call autofillFarDeg to update tableData
+      //   if (columnInfo[i].length === 2 || columnInfo[i].length === 3) {
+      //     tableData = 
+      //       autofillFarDeg(tableData,
+      //                       columnInfo[i],
+      //                       farArray[farIndex],
+      //                       curColumn,
+      //                       fillStartIndex);
+      //     // We also need to update farIndex
+      //     ++farIndex;
+      //   }
+      // }
+      console.log(tableData);
 
       document.body.classList.remove('waiting');
       // Suppport for undo.
@@ -3832,6 +3874,7 @@ class MainBody extends Component {
         lastAction: lastAction,
         prevState: prevState,
       })
+    })
     })
     })
     })
@@ -7707,11 +7750,15 @@ function computeJoinableColumn(originTableData, joinTableData, originTableHeader
   return allPairsRecord;
 }
 
-// Helper function that takes two inputs: tableData
+// Helper function that takes input: tableData and originCols (optional)
 // and outputs which second and third deg neighbours we need to fetch (the exact ones)
-function getAutofillInfo(tableData) {
+function getAutofillInfo(tableData, originCols) {
   // First take a look at the data passed in
   // console.log(tableData);
+  // console.log(originCols);
+
+  // IMPORTANT: WE HAVE TO MODIFY THIS FUNCTION, TO GET THE CORRECT CELLS THAT WE ARE REFERENCING
+  // BECAUSE IN STARTTABLE CASE WE DON'T KNOW WHICH COLUMN WE ARE DEALING WITH
 
   // Since we have modified how origin is stored (now even N/A cells has origins)
   // We look at the first row (first record) to get all the columns information
@@ -7720,11 +7767,19 @@ function getAutofillInfo(tableData) {
   let twoDegInfo = [];
   let threeDegInfo = [];
   let columnInfo = [];
+  let refInfo = [];
   let longHopWarning = false;
   for (let i = 1; i < firstRecord.length; ++i) {
     let curOrigin = firstRecord[i].origin;
     // We only care about columns that are 1 to 3 hops away
     if (curOrigin.length >= 2 && curOrigin.length <= 4) {
+      // Modification made for startTable here:
+      // If we are in the startTable case (so originCols is not undefined)
+      // We have to figure out the current columns' reference col, based on curOrigin's first element
+      let firstOrigin = curOrigin[0];
+      let curRef = originCols.indexOf(firstOrigin.split(":")[0]) - 1;
+      // console.log(referenceCol);
+
       curOrigin = curOrigin.slice(1);
       let curInfo = [];
       for (let j = 0; j < curOrigin.length; ++j) {
@@ -7749,9 +7804,11 @@ function getAutofillInfo(tableData) {
         alert("Autofill information has caused an error!");
       }
       columnInfo.push(curInfo);
+      refInfo.push(curRef);
     }
     else {
       columnInfo.push([]);
+      refInfo.push(-1);
     }
     if (curOrigin.length > 4) {
       longHopWarning = true;
@@ -7767,6 +7824,7 @@ function getAutofillInfo(tableData) {
     "twoDegInfo": twoDegInfo,
     "threeDegInfo": threeDegInfo,
     "columnInfo": columnInfo,
+    "refInfo": refInfo,
   }
 
   return returnVal;
@@ -7777,11 +7835,12 @@ function getAutofillInfo(tableData) {
 // It should look very similar to populateOtherColumn
 
 function autofillFirstDeg(tableDataPassed, columnInfo, colIndex, fillStartIndex, firstDegNeighboursPassed, keyColIndex) {
-  // console.log(tableData);
+  // console.log(tableDataPassed);
   // console.log(columnInfo);
   // console.log(colIndex);
   // console.log(fillStartIndex);
-  // console.log(firstDegNeighbours);
+  // console.log(firstDegNeighboursPassed);
+  // console.log(keyColIndex);
 
   let tableData = _.cloneDeep(tableDataPassed);
   let firstDegNeighboursPassedCopy = _.cloneDeep(firstDegNeighboursPassed);
