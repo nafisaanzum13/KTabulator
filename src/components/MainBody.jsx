@@ -1524,10 +1524,10 @@ class MainBody extends Component {
         tableData[i][colIndex].data = curData;
         // Note that we still want to set origin to support autofill
         let originToAdd = createNeighbourText(neighbourArray) + ":" + curData;
-        console.log("Current data point is: ");
-        console.log(i);
-        console.log(this.state.keyColIndex);
-        console.log(tableData[i][this.state.keyColIndex]);
+        // console.log("Current data point is: ");
+        // console.log(i);
+        // console.log(this.state.keyColIndex);
+        // console.log(tableData[i][this.state.keyColIndex]);
         let keyOrigin = tableData[i][this.state.keyColIndex].origin.slice();
         keyOrigin.push(originToAdd);
         tableData[i][colIndex].origin = keyOrigin;
@@ -3710,7 +3710,7 @@ class MainBody extends Component {
     let otherTableOrigin = this.state.propertyNeighbours[firstIndex].siblingArray[secondIndex].name;
     let otherTableData = setTableFromHTML(otherTableHTML, otherTableOrigin);
     otherTableData = setUnionData(otherTableData);
-    console.log(otherTableData);
+    // console.log(otherTableData);
 
     // Note that we also need to build a semantic tree for the table being unioned
     // To do that, we first get its typeRecord
@@ -3783,19 +3783,23 @@ class MainBody extends Component {
     console.log(newMapping);
 
     // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
+    let newMappingCopy = newMapping.slice();
 
-    // console.log(colMapping);
-
-    let tempMapping_replace = colMapping.slice();
+    // Before we go into autofill, let's update the tableData first
     tableData = tableConcat(
       tableData,
       otherTableData,
       otherTableOrigin,
-      tempMapping_replace,
-    );
-
+      newMappingCopy
+    )
     console.log(otherTableData);
     console.log(tableData);
+
+    // Step five: for those columns in original table whose names are still not matched, look into column autofill
+    // In here we have to make use of what we have done previously with autofill
+
+    let autoFillInfo = getAutofillInfo(tableData);
+    console.log(autoFillInfo);
 
     // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
     // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
@@ -6170,25 +6174,14 @@ function updateFirstColSelection(resultsBinding) {
 // And returns the unioned clean data for the first table
 
 function tableConcat(tableData, otherTableData, otherTableOrigin, tempMapping) {
-  // We want to correctly modify tableDataExplore, based on colMapping.
-  // If colMapping is null for some column, we want to set the data as "N/A"
-  // console.log(tableDataExplore);
 
-  // We first make some small modifications to colMapping, as we have inserted a new column into otherTableData and tableDataExplore
-  for (let j = 0; j < tempMapping.length; ++j) {
-    if (tempMapping[j] !== "null") {
-      tempMapping[j]++;
-    }
-  }
-  tempMapping.splice(0, 0, 0); // insert element 0 at the first position of colMapping, deleting 0 elements
-
-  // Now we insert the data into dataToAdd. dataToAdd will be concatenated with tableDataExplore
+  // Now we insert the data into dataToAdd. dataToAdd will be concatenated with tableData
   let dataToAdd = [];
   for (let i = 0; i < otherTableData.length; ++i) {
     let tempRow = [];
     for (let j = 0; j < tempMapping.length; ++j) {
       let colInNew = tempMapping[j];
-      if (colInNew !== "null") {
+      if (colInNew !== -1) {
         tempRow.push(otherTableData[i][colInNew]);
       } else {
         tempRow.push({ 
@@ -7714,7 +7707,7 @@ function computeJoinableColumn(originTableData, joinTableData, originTableHeader
   return allPairsRecord;
 }
 
-// Helper function that takes input: this.state.tableData and this.state.tableHeader
+// Helper function that takes two inputs: tableData
 // and outputs which second and third deg neighbours we need to fetch (the exact ones)
 function getAutofillInfo(tableData) {
   // First take a look at the data passed in
