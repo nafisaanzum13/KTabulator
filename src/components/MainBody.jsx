@@ -1247,7 +1247,7 @@ class MainBody extends Component {
         // In here we add support for auto-fill information:
         // We make use of the autofillFarPromise helper function to get the 2nd and 3rd deg neighbours
         let columnInfo = autoFillInfo.columnInfo;
-        let autoPromise = autofillFarPromise(tableData, columnInfo, fillStartIndex);
+        let autoPromise = autofillFarPromise(tableData, columnInfo, fillStartIndex, "startSubject", -1);
         allPromiseReady(promiseArrayOne).then((valuesOne) => {
         allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
         allPromiseReady(autoPromise).then((valuesAuto) => {
@@ -3777,10 +3777,12 @@ class MainBody extends Component {
     }
 
     // Step four: for those columns in original table whose names cannot be matched, look into semantic tree
+
     for (let j = 0; j < newMapping.length; ++j) {
       if (newMapping[j] === -1) {
         let semMatchingIndex = findSemanticUnion(j, tableTree, otherTableTree);
-        if (semMatchingIndex !== -1) {
+        // We include an additional check here that this column is not used already
+        if (semMatchingIndex !== -1 && newMapping.indexOf(semMatchingIndex) === -1) {
           newMapping[j] = semMatchingIndex;
         }
       }
@@ -3815,11 +3817,17 @@ class MainBody extends Component {
     // In here we add support for auto-fill information:
     // We make use of the autofillFarPromise helper function to get the 2nd and 3rd deg neighbours
     let columnInfo = autoFillInfo.columnInfo;
+    let refInfo = autoFillInfo.refInfo;
     // console.log(columnInfo);
-    let autoPromise = autofillFarPromise(tableData, columnInfo, fillStartIndex);
+
+    // Start from here: next we need to modify autofillFarPromise function to accomodate startTable
+    // We should no longer differentiate between 1st def neighbours and 2/3 deg neighbours
+    let autoPromise = autofillFarPromise(tableData, columnInfo, fillStartIndex, "startTable", refInfo);
     allPromiseReady(promiseArrayOne).then((valuesOne) => {
     allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
     allPromiseReady(autoPromise).then((valuesAuto) => {
+
+      console.log(valuesAuto);
 
       // We call updateNeighbourInfo here because we are changing the rows
       let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
@@ -7895,7 +7903,7 @@ function autofillFirstDeg(tableDataPassed, columnInfo, colIndex, fillStartIndex,
 }
 
 // This is a helper function to generate the query we needed to fetch the 2nd and 3rd deg neighbours
-function autofillFarPromise(tableData, columnInfo, fillStartIndex) {
+function autofillFarPromise(tableData, columnInfo, fillStartIndex, usecaseSelected, refInfo) {
   // console.log(tableData);
   // console.log(columnInfo);
   // console.log(fillStartIndex);
@@ -7913,6 +7921,18 @@ function autofillFarPromise(tableData, columnInfo, fillStartIndex) {
   // }
   // limit 1
 
+  // Alternatively, when we are in the startTable case
+
+  // select ?o1 ?o2 ?o3
+  // where {
+  // OPTIONAL {dbr:Barack_Obama dbo:spouse ?o1}.
+  // OPTIONAL {dbr:Devullu dbo:director/dbo:birthPlace ?o2}.
+  // OPTIONAL {dbr:Devullu dbo:director/dbo:birthPlace/^dbo:restingPlace ?o3}.
+  // }
+  // limit 1
+
+  // In startTable case, we fetch 1/2/3deg neighbours. In startSubject, only 2/3deg.
+  let degLimit = usecaseSelected === "startTable" ? 0 : 1;
   // Let's generate our query clause by clause
 
   // We loop over tableData because we need to generate multiple queries (30 or 45)
@@ -7927,7 +7947,7 @@ function autofillFarPromise(tableData, columnInfo, fillStartIndex) {
     // Ex: "select+%3Fo1+%3Fo2%0D%0A"
     let numVar = 0;
     for (let i = 0; i < columnInfo.length; ++i) {
-      if (columnInfo[i].length > 1) {
+      if (columnInfo[i].length > degLimit) {
         numVar++;
       }
     }
@@ -7948,10 +7968,13 @@ function autofillFarPromise(tableData, columnInfo, fillStartIndex) {
     let optionIndex = 1;
     // We loop through all the columns (paths)
     for (let i = 0; i < columnInfo.length; ++i) {
-      if (columnInfo[i].length > 1) {
+      if (columnInfo[i].length > degLimit) {
         let curClause = "OPTIONAL+%7Bdbr%3A";
         // we can use 0 for the second index because the first column has to be the search column right now
-        let cellValue = regexReplace(tableData[j][0].data);
+
+        let refColIndex = usecaseSelected === "startTable" ? refInfo[i] + 1 : 0;
+
+        let cellValue = regexReplace(tableData[j][refColIndex].data);
         curClause = curClause + cellValue + "+";
         // we now loop over all the predicates that form this query path 
         for (let k = 0; k < columnInfo[i].length; ++k) {
