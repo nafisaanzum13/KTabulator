@@ -1272,7 +1272,7 @@ class MainBody extends Component {
 
           // Now we call a helper function to process valuesAuto
           // Specifically, we want to get an array of arrays of string, as data for the 2nd/3rd deg neighbour columns
-          let farArray = processFarDeg(columnInfo, valuesAuto);
+          let farArray = processAutoInfo(columnInfo, valuesAuto, "startSubject");
           // This farArray contains all the information we needed. We set a starting index
           let farIndex = 0;
 
@@ -3807,7 +3807,7 @@ class MainBody extends Component {
 
     // Note that one change we have to make is passing in originCols, since in startTable case we don't know reference column
     let autoFillInfo = getAutofillInfo(tableData, originCols);
-    console.log(autoFillInfo);
+    // console.log(autoFillInfo);
     // console.log(fillStartIndex);
 
     // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
@@ -3827,40 +3827,35 @@ class MainBody extends Component {
     allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
     allPromiseReady(autoPromise).then((valuesAuto) => {
 
-      console.log(valuesAuto);
+      // console.log(valuesAuto);
+
+      // We call helper "processAutoInfo" to process valuesAuto
+      // Specifically, we want to get an array of arrays of string, as data for the 1/2/3 deg neighbour columns
+      let autoArray = processAutoInfo(columnInfo, valuesAuto, "startTable");
+      let autoIndex = 0;
+      console.log(autoArray);
 
       // We call updateNeighbourInfo here because we are changing the rows
       let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
       let keyColNeighbours = updatedNeighbours.keyColNeighbours;
       let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
 
-      // Step one: Call helper function autofillFirstDeg to fill in the one-deg neighbours first
-      // This information should already exists in firstDegNeighbours
-      // for (let i = 0; i < columnInfo.length; ++i) {
-      //   // We are currently dealing with curColumn_th column in the table
-      //   let curColumn = i + 1;
-      //   // If it is a one-deg neighbour, we call the autofillFirstDeg to update tableData
-      //   if (columnInfo[i].length === 1) {
-      //     tableData = 
-      //       autofillFirstDeg(tableData, 
-      //                        columnInfo[i], 
-      //                        curColumn, 
-      //                        fillStartIndex, 
-      //                        firstDegNeighbours, 
-      //                        this.state.keyColIndex);
-      //   }
-      //   // It it is a 2nd/3rd deg neighbour, we call autofillFarDeg to update tableData
-      //   if (columnInfo[i].length === 2 || columnInfo[i].length === 3) {
-      //     tableData = 
-      //       autofillFarDeg(tableData,
-      //                       columnInfo[i],
-      //                       farArray[farIndex],
-      //                       curColumn,
-      //                       fillStartIndex);
-      //     // We also need to update farIndex
-      //     ++farIndex;
-      //   }
-      // }
+      for (let i = 0; i < columnInfo.length; ++i) {
+        // We are currently dealing with curColumn_th column in the table
+        let curColumn = i + 1;
+
+        //  We call autofillFarDeg to update tableData
+        if (columnInfo[i].length > 0 && columnInfo[i].length < 4) {
+          tableData = 
+            autofillFarDeg(tableData,
+                           columnInfo[i],
+                           autoArray[autoIndex],
+                           curColumn,
+                           fillStartIndex);
+          // We also need to update autoIndex
+          ++autoIndex;
+        }
+      }
       console.log(tableData);
 
       document.body.classList.remove('waiting');
@@ -8023,14 +8018,16 @@ function autofillFarPromise(tableData, columnInfo, fillStartIndex, usecaseSelect
   return promiseArray;
 }
 
-// This function is a helper function to support 2nd/3rd deg autofill
-// Specifically, it return a 2D array of strings, as data for the 2nd/3rd deg neighbour columns
-// Input: 
-function processFarDeg(columnInfo, valuesAuto) {
+// This function is a helper function to support autofill, based on the starting use case.
+// Specifically, it return a 2D array of strings, as data for the 1/2/3 or 2/3 deg neighbour columns
+ 
+function processAutoInfo(columnInfo, valuesAuto, usecaseSelected) {
   // First let's determine how many variables there are 
   let numVar = 0;
+  let degLimit = usecaseSelected === "startTable" ? 0 : 1;
+
   for (let i = 0; i < columnInfo.length; ++i) {
-    if (columnInfo[i].length === 2 || columnInfo[i].length === 3) {
+    if (columnInfo[i].length > degLimit && columnInfo[i].length < 4) {
       numVar++;
     }
   }
