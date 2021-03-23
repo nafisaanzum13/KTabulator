@@ -256,6 +256,9 @@ class MainBody extends Component {
 
     // functions below are for file uploading/sharing
     this.handleFileChange = this.handleFileChange.bind(this);
+
+    // functions below are for unioning customized tables
+    this.unionCustomized = this.unionCustomized.bind(this);
   }
 
   // As soon as the URL has been pasted, we want to fetch all tables from the pasted URL.
@@ -3737,7 +3740,7 @@ class MainBody extends Component {
     // console.log(tableTree);
     // console.log(otherTableTree);
 
-    // Start here
+    // We start creating column mappings
     let newMapping = [];
 
     // We first union by row names, then union by semTree
@@ -3767,14 +3770,27 @@ class MainBody extends Component {
     // console.log(newCols);
 
     // Step three: check which names are matched already
+    // Let's use string containment, ignored upper/lower cases
+    // for (let j = 0; j < newMapping.length; ++j) {
+    //   let curIndex = newCols.indexOf(originCols[j]);
+    //   if (curIndex !== -1) {
+    //     // This means the new table also contains column j from the selected table
+    //     // Thus we have found a mapping. We updated colMapping.
+    //     newMapping[j] = curIndex;
+    //   }
+    // }
+
     for (let j = 0; j < newMapping.length; ++j) {
-      let curIndex = newCols.indexOf(originCols[j]);
-      if (curIndex !== -1) {
-        // This means the new table also contains column j from the selected table
-        // Thus we have found a mapping. We updated colMapping.
-        newMapping[j] = curIndex;
+      let originColName = originCols[j].toUpperCase();
+      for (let k = 0; k < newCols.length; ++k) {
+        let newColName = newCols[k].toUpperCase();
+        if (originColName.includes(newColName) || newColName.includes(originColName)) {
+          newMapping[j] = k;
+          break;
+        }
       }
     }
+    // console.log(newMapping);
 
     // Step four: for those columns in original table whose names cannot be matched, look into semantic tree
 
@@ -3880,6 +3896,84 @@ class MainBody extends Component {
     })
     })
     })
+    })
+    })
+    })
+  }
+
+  // Start here
+  unionCustomized(e, index) {
+    // console.log(this.state.unionURL);
+    // console.log(this.state.unionTableArray);
+    // console.log(this.state.unionOpenList);
+    // console.log(index);
+
+    // First we create a copy of the current tableData
+    let tableData = _.cloneDeep(this.state.tableData);
+    // console.log(tableData);
+
+    // Let's also get the length of tableData, which will be used in autofilling
+    let fillStartIndex = tableData.length;
+
+    // Starting here, let's build the semantic tree from type record.
+    // console.log(this.state.typeRecord);
+    let tablePromise = [tableTreePromise(this.state.typeRecord)];
+    // console.log(tablePromise);
+    allPromiseReady(tablePromise).then((treeValues) => {
+    let tableTree = buildTableTree(treeValues[0], this.state.typeRecord);
+
+    // Now we work with otherTable's data
+    let otherTableOrigin = decodeURIComponent(this.state.unionURL.slice(30));
+    let otherTableHTML = this.state.unionTableArray[index];
+    let otherTableData = setTableFromHTML(otherTableHTML, otherTableOrigin);
+    otherTableData = setUnionData(otherTableData);
+    // console.log(otherTableData);
+
+    // We now build a semantic tree for the table being unioned
+    let sampleRows = _.sampleSize(otherTableData, Math.min(otherTableData.length, numForTree));
+    let promiseArray = getRDFType(sampleRows, -1, "startTable");
+    allPromiseReady(promiseArray).then((values) => {
+    // We call helper function to store the ontology rdf:type of the sampleRows to support semantic tree
+    let otherTypeRecord = buildTypeRecord(sampleRows, -1, values, "startTable");
+    // Now we build the semantic tree for the other table from otherTypeRecord
+    let otherTablePromise = [tableTreePromise(otherTypeRecord)];
+    // console.log(tablePromise);
+    allPromiseReady(otherTablePromise).then((otherTreeValues) => {
+    let otherTableTree = buildTableTree(otherTreeValues[0], otherTypeRecord);
+
+    // We take a look at both tableTree and otherTableTree
+    console.log(tableTree);
+    console.log(otherTableTree);
+
+    // We start creating column mappings
+    let newMapping = [];
+
+    // We first union by row names, then union by semTree
+    
+    // Step One: get the column names of the table in the table panel, using this.state.tableHeader.
+    let originCols = [];
+    let tableHeader = _.cloneDeep(this.state.tableHeader);
+
+    for (let j = 0; j < this.state.tableHeader.length; ++j) {
+      let curValue = "";
+      for (let k = 0; k < tableHeader[j].length; ++k) {
+        curValue+=tableHeader[j][k].value;
+      }
+      originCols.push(curValue);
+      newMapping.push(-1);
+    }
+    console.log(originCols);
+
+    // Step Two: get the column names of the othe table, based on otherTableHTML
+    let newCols = ["OriginURL"];
+    let curHeaderCells = otherTableHTML.rows[0].cells;
+  
+    for (let j = 0; j < curHeaderCells.length; ++j) {
+      let headerName = HTMLCleanCell(curHeaderCells[j].innerText);
+      newCols.push(headerName);
+    }
+    console.log(newCols);
+
     })
     })
     })
@@ -5221,6 +5315,9 @@ class MainBody extends Component {
 
   // The following function handles users uploading a json table downloaded from website
   handleFileChange(e) {
+
+    document.body.classList.add('waiting');
+
     console.log("File just uploaded");
     let uploadedFile = e.target.files[0];
     let reader = new FileReader();
@@ -5248,6 +5345,8 @@ class MainBody extends Component {
         }
       }
       originTableArray = content.usecaseSelected === "startTable" ? originTableArray : content.originTableArray;
+
+      document.body.classList.remove('waiting');
 
       // Let's set state based on content
       this.setState({
@@ -5457,6 +5556,7 @@ class MainBody extends Component {
                     unionOpenList={this.state.unionOpenList}
                     toggleUnionTable={this.toggleUnionTable}
                     showUnionAlign={this.showUnionAlign}
+                    unionCustomized={this.unionCustomized}
                   />
                 </div>
               </div>

@@ -409,7 +409,8 @@ class ActionPanel extends Component {
           tableOpenList={this.props.unionOpenList}
           toggleTable={this.props.toggleUnionTable}
           listType={"union"}
-          buttonFunction={this.props.showUnionAlign} 
+          // buttonFunction={this.props.showUnionAlign}
+          buttonFunction={this.props.unionCustomized} 
         />
       </div>
 
