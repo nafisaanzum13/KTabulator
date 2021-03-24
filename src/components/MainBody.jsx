@@ -1306,6 +1306,7 @@ class MainBody extends Component {
               ++farIndex;
             }
           }
+          // console.log(tableData);
 
           document.body.classList.remove('waiting');
 
@@ -3843,6 +3844,8 @@ class MainBody extends Component {
     allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
     allPromiseReady(autoPromise).then((valuesAuto) => {
 
+      let selectionInfo = updateUnionSelection(valuesOne); // Sept 13 update
+
       // console.log(valuesAuto);
 
       // We call helper "processAutoInfo" to process valuesAuto
@@ -3883,6 +3886,8 @@ class MainBody extends Component {
             "keyColNeighbours":this.state.keyColNeighbours,
             "firstDegNeighbours":this.state.firstDegNeighbours,
             "previewColIndex": this.state.previewColIndex,
+            "firstColSelection": this.state.firstColSelection, 
+            "firstColChecked": this.state.firstColChecked, 
           };
       
       this.setState({
@@ -3892,6 +3897,8 @@ class MainBody extends Component {
         previewColIndex: -1,
         lastAction: lastAction,
         prevState: prevState,
+        firstColSelection: selectionInfo.firstColSelection,
+        firstColChecked: selectionInfo.firstColChecked,
       })
     })
     })
@@ -3903,6 +3910,7 @@ class MainBody extends Component {
 
   // Start here
   unionCustomized(e, index) {
+    document.body.classList.add('waiting');
     // console.log(this.state.unionURL);
     // console.log(this.state.unionTableArray);
     // console.log(this.state.unionOpenList);
@@ -3942,8 +3950,8 @@ class MainBody extends Component {
     let otherTableTree = buildTableTree(otherTreeValues[0], otherTypeRecord);
 
     // We take a look at both tableTree and otherTableTree
-    console.log(tableTree);
-    console.log(otherTableTree);
+    // console.log(tableTree);
+    // console.log(otherTableTree);
 
     // We start creating column mappings
     let newMapping = [];
@@ -3962,7 +3970,7 @@ class MainBody extends Component {
       originCols.push(curValue);
       newMapping.push(-1);
     }
-    console.log(originCols);
+    // console.log(originCols);
 
     // Step Two: get the column names of the othe table, based on otherTableHTML
     let newCols = ["OriginURL"];
@@ -3972,7 +3980,7 @@ class MainBody extends Component {
       let headerName = HTMLCleanCell(curHeaderCells[j].innerText);
       newCols.push(headerName);
     }
-    console.log(newCols);
+    // console.log(newCols);
 
     // Step three: check which names are matched already. Using string containment, ignoring cases.
     for (let j = 1; j < newMapping.length; ++j) {
@@ -4010,8 +4018,107 @@ class MainBody extends Component {
       otherTableOrigin,
       newMappingCopy
     )
-    console.log(tableData);
+    // console.log(tableData);
 
+    // Step five: for those columns in original table whose names are still not matched, look into column autofill
+
+    // Note that one change we have to make is passing in originCols, since in startTable case we don't know reference column
+    let autoFillInfo = getAutofillInfo(tableData, false, newMapping);
+    // console.log(autoFillInfo);
+    // console.log(fillStartIndex);
+
+    // Now, since we are changing the number of rows, we need to call updateNeighbourInfo
+    // Note: the colIndex we give to getNeighbourPromise should be this.state.keyColIndex
+    let promiseArrayOne = this.getNeighbourPromise(tableData, "subject", this.state.keyColIndex);
+    let promiseArrayTwo = this.getNeighbourPromise(tableData, "object", this.state.keyColIndex);
+    // In here we add support for auto-fill information:
+    // We make use of the autofillFarPromise helper function 
+    let columnInfo = autoFillInfo.columnInfo;
+    // let refInfo = autoFillInfo.refInfo;
+    // console.log(columnInfo);
+
+    // Start from here: next we need to modify autofillFarPromise function to accomodate startTable
+    // We should no longer differentiate between 1st def neighbours and 2/3 deg neighbours
+    let autoPromise = autofillFarPromise(tableData, columnInfo, fillStartIndex, "startSubject", -1);
+    // console.log(autoPromise);
+
+    allPromiseReady(promiseArrayOne).then((valuesOne) => {
+    allPromiseReady(promiseArrayTwo).then((valuesTwo) => {
+    allPromiseReady(autoPromise).then((valuesAuto) => {
+
+    // console.log(valuesAuto);
+
+    let selectionInfo = updateUnionSelection(valuesOne); // Sept 13 update
+  
+    // We call updateNeighbourInfo here because we are changing the rows
+    let updatedNeighbours = updateNeighbourInfo(valuesOne, valuesTwo);
+    let keyColNeighbours = updatedNeighbours.keyColNeighbours;
+    let firstDegNeighbours = updatedNeighbours.firstDegNeighbours;
+
+    // We call helper "processAutoInfo" to process valuesAuto to handle the 2nd/3rd deg neighbours
+    let farArray = processAutoInfo(columnInfo, valuesAuto, "startSubject");
+    // console.log(farArray);
+    // This farArray contains all the information we needed. We set a starting index
+    let farIndex = 0;
+
+    // Stepone: Call helper function autofillFirstDeg to fill in the one-deg neighbours first
+    // This information should already exists in firstDegNeighbours
+    for (let i = 0; i < columnInfo.length; ++i) {
+      // We are currently dealing with curColumn_th column in the table
+      let curColumn = i + 1;
+      // If it is a one-deg neighbour, we call the autofillFirstDeg to update tableData
+      if (columnInfo[i].length === 1) {
+        tableData = 
+          autofillFirstDeg(tableData, 
+                            columnInfo[i], 
+                            curColumn, 
+                            fillStartIndex, 
+                            firstDegNeighbours, 
+                            this.state.keyColIndex);
+      }
+      // It it is a 2nd/3rd deg neighbour, we call autofillFarDeg to update tableData
+      if (columnInfo[i].length === 2 || columnInfo[i].length === 3) {
+        tableData = 
+          autofillFarDeg(tableData,
+                          columnInfo[i],
+                          farArray[farIndex],
+                          curColumn,
+                          fillStartIndex);
+        // We also need to update farIndex
+        ++farIndex;
+      }
+    }
+
+    // Lastly we remove NA from Notes column.
+    tableData = removeNAfromNotes(tableData, originCols)
+
+    document.body.classList.remove('waiting');
+
+    // Suppport for undo.
+    let lastAction = "unionCustomized";
+    let prevState = 
+        {
+          "tableData":this.state.tableData,
+          "keyColNeighbours":this.state.keyColNeighbours,
+          "firstDegNeighbours":this.state.firstDegNeighbours,
+          "previewColIndex": this.state.previewColIndex,
+          "firstColSelection": this.state.firstColSelection, 
+          "firstColChecked": this.state.firstColChecked, 
+        };
+    
+    this.setState({
+      tableData: tableData,
+      keyColNeighbours: keyColNeighbours,
+      firstDegNeighbours: firstDegNeighbours,
+      previewColIndex: -1,
+      lastAction: lastAction,
+      prevState: prevState,
+      firstColSelection: selectionInfo.firstColSelection,
+      firstColChecked: selectionInfo.firstColChecked,
+    })
+    })
+    })
+    })
     })
     })
     })
@@ -7893,10 +8000,11 @@ function computeJoinableColumn(originTableData, joinTableData, originTableHeader
 
 // Helper function that takes input: tableData and originCols (optional)
 // and outputs which second and third deg neighbours we need to fetch (the exact ones)
-function getAutofillInfo(tableData, originCols) {
+function getAutofillInfo(tableData, originCols, newMapping) {
   // First take a look at the data passed in
   // console.log(tableData);
   // console.log(originCols);
+  console.log(newMapping);
 
   // IMPORTANT: WE HAVE TO MODIFY THIS FUNCTION, TO GET THE CORRECT CELLS THAT WE ARE REFERENCING
   // BECAUSE IN STARTTABLE CASE WE DON'T KNOW WHICH COLUMN WE ARE DEALING WITH
@@ -7912,13 +8020,17 @@ function getAutofillInfo(tableData, originCols) {
   let longHopWarning = false;
   for (let i = 1; i < firstRecord.length; ++i) {
     let curOrigin = firstRecord[i].origin;
-    // We only care about columns that are 1 to 3 hops away
-    if (curOrigin.length >= 2 && curOrigin.length <= 4) {
+    // We only care about columns that are 1 to 3 hops away. 
+    // Note that for columns already unioned from semantic mapping, we ignore them as well.
+    if (curOrigin.length >= 2 && curOrigin.length <= 4 && newMapping[i] === -1) {
       // Modification made for startTable here:
       // If we are in the startTable case (so originCols is not undefined)
       // We have to figure out the current columns' reference col, based on curOrigin's first element
       let firstOrigin = curOrigin[0];
-      let curRef = originCols.indexOf(firstOrigin.split(":")[0]) - 1;
+      let curRef = -1;
+      if (originCols !== undefined && originCols !== false) {
+        curRef = originCols.indexOf(firstOrigin.split(":")[0]) - 1;
+      }
       // console.log(referenceCol);
 
       curOrigin = curOrigin.slice(1);
@@ -8705,6 +8817,25 @@ function calcColumnScore(treeOne, treeTwo) {
     }
     return returnScore;
   }
+}
+
+// This function removes N/A from "Notes" column
+function removeNAfromNotes(tableData, originCols) {
+  let tableDataUpdated = _.cloneDeep(tableData);
+
+  console.log(tableData);
+  console.log(originCols);
+
+  for (let i = 0; i < originCols.length; ++i) {
+    if (originCols[i] === "Notes") {
+      for (let j = 0; j < tableDataUpdated.length; ++j) {
+        if (tableDataUpdated[j][i].data === "N/A") {
+          tableDataUpdated[j][i].data = "";
+        }
+      }
+    }
+  }
+  return tableDataUpdated;
 }
 
 
