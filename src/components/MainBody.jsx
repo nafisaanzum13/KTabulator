@@ -3974,6 +3974,44 @@ class MainBody extends Component {
     }
     console.log(newCols);
 
+    // Step three: check which names are matched already. Using string containment, ignoring cases.
+    for (let j = 1; j < newMapping.length; ++j) {
+      let originColName = originCols[j].toUpperCase();
+      for (let k = 0; k < newCols.length; ++k) {
+        let newColName = newCols[k].toUpperCase();
+        if (originColName.includes(newColName) || newColName.includes(originColName)) {
+          newMapping[j] = k;
+          break;
+        }
+      }
+    }
+    // console.log(newMapping);
+
+    // Step four: for those columns in original table whose names cannot be matched, look into semantic tree
+
+    for (let j = 0; j < newMapping.length; ++j) {
+      if (newMapping[j] === -1) {
+        let semMatchingIndex = findSemanticUnion(j, tableTree, otherTableTree);
+        // We include an additional check here that this column is not used already
+        if (semMatchingIndex !== -1 && newMapping.indexOf(semMatchingIndex) === -1) {
+          newMapping[j] = semMatchingIndex;
+        }
+      }
+    }
+    // console.log(newMapping);
+
+    // Note: we have to create a copy of colMapping, otherwise we are modifying the reference
+    let newMappingCopy = newMapping.slice();
+
+    // Before we go into autofill, let's update the tableData first
+    tableData = tableConcat(
+      tableData,
+      otherTableData,
+      otherTableOrigin,
+      newMappingCopy
+    )
+    console.log(tableData);
+
     })
     })
     })
