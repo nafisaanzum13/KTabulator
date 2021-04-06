@@ -1,26 +1,26 @@
 {
   "files": {
-    "main.css": "/KGWrangler/static/css/main.befd12b4.chunk.css",
-    "main.js": "/KGWrangler/static/js/main.e4d6db98.chunk.js",
-    "main.js.map": "/KGWrangler/static/js/main.e4d6db98.chunk.js.map",
-    "runtime-main.js": "/KGWrangler/static/js/runtime-main.8cd9a1b9.js",
-    "runtime-main.js.map": "/KGWrangler/static/js/runtime-main.8cd9a1b9.js.map",
-    "static/css/2.0cd81731.chunk.css": "/KGWrangler/static/css/2.0cd81731.chunk.css",
-    "static/js/2.342fe93f.chunk.js": "/KGWrangler/static/js/2.342fe93f.chunk.js",
-    "static/js/2.342fe93f.chunk.js.map": "/KGWrangler/static/js/2.342fe93f.chunk.js.map",
-    "index.html": "/KGWrangler/index.html",
-    "precache-manifest.b4e90c7fd7256623d7cbd5ca692c4f2a.js": "/KGWrangler/precache-manifest.b4e90c7fd7256623d7cbd5ca692c4f2a.js",
-    "service-worker.js": "/KGWrangler/service-worker.js",
-    "static/css/2.0cd81731.chunk.css.map": "/KGWrangler/static/css/2.0cd81731.chunk.css.map",
-    "static/css/main.befd12b4.chunk.css.map": "/KGWrangler/static/css/main.befd12b4.chunk.css.map",
-    "static/js/2.342fe93f.chunk.js.LICENSE.txt": "/KGWrangler/static/js/2.342fe93f.chunk.js.LICENSE.txt",
-    "static/media/layout.css": "/KGWrangler/static/media/6.f29b5f23.woff2"
+    "main.css": "/KTabulator/static/css/main.af811fad.chunk.css",
+    "main.js": "/KTabulator/static/js/main.b3c01940.chunk.js",
+    "main.js.map": "/KTabulator/static/js/main.b3c01940.chunk.js.map",
+    "runtime-main.js": "/KTabulator/static/js/runtime-main.1cbc38a3.js",
+    "runtime-main.js.map": "/KTabulator/static/js/runtime-main.1cbc38a3.js.map",
+    "static/css/2.0cd81731.chunk.css": "/KTabulator/static/css/2.0cd81731.chunk.css",
+    "static/js/2.6632d807.chunk.js": "/KTabulator/static/js/2.6632d807.chunk.js",
+    "static/js/2.6632d807.chunk.js.map": "/KTabulator/static/js/2.6632d807.chunk.js.map",
+    "index.html": "/KTabulator/index.html",
+    "precache-manifest.5e4acd86708271e9634729b5dd706113.js": "/KTabulator/precache-manifest.5e4acd86708271e9634729b5dd706113.js",
+    "service-worker.js": "/KTabulator/service-worker.js",
+    "static/css/2.0cd81731.chunk.css.map": "/KTabulator/static/css/2.0cd81731.chunk.css.map",
+    "static/css/main.af811fad.chunk.css.map": "/KTabulator/static/css/main.af811fad.chunk.css.map",
+    "static/js/2.6632d807.chunk.js.LICENSE.txt": "/KTabulator/static/js/2.6632d807.chunk.js.LICENSE.txt",
+    "static/media/layout.css": "/KTabulator/static/media/6.f29b5f23.woff2"
   },
   "entrypoints": [
-    "static/js/runtime-main.8cd9a1b9.js",
+    "static/js/runtime-main.1cbc38a3.js",
     "static/css/2.0cd81731.chunk.css",
-    "static/js/2.342fe93f.chunk.js",
-    "static/css/main.befd12b4.chunk.css",
-    "static/js/main.e4d6db98.chunk.js"
+    "static/js/2.6632d807.chunk.js",
+    "static/css/main.af811fad.chunk.css",
+    "static/js/main.b3c01940.chunk.js"
   ]
 }
