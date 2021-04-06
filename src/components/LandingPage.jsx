@@ -25,7 +25,7 @@ class LandingPage extends Component {
               <URLForm 
                 handleURLPaste={this.props.handleURLPaste} 
               />
-              <br />
+              {/* <br />
               <h4 className="offset-md-1">
                 Or upload a downloaded table
               </h4>
@@ -34,7 +34,7 @@ class LandingPage extends Component {
                   type="file" 
                   onChange={this.props.handleFileChange}
                 />
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

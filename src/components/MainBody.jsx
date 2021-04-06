@@ -16,7 +16,7 @@ import _ from "lodash";
 const maxNeighbourCount = 10;
 const maxFetchCount = 30;
 const initialColNum = 4;   // initial number of columns
-const initialRowNum = 15;  // initial number of rows
+const initialRowNum = 20;  // initial number of rows
 const numForTree = 3;      // how many entries(rows) we want to use to construct the semantic tree
 
 class MainBody extends Component {
@@ -7513,19 +7513,19 @@ function addRecommendNeighbours(processedNeighboursCopy) {
           )
         }
 
-        // updated on 9/13: hardcode "starring" to be in "director"'s attribute recommendations
-        if ((processedNeighbours[i].value === "director" && processedNeighbours[i].type === "subject") &&
-            (processedNeighbours[j].value === "starring" && processedNeighbours[j].type === "subject")) {
-          // console.log(processedNeighbours[i]);
-          // console.log(processedNeighbours[j]);
-          recommendNeighbours.push(
-            {
-              "value": processedNeighbours[j].value,
-              "type": processedNeighbours[j].type,
-              "relation": "magic!",
-            }
-          )
-        }
+        // // updated on 9/13: hardcode "starring" to be in "director"'s attribute recommendations
+        // if ((processedNeighbours[i].value === "director" && processedNeighbours[i].type === "subject") &&
+        //     (processedNeighbours[j].value === "starring" && processedNeighbours[j].type === "subject")) {
+        //   // console.log(processedNeighbours[i]);
+        //   // console.log(processedNeighbours[j]);
+        //   recommendNeighbours.push(
+        //     {
+        //       "value": processedNeighbours[j].value,
+        //       "type": processedNeighbours[j].type,
+        //       "relation": "magic!",
+        //     }
+        //   )
+        // }
       }
     }
     // We take a look at the recommendNeighbours
@@ -8022,7 +8022,14 @@ function getAutofillInfo(tableData, originCols, newMapping) {
     let curOrigin = firstRecord[i].origin;
     // We only care about columns that are 1 to 3 hops away. 
     // Note that for columns already unioned from semantic mapping, we ignore them as well.
-    if (curOrigin.length >= 2 && curOrigin.length <= 4 && newMapping[i] === -1) {
+    let needToAutofill;
+    if (newMapping === undefined) {
+      needToAutofill = curOrigin.length >= 2 && curOrigin.length <= 4;
+    }
+    else {
+      needToAutofill = curOrigin.length >= 2 && curOrigin.length <= 4 && newMapping[i] === -1;
+    }
+    if (needToAutofill) {
       // Modification made for startTable here:
       // If we are in the startTable case (so originCols is not undefined)
       // We have to figure out the current columns' reference col, based on curOrigin's first element
