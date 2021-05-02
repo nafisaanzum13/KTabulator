@@ -6,7 +6,6 @@ import Footer from "../components/Footer";
 import SettingModal from "../components/SettingModal";
 import FilterModal from "../components/FilterModal";
 import JoinModal from "../components/JoinModal";
-import UnionModal from "../components/UnionModal";
 import LandingPage from "../components/LandingPage";
 import TablePanel from "../components/TablePanel";
 import ActionPanel from "../components/ActionPanel";
@@ -252,7 +251,6 @@ class MainBody extends Component {
     this.toggleUnionTable = this.toggleUnionTable.bind(this);
     this.showUnionAlign = this.showUnionAlign.bind(this);
     this.cancelUnionAlign = this.cancelUnionAlign.bind(this);
-    this.hardcodeUnion = this.hardcodeUnion.bind(this);
 
     // functions below are for file uploading/sharing
     this.handleFileChange = this.handleFileChange.bind(this);
@@ -5367,97 +5365,6 @@ class MainBody extends Component {
     })
   } 
 
-  // The following function is completely hardcoded: it performs the table union
-  hardcodeUnion(e) {
-    document.body.classList.add('waiting');
-
-    let dataToUnion = setTableFromHTML(this.state.unionTableArray[0],"");
-    // console.log(dataToUnion);
-
-    // Now we should have a for loop to loop over dataToUnion.length
-    // We also need to run a loop to queries to specifically fetch the dbo:starring attribute
-
-    // Let's first take a look of all the movies (all entries from col index 2). 
-    // Then we will ask the queries. Then, when we get our results back (the starring), 
-    // we construct the new table data row by row. One cell at a time.
-    // and concat the new table data with the existing table data.
-
-    let promiseArray = [];
-
-    for (let i = 0; i < dataToUnion.length; ++i) {
-      let cellValue = dataToUnion[i][2].data === "N/A" ? "NONEXISTINGSTRING" : regexReplace(dataToUnion[i][2].data);
-      let prefixURL = 
-        "https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=";
-      let suffixURL = 
-        "format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query+";
-      let queryBody =
-        "select+%3Fo%0D%0Awhere+%7B%0D%0Adbr%3A" + cellValue + "+dbo%3Astarring+%3Fo.%0D%0A%7D&";
-      let queryURL = prefixURL + queryBody + suffixURL;
-      let curPromise = fetchJSON(queryURL);
-      promiseArray.push(curPromise);
-    }
-
-    allPromiseReady(promiseArray).then((values) => {
-
-      // for (let i = 0; i < values.length; ++i) {
-      //   console.log(values[i].results.bindings);
-      // }
-
-      // We have gotten all the data we need. Let's now put them together
-
-      let otherTableData = [];
-
-      for (let i = 0; i < dataToUnion.length; ++i) {
-        let tempRow = [];
-        // We push on the movies, directors, notes (which will be blank), starring (using the query results), and country in order
-        // First movies
-        tempRow.push(dataToUnion[i][2]);
-        // Then directors
-        tempRow.push(dataToUnion[i][4]);
-        // Then notes. It will have blank data and origin
-        tempRow.push({
-          "data": "",
-          "origin": "",
-        })
-        // Then starring. We need to use query results.
-        if (values[i].results.bindings.length === 0) {
-          tempRow.push({
-            "data": "N/A",
-          })
-        }
-        else {
-          let tempData = "";
-          for (let j = 0; j < values[i].results.bindings.length; ++j) {
-            if (j > 0) {
-              tempData+=";";
-            }
-            tempData+=removePrefix(values[i].results.bindings[j].o.value);
-          }
-          tempRow.push({
-            "data": tempData,
-            "origin":"",
-          })
-        }
-        // Lastly, country.
-        tempRow.push(dataToUnion[i][5]);
-
-        // After the row has been set, we push the row onto otherTableData
-        otherTableData.push(tempRow);
-      }
-      // console.log(otherTableData);
-
-      let tableData = _.cloneDeep(this.state.tableData);
-      tableData = tableData.concat(otherTableData);
-
-      document.body.classList.remove('waiting');
-
-      this.setState({
-        showUnionModal: false,
-        tableData: tableData,
-      })
-    })
-  }
-
   // The following function handles users uploading a json table downloaded from website
   handleFileChange(e) {
 
@@ -5753,13 +5660,6 @@ class MainBody extends Component {
                   runJoin={this.runJoin}
                   // support for suggested join
                   joinPairRecord={this.state.joinPairRecord}
-                />
-              </div>
-              <div>
-                <UnionModal
-                  showUnionModal={this.state.showUnionModal}
-                  cancelUnionAlign={this.cancelUnionAlign}
-                  hardcodeUnion={this.hardcodeUnion}
                 />
               </div>
             </div>
@@ -7512,20 +7412,6 @@ function addRecommendNeighbours(processedNeighboursCopy) {
             }
           )
         }
-
-        // // updated on 9/13: hardcode "starring" to be in "director"'s attribute recommendations
-        // if ((processedNeighbours[i].value === "director" && processedNeighbours[i].type === "subject") &&
-        //     (processedNeighbours[j].value === "starring" && processedNeighbours[j].type === "subject")) {
-        //   // console.log(processedNeighbours[i]);
-        //   // console.log(processedNeighbours[j]);
-        //   recommendNeighbours.push(
-        //     {
-        //       "value": processedNeighbours[j].value,
-        //       "type": processedNeighbours[j].type,
-        //       "relation": "magic!",
-        //     }
-        //   )
-        // }
       }
     }
     // We take a look at the recommendNeighbours
@@ -8846,7 +8732,7 @@ function removeNAfromNotes(tableData, originCols) {
 }
 
 
-// this following query is going to help with the recursive property recommendation
+// this following query may be helpful for property recommendation
 
 // select ?superclass where{
 //   dbo:Person rdfs:subClassOf* ?superclass .
