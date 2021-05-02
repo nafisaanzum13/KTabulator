@@ -20,7 +20,7 @@ class SettingModal extends Component {
               </div>
             </div>
             <br />
-            <div className="row">
+            {/* <div className="row">
               <div className="col-md-4">Semantic Mapping:</div>
               <div className="col-md-6">
                 <div onChange={(e) => this.props.toggleSemantic(e)}>
@@ -38,7 +38,7 @@ class SettingModal extends Component {
                   Disabled
                 </div>
               </div>
-            </div>
+            </div> */}
             <br />
             <div className="row">
               <div className="col-md-4">Percentage of Columns to Union:</div>

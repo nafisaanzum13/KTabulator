@@ -7892,9 +7892,6 @@ function getAutofillInfo(tableData, originCols, newMapping) {
   // console.log(originCols);
   console.log(newMapping);
 
-  // IMPORTANT: WE HAVE TO MODIFY THIS FUNCTION, TO GET THE CORRECT CELLS THAT WE ARE REFERENCING
-  // BECAUSE IN STARTTABLE CASE WE DON'T KNOW WHICH COLUMN WE ARE DEALING WITH
-
   // Since we have modified how origin is stored (now even N/A cells has origins)
   // We look at the first row (first record) to get all the columns information
   let firstRecord = tableData[0].slice();
@@ -7973,6 +7970,8 @@ function getAutofillInfo(tableData, originCols, newMapping) {
     "refInfo": refInfo,
   }
 
+  console.log(returnVal);
+  
   return returnVal;
 }
 
