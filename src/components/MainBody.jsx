@@ -4733,6 +4733,8 @@ class MainBody extends Component {
         keyColNeighbours: prevState.keyColNeighbours,
         firstDegNeighbours: prevState.firstDegNeighbours,
         previewColIndex: prevState.previewColIndex,
+        firstColSelection: prevState.firstColSelection, 
+        firstColChecked: prevState.firstColChecked, 
         lastAction: "",
       })
     }
@@ -4900,6 +4902,18 @@ class MainBody extends Component {
         curActionInfo: prevState.curActionInfo,
         tabIndex: prevState.tabIndex,
         previewColIndex: prevState.previewColIndex,
+        lastAction: "",
+      })
+    }
+
+    else if (lastAction === "unionCustomized") {
+      this.setState({
+        tableData: prevState.tableData,
+        keyColNeighbours: prevState.keyColNeighbours,
+        firstDegNeighbours: prevState.firstDegNeighbours,
+        previewColIndex: prevState.previewColIndex,
+        firstColSelection: prevState.firstColSelection, 
+        firstColChecked: prevState.firstColChecked, 
         lastAction: "",
       })
     }
