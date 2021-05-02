@@ -1325,6 +1325,8 @@ class MainBody extends Component {
               "firstDegNeighbours": this.state.firstDegNeighbours,
               "firstColHeaderInfo": this.state.firstColHeaderInfo,
               "previewColIndex": this.state.previewColIndex,
+              "curActionInfo": this.state.curActionInfo,
+              "firstColText": "",
               "firstColSelection": this.state.firstColSelection, // updated on 9/13
               "firstColChecked": this.state.firstColChecked, // updated on 9/13
             }
@@ -4643,6 +4645,7 @@ class MainBody extends Component {
         firstColChecked: prevState.firstColChecked,
         tabIndex: prevState.tabIndex,
         curActionInfo: prevState.curActionInfo,
+        firstColText: "",
         lastAction: "",
       })
     }
@@ -4859,6 +4862,8 @@ class MainBody extends Component {
         previewColIndex: prevState.previewColIndex,
         firstColSelection: prevState.firstColSelection, // updated on 9/13
         firstColChecked: prevState.firstColChecked,  // updated on 9/13
+        firstColIndex: "",
+        curActionInfo: prevState.curActionInfo,
         lastAction: "",
       })
     }
@@ -7971,7 +7976,7 @@ function getAutofillInfo(tableData, originCols, newMapping) {
   }
 
   console.log(returnVal);
-  
+
   return returnVal;
 }
 
